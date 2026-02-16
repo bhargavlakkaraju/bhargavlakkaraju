@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 // ─── Authentication & Users ─────────────────────────────────────────
@@ -14,7 +14,7 @@ model User {
   email          String    @unique
   name           String
   passwordHash   String
-  role           UserRole  @default(MEMBER)
+  role           String    @default("MEMBER")
   avatarUrl      String?
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -27,13 +27,6 @@ model User {
   workflowLogs     WorkflowLog[]
 
   @@index([organizationId])
-}
-
-enum UserRole {
-  OWNER
-  ADMIN
-  MEMBER
-  VIEWER
 }
 
 model Organization {
@@ -93,16 +86,16 @@ model Customer {
 // ─── Invoices ───────────────────────────────────────────────────────
 
 model Invoice {
-  id             String        @id @default(cuid())
+  id             String   @id @default(cuid())
   invoiceNumber  String
-  status         InvoiceStatus @default(DRAFT)
-  issueDate      DateTime      @default(now())
+  status         String   @default("DRAFT")
+  issueDate      DateTime @default(now())
   dueDate        DateTime
-  subtotal       Float         @default(0)
-  taxAmount      Float         @default(0)
-  discountAmount Float         @default(0)
-  totalAmount    Float         @default(0)
-  paidAmount     Float         @default(0)
+  subtotal       Float    @default(0)
+  taxAmount      Float    @default(0)
+  discountAmount Float    @default(0)
+  totalAmount    Float    @default(0)
+  paidAmount     Float    @default(0)
   notes          String?
   terms          String?
 
@@ -126,17 +119,6 @@ model Invoice {
   @@index([dueDate])
 }
 
-enum InvoiceStatus {
-  DRAFT
-  SENT
-  VIEWED
-  PARTIALLY_PAID
-  PAID
-  OVERDUE
-  CANCELLED
-  REFUNDED
-}
-
 model InvoiceLineItem {
   id          String  @id @default(cuid())
   description String
@@ -155,10 +137,10 @@ model InvoiceLineItem {
 // ─── Payments ───────────────────────────────────────────────────────
 
 model Payment {
-  id             String        @id @default(cuid())
+  id             String   @id @default(cuid())
   amount         Float
-  method         PaymentMethod @default(BANK_TRANSFER)
-  status         PaymentStatus @default(PENDING)
+  method         String   @default("BANK_TRANSFER")
+  status         String   @default("PENDING")
   reference      String?
   notes          String?
   paidAt         DateTime?
@@ -177,24 +159,6 @@ model Payment {
   @@index([organizationId])
   @@index([invoiceId])
   @@index([status])
-}
-
-enum PaymentMethod {
-  CASH
-  CHECK
-  BANK_TRANSFER
-  CREDIT_CARD
-  DEBIT_CARD
-  PAYPAL
-  STRIPE
-  OTHER
-}
-
-enum PaymentStatus {
-  PENDING
-  COMPLETED
-  FAILED
-  REFUNDED
 }
 
 // ─── Inventory / Products ───────────────────────────────────────────
@@ -239,8 +203,8 @@ model Product {
 }
 
 model StockMovement {
-  id          String        @id @default(cuid())
-  type        MovementType
+  id          String   @id @default(cuid())
+  type        String
   quantity    Int
   reason      String?
   productId   String
@@ -248,12 +212,6 @@ model StockMovement {
   createdAt   DateTime @default(now())
 
   @@index([productId])
-}
-
-enum MovementType {
-  IN
-  OUT
-  ADJUSTMENT
 }
 
 // ─── Expenses ───────────────────────────────────────────────────────
@@ -278,12 +236,12 @@ model Expense {
 // ─── AI Workflows ───────────────────────────────────────────────────
 
 model Workflow {
-  id             String         @id @default(cuid())
+  id             String   @id @default(cuid())
   name           String
   description    String?
-  trigger        WorkflowTrigger
-  actions        String         // JSON string of workflow actions
-  isActive       Boolean        @default(true)
+  trigger        String
+  actions        String
+  isActive       Boolean  @default(true)
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdAt      DateTime @default(now())
@@ -294,23 +252,11 @@ model Workflow {
   @@index([organizationId])
 }
 
-enum WorkflowTrigger {
-  INVOICE_CREATED
-  INVOICE_OVERDUE
-  PAYMENT_RECEIVED
-  LOW_STOCK
-  EXPENSE_ADDED
-  CUSTOMER_CREATED
-  SCHEDULED_DAILY
-  SCHEDULED_WEEKLY
-  SCHEDULED_MONTHLY
-}
-
 model WorkflowLog {
-  id         String          @id @default(cuid())
-  status     WorkflowLogStatus
+  id         String   @id @default(cuid())
+  status     String
   message    String?
-  details    String?          // JSON string
+  details    String?
   workflowId String
   workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
   triggeredById String?
@@ -320,21 +266,14 @@ model WorkflowLog {
   @@index([workflowId])
 }
 
-enum WorkflowLogStatus {
-  RUNNING
-  SUCCESS
-  FAILED
-  SKIPPED
-}
-
 // ─── Reminders & Notifications ──────────────────────────────────────
 
 model Reminder {
-  id             String        @id @default(cuid())
-  type           ReminderType
+  id             String   @id @default(cuid())
+  type           String
   scheduledFor   DateTime
   sentAt         DateTime?
-  status         ReminderStatus @default(PENDING)
+  status         String   @default("PENDING")
   message        String?
 
   invoiceId      String?
@@ -348,26 +287,12 @@ model Reminder {
   @@index([status])
 }
 
-enum ReminderType {
-  PAYMENT_DUE
-  PAYMENT_OVERDUE
-  FOLLOW_UP
-  CUSTOM
-}
-
-enum ReminderStatus {
-  PENDING
-  SENT
-  FAILED
-  CANCELLED
-}
-
 model Notification {
-  id        String           @id @default(cuid())
+  id        String   @id @default(cuid())
   title     String
   message   String
-  type      NotificationType
-  isRead    Boolean          @default(false)
+  type      String
+  isRead    Boolean  @default(false)
   link      String?
   userId    String
   user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -375,16 +300,4 @@ model Notification {
 
   @@index([userId])
   @@index([isRead])
-}
-
-enum NotificationType {
-  INFO
-  SUCCESS
-  WARNING
-  ERROR
-  PAYMENT
-  INVOICE
-  INVENTORY
-  WORKFLOW
-  REMINDER
 }
