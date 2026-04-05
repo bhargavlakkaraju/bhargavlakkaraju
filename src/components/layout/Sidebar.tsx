@@ -52,6 +52,29 @@ const navigation = [
   },
 ];
 
+const polymarketNavigation = [
+  {
+    name: "Market Scanner",
+    href: "/dashboard/polymarket",
+    icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
+  },
+  {
+    name: "My Portfolio",
+    href: "/dashboard/polymarket/portfolio",
+    icon: "M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z",
+  },
+  {
+    name: "Trade Calculator",
+    href: "/dashboard/polymarket/calculator",
+    icon: "M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z",
+  },
+  {
+    name: "Strategy Guide",
+    href: "/dashboard/polymarket/strategies",
+    icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253",
+  },
+];
+
 export default function Sidebar() {
   const pathname = usePathname();
 
@@ -67,6 +90,51 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        {/* Polymarket Trading Section */}
+        <div className="mb-4">
+          <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-emerald-600">
+            Polymarket Trading
+          </p>
+          {polymarketNavigation.map((item) => {
+            const isActive =
+              pathname === item.href ||
+              (item.href !== "/dashboard/polymarket" && pathname.startsWith(item.href));
+
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "text-gray-700 hover:bg-emerald-50/50 hover:text-emerald-700"
+                )}
+              >
+                <svg
+                  className={cn(
+                    "h-5 w-5 shrink-0",
+                    isActive ? "text-emerald-600" : "text-gray-400 group-hover:text-emerald-500"
+                  )}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
+                </svg>
+                {item.name}
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="my-3 border-t border-gray-200" />
+
+        {/* Finance Section */}
+        <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
+          Finance Tools
+        </p>
         {navigation.map((item) => {
           const isActive =
             pathname === item.href ||
