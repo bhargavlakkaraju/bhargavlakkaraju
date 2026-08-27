@@ -22,8 +22,7 @@ in one place.
 ```bash
 npm install
 cp .env.example .env      # then fill in DATABASE_URL and NEXTAUTH_SECRET
-npm run db:push           # create tables
-npm run db:seed           # load demo agency data
+npm run setup             # create tables + load demo agency data
 npm run dev
 ```
 
