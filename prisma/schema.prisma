@@ -25,6 +25,10 @@ model User {
   paymentsRecorded Payment[]
   notifications    Notification[]
   workflowLogs     WorkflowLog[]
+  tasksAssigned    Task[]         @relation("TaskAssignee")
+  projectsLed      Project[]      @relation("ProjectLead")
+  activities       Activity[]
+  gmailAccount     GmailAccount?
 
   @@index([organizationId])
 }
@@ -55,6 +59,9 @@ model Organization {
   expenses    Expense[]
   workflows   Workflow[]
   reminders   Reminder[]
+  projects    Project[]
+  tasks       Task[]
+  activities  Activity[]
 }
 
 // ─── Customers ──────────────────────────────────────────────────────
@@ -78,6 +85,7 @@ model Customer {
 
   invoices Invoice[]
   payments Payment[]
+  projects Project[]
 
   @@index([organizationId])
   @@index([email])
@@ -285,6 +293,93 @@ model Reminder {
   @@index([organizationId])
   @@index([scheduledFor])
   @@index([status])
+}
+
+// ─── Agency: Projects & Tasks ───────────────────────────────────────
+
+model Project {
+  id             String    @id @default(cuid())
+  name           String
+  description    String?
+  status         String    @default("ACTIVE") // ACTIVE | ON_HOLD | COMPLETED | ARCHIVED
+  health         String    @default("ON_TRACK") // ON_TRACK | AT_RISK | OFF_TRACK
+  startDate      DateTime  @default(now())
+  dueDate        DateTime?
+  budget         Float?
+
+  clientId       String?
+  client         Customer? @relation(fields: [clientId], references: [id])
+  leadId         String?
+  lead           User?     @relation("ProjectLead", fields: [leadId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tasks Task[]
+
+  @@index([organizationId])
+  @@index([clientId])
+  @@index([status])
+}
+
+model Task {
+  id             String    @id @default(cuid())
+  title          String
+  description    String?
+  status         String    @default("TODO") // TODO | IN_PROGRESS | IN_REVIEW | BLOCKED | DONE
+  priority       String    @default("MEDIUM") // LOW | MEDIUM | HIGH | URGENT
+  dueDate        DateTime?
+  completedAt    DateTime?
+
+  assigneeId     String?
+  assignee       User?     @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  projectId      String?
+  project        Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([assigneeId])
+  @@index([projectId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+// ─── Agency: Activity Feed ──────────────────────────────────────────
+
+model Activity {
+  id             String   @id @default(cuid())
+  type           String   // TASK_CREATED | TASK_COMPLETED | TASK_STATUS | PROJECT_CREATED | PROJECT_UPDATE | INVOICE_SENT | PAYMENT_RECEIVED | CLIENT_ADDED | NOTE
+  message        String
+  entityType     String?  // "task" | "project" | "invoice" | "payment" | "customer"
+  entityId       String?
+
+  actorId        String?
+  actor          User?    @relation(fields: [actorId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+}
+
+// ─── Gmail Integration ──────────────────────────────────────────────
+
+model GmailAccount {
+  id           String    @id @default(cuid())
+  email        String
+  accessToken  String
+  refreshToken String?
+  tokenExpiry  DateTime?
+  scope        String?
+  connectedAt  DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Notification {
