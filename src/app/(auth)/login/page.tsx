@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -15,20 +16,21 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Login failed");
+      if (result?.error) {
+        throw new Error(result.error);
       }
 
-      window.location.href = "/dashboard";
+      if (result?.ok) {
+        window.location.href = "/dashboard";
+      }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -92,6 +94,11 @@ export default function LoginPage() {
             <Link href="/register" className="font-semibold text-brand-600 hover:text-brand-700">
               Sign up
             </Link>
+          </p>
+
+          <p className="mt-4 rounded-lg bg-gray-50 p-3 text-center text-xs text-gray-500">
+            Demo account: <span className="font-mono">admin@agency.com</span> /{" "}
+            <span className="font-mono">password123</span>
           </p>
         </div>
       </div>
