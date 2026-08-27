@@ -37,6 +37,14 @@ NEXTAUTH_SECRET="${SECRET}"
 EOF
 fi
 
+# Export the variables so tools that do not auto-load .env (the tsx seed script's
+# PrismaClient) can see DATABASE_URL. The Prisma CLI loads .env on its own, but
+# `npm run db:seed` does not.
+set -a
+# shellcheck disable=SC1091
+. ./.env
+set +a
+
 # Sync the schema to the database (idempotent).
 npx prisma db push --skip-generate
 
