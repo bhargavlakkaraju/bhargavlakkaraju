@@ -1,4 +1,4 @@
-# FinFlow — Agency Command Center
+# Agency OS — Agency Command Center
 
 One dashboard to run your agency: who's working on what, what's happening across
 projects, your money (invoices, payments, expenses), and your Gmail inbox — all

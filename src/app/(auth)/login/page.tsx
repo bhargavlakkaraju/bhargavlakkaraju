@@ -40,9 +40,9 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-brand-600">FinFlow</h1>
+          <h1 className="text-3xl font-bold text-brand-600">Agency OS</h1>
           <p className="mt-2 text-gray-600">
-            Sign in to your financial dashboard
+            Sign in to your command center
           </p>
         </div>
 
@@ -94,11 +94,6 @@ export default function LoginPage() {
             <Link href="/register" className="font-semibold text-brand-600 hover:text-brand-700">
               Sign up
             </Link>
-          </p>
-
-          <p className="mt-4 rounded-lg bg-gray-50 p-3 text-center text-xs text-gray-500">
-            Demo account: <span className="font-mono">admin@agency.com</span> /{" "}
-            <span className="font-mono">password123</span>
           </p>
         </div>
       </div>

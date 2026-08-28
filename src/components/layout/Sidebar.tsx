@@ -75,9 +75,9 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="flex h-16 items-center gap-2 border-b border-gray-200 px-6">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600">
-          <span className="text-sm font-bold text-white">FF</span>
+          <span className="text-sm font-bold text-white">A</span>
         </div>
-        <span className="text-lg font-bold text-gray-900">FinFlow</span>
+        <span className="text-lg font-bold text-gray-900">Agency OS</span>
       </div>
 
       {/* Navigation */}
