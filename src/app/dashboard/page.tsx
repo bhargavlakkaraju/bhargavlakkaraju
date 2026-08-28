@@ -81,6 +81,7 @@ const activityIcon: Record<string, { bg: string; symbol: string }> = {
   INVOICE_SENT: { bg: "bg-yellow-100 text-yellow-600", symbol: "$" },
   PAYMENT_RECEIVED: { bg: "bg-green-100 text-green-600", symbol: "$" },
   CLIENT_ADDED: { bg: "bg-indigo-100 text-indigo-600", symbol: "@" },
+  MEMBER_ADDED: { bg: "bg-indigo-100 text-indigo-600", symbol: "+" },
   NOTE: { bg: "bg-gray-100 text-gray-600", symbol: "•" },
 };
 

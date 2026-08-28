@@ -1,4 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { getSessionContext } from "@/lib/api-auth";
 
@@ -56,5 +58,77 @@ export async function GET() {
       projectsLed: m.projectsLed,
       completedThisWeek: completedByUser.get(m.id) || 0,
     })),
+    canManage: ["OWNER", "ADMIN"].includes(ctx.role),
   });
+}
+
+const addMemberSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Enter a valid email address"),
+});
+
+function generatePassword(): string {
+  const words = ["Harbor", "Falcon", "Meadow", "Summit", "Indigo", "Casper", "Voyage", "Amber", "Juniper", "Atlas"];
+  const pick = () => words[Math.floor(Math.random() * words.length)];
+  return `${pick()}-${pick()}-${Math.floor(10 + Math.random() * 89)}`;
+}
+
+export async function POST(req: NextRequest) {
+  const ctx = await getSessionContext();
+  if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!["OWNER", "ADMIN"].includes(ctx.role)) {
+    return NextResponse.json(
+      { error: "Only the account owner can add team members" },
+      { status: 403 }
+    );
+  }
+
+  const parsed = addMemberSchema.safeParse(await req.json());
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.errors[0].message },
+      { status: 400 }
+    );
+  }
+
+  const { name, email } = parsed.data;
+  const existing = await db.user.findUnique({ where: { email } });
+  if (existing) {
+    return NextResponse.json(
+      { error: "An account with this email already exists" },
+      { status: 400 }
+    );
+  }
+
+  const tempPassword = generatePassword();
+  const passwordHash = await bcrypt.hash(tempPassword, 12);
+
+  const user = await db.user.create({
+    data: {
+      name,
+      email,
+      passwordHash,
+      role: "MEMBER",
+      organizationId: ctx.organizationId,
+    },
+  });
+
+  await db.activity.create({
+    data: {
+      type: "MEMBER_ADDED",
+      message: `added ${user.name} to the team`,
+      entityType: "user",
+      entityId: user.id,
+      actorId: ctx.userId,
+      organizationId: ctx.organizationId,
+    },
+  });
+
+  return NextResponse.json(
+    {
+      member: { id: user.id, name: user.name, email: user.email },
+      tempPassword,
+    },
+    { status: 201 }
+  );
 }

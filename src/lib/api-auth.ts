@@ -6,13 +6,14 @@ export interface SessionContext {
   organizationId: string;
   name: string;
   email: string;
+  role: string;
 }
 
 /** Returns the authenticated user's context, or null when not signed in. */
 export async function getSessionContext(): Promise<SessionContext | null> {
   const session = await getServerSession(authOptions);
   const user = session?.user as
-    | { id?: string; organizationId?: string; name?: string; email?: string }
+    | { id?: string; organizationId?: string; name?: string; email?: string; role?: string }
     | undefined;
   if (!user?.id || !user?.organizationId) return null;
   return {
@@ -20,5 +21,6 @@ export async function getSessionContext(): Promise<SessionContext | null> {
     organizationId: user.organizationId,
     name: user.name || "",
     email: user.email || "",
+    role: user.role || "MEMBER",
   };
 }
