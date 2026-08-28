@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -15,20 +16,21 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Login failed");
+      if (result?.error) {
+        throw new Error(result.error);
       }
 
-      window.location.href = "/dashboard";
+      if (result?.ok) {
+        window.location.href = "/dashboard";
+      }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -38,9 +40,9 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-brand-600">FinFlow</h1>
+          <h1 className="text-3xl font-bold text-brand-600">Agency OS</h1>
           <p className="mt-2 text-gray-600">
-            Sign in to your financial dashboard
+            Sign in to your command center
           </p>
         </div>
 

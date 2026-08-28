@@ -46,7 +46,7 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-brand-600">FinFlow</h1>
+          <h1 className="text-3xl font-bold text-brand-600">Agency OS</h1>
           <p className="mt-2 text-gray-600">Create your account to get started</p>
         </div>
 

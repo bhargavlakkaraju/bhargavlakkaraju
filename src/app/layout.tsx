@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "FinFlow - SaaS Finance & Billing Platform",
+  title: "Agency OS — Command Center",
   description:
-    "Complete financial management with invoicing, billing, inventory tracking, and AI-automated workflows.",
+    "One dashboard to run your agency: projects, team workload, activity, invoices, and your inbox.",
 };
 
 export default function RootLayout({
