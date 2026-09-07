@@ -1,250 +1,135 @@
 import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("Seeding database...");
-
-  // Create organization
-  const org = await prisma.organization.create({
-    data: {
-      name: "Acme Corp",
-      slug: "acme-corp",
-      email: "admin@acme.com",
-      phone: "+1 (555) 000-0000",
-      address: "123 Business Ave, Suite 100",
-      city: "San Francisco",
-      state: "CA",
-      zipCode: "94105",
-      country: "US",
-      currency: "USD",
-      taxRate: 10,
-    },
-  });
-
-  // Create admin user
-  const passwordHash = await bcrypt.hash("password123", 12);
-  const user = await prisma.user.create({
-    data: {
-      name: "John Doe",
-      email: "admin@acme.com",
-      passwordHash,
-      role: "OWNER",
-      organizationId: org.id,
-    },
-  });
-
-  // Create categories
-  const categories = await Promise.all(
-    ["Services", "Hardware", "Accessories", "Software"].map((name) =>
-      prisma.category.create({
-        data: { name, organizationId: org.id },
-      })
+  // Prospective client companies
+  const companies = Object.fromEntries(
+    await Promise.all(
+      (
+        [
+          { name: "UrbanKart", domain: "urbankart.example", industry: "D2C e-commerce", location: "Bengaluru" },
+          { name: "GreenLeaf Organics", domain: "greenleaf.example", industry: "FMCG / Organic foods", location: "Mumbai" },
+          { name: "FinEdge", domain: "finedge.example", industry: "Fintech", location: "Gurugram" },
+          { name: "AgroSpark", domain: "agrospark.example", industry: "Agritech", location: "Pune" },
+          { name: "NimbusStay", domain: "nimbusstay.example", industry: "Travel / Hospitality", location: "Goa" },
+        ] as const
+      ).map(async (c) => [c.name, await prisma.company.upsert({ where: { name: c.name }, create: c, update: {} })])
     )
   );
 
-  // Create products
-  const products = await Promise.all([
-    prisma.product.create({
-      data: {
-        name: "Web Development Package",
-        sku: "WEB-001",
-        unitPrice: 3000,
-        costPrice: 1200,
-        quantity: 999,
-        reorderLevel: 0,
-        unit: "pkg",
-        categoryId: categories[0].id,
-        organizationId: org.id,
-      },
-    }),
-    prisma.product.create({
-      data: {
-        name: "SEO Optimization",
-        sku: "SEO-001",
-        unitPrice: 1500,
-        costPrice: 600,
-        quantity: 999,
-        reorderLevel: 0,
-        unit: "pkg",
-        categoryId: categories[0].id,
-        organizationId: org.id,
-      },
-    }),
-    prisma.product.create({
-      data: {
-        name: "Widget A",
-        sku: "WGT-A01",
-        unitPrice: 49.99,
-        costPrice: 22.5,
-        quantity: 8,
-        reorderLevel: 25,
-        unit: "pcs",
-        categoryId: categories[1].id,
-        organizationId: org.id,
-      },
-    }),
-  ]);
-
-  // Create customers
-  const customers = await Promise.all([
-    prisma.customer.create({
-      data: {
-        name: "Acme Corp Client",
-        email: "billing@client.acme.com",
-        phone: "+1 (555) 123-4567",
-        company: "Client Acme",
-        organizationId: org.id,
-      },
-    }),
-    prisma.customer.create({
-      data: {
-        name: "TechStart Inc",
-        email: "finance@techstart.io",
-        phone: "+1 (555) 234-5678",
-        company: "TechStart",
-        organizationId: org.id,
-      },
-    }),
-    prisma.customer.create({
-      data: {
-        name: "GlobalTrade LLC",
-        email: "ap@globaltrade.com",
-        phone: "+1 (555) 345-6789",
-        company: "GlobalTrade",
-        organizationId: org.id,
-      },
-    }),
-  ]);
-
-  // Create invoices
-  const invoice1 = await prisma.invoice.create({
-    data: {
-      invoiceNumber: "INV-2024-001",
-      status: "PAID",
-      dueDate: new Date("2024-02-20"),
-      subtotal: 5000,
-      taxAmount: 500,
-      discountAmount: 250,
-      totalAmount: 5250,
-      paidAmount: 5250,
-      notes: "Thank you for your business!",
-      terms: "Payment is due within 30 days.",
-      customerId: customers[0].id,
-      organizationId: org.id,
-      createdById: user.id,
-      lineItems: {
-        create: [
-          { description: "Web Development - Homepage Redesign", quantity: 1, unitPrice: 3000, taxRate: 10, amount: 3300 },
-          { description: "SEO Optimization Package", quantity: 1, unitPrice: 1500, taxRate: 10, amount: 1650 },
-          { description: "Content Writing - 5 Blog Posts", quantity: 5, unitPrice: 100, taxRate: 10, amount: 550 },
-        ],
-      },
+  // Outreach campaigns (channels/pushes), `client` = target segment
+  const coldEmail = await prisma.campaign.upsert({
+    where: { name: "Cold email — D2C founders Q4" },
+    create: {
+      name: "Cold email — D2C founders Q4",
+      client: "D2C brands, ₹5Cr+ revenue",
+      status: "ACTIVE",
+      notes: "Apollo list, 3-step sequence pitching performance marketing + AI chatbots.",
     },
+    update: {},
+  });
+  const linkedin = await prisma.campaign.upsert({
+    where: { name: "LinkedIn — agritech & fintech CMOs" },
+    create: {
+      name: "LinkedIn — agritech & fintech CMOs",
+      client: "CMOs / growth heads",
+      status: "ACTIVE",
+    },
+    update: {},
+  });
+  const referrals = await prisma.campaign.upsert({
+    where: { name: "Referral follow-ups" },
+    create: { name: "Referral follow-ups", client: "Warm intros from existing clients", status: "ACTIVE" },
+    update: {},
   });
 
-  const invoice2 = await prisma.invoice.create({
-    data: {
-      invoiceNumber: "INV-2024-002",
-      status: "SENT",
-      dueDate: new Date("2024-02-25"),
-      subtotal: 3750,
-      taxAmount: 0,
-      totalAmount: 3750,
-      paidAmount: 0,
-      customerId: customers[1].id,
-      organizationId: org.id,
-      createdById: user.id,
-      lineItems: {
-        create: [
-          { description: "Consulting Services - 25 hours", quantity: 25, unitPrice: 150, taxRate: 0, amount: 3750 },
-        ],
-      },
-    },
-  });
+  const seedContacts = [
+    { firstName: "Rohan", lastName: "Mehta", email: "rohan@urbankart.example", phone: "+91 9812340001", title: "Founder", status: "REPLIED", source: "apollo", campaignId: coldEmail.id, companyId: companies["UrbanKart"].id, customData: JSON.stringify({ industry: "D2C", employees: "51-200", monthlyAdSpend: "₹40L" }) },
+    { firstName: "Kavya", lastName: "Sharma", email: "kavya@greenleaf.example", title: "CMO", status: "MEETING_BOOKED", source: "referral", campaignId: referrals.id, companyId: companies["GreenLeaf Organics"].id, phone: "+91 9812340002" },
+    { firstName: "Arjun", lastName: "Bansal", email: "arjun@finedge.example", title: "Head of Growth", status: "CONTACTED", source: "linkedin", campaignId: linkedin.id, companyId: companies["FinEdge"].id },
+    { firstName: "Neha", lastName: "Kulkarni", email: "neha@agrospark.example", title: "Co-founder", status: "CONTACTED", source: "linkedin", campaignId: linkedin.id, companyId: companies["AgroSpark"].id },
+    { firstName: "Dev", lastName: "Pillai", email: "dev@nimbusstay.example", title: "CEO", status: "PROSPECT", source: "apollo", campaignId: coldEmail.id, companyId: companies["NimbusStay"].id },
+    { firstName: "Ishita", lastName: "Rao", email: "ishita.rao@example.com", title: "Marketing Director", status: "CLIENT", source: "referral", campaignId: referrals.id, companyId: companies["GreenLeaf Organics"].id },
+    { firstName: "Sameer", lastName: "Joshi", email: "sameer.j@example.com", title: "Founder", status: "NOT_INTERESTED", source: "apollo", campaignId: coldEmail.id },
+  ];
 
-  // Create payment for invoice 1
-  await prisma.payment.create({
-    data: {
-      amount: 5250,
-      method: "BANK_TRANSFER",
-      status: "COMPLETED",
-      reference: "TRF-98765",
-      paidAt: new Date("2024-02-15"),
-      invoiceId: invoice1.id,
-      customerId: customers[0].id,
-      organizationId: org.id,
-      recordedById: user.id,
-    },
-  });
+  for (const c of seedContacts) {
+    await prisma.contact.upsert({ where: { email: c.email }, create: c, update: c });
+  }
 
-  // Create expenses
-  await Promise.all([
-    prisma.expense.create({ data: { description: "Office Rent - February", amount: 2500, category: "Rent", vendor: "BuildingCo", date: new Date("2024-02-01"), organizationId: org.id } }),
-    prisma.expense.create({ data: { description: "Cloud Hosting - AWS", amount: 847.32, category: "Technology", vendor: "Amazon Web Services", date: new Date("2024-02-03"), organizationId: org.id } }),
-    prisma.expense.create({ data: { description: "Marketing - Google Ads", amount: 1200, category: "Marketing", vendor: "Google", date: new Date("2024-02-10"), organizationId: org.id } }),
-  ]);
+  const rohan = await prisma.contact.findUnique({ where: { email: "rohan@urbankart.example" } });
+  const kavya = await prisma.contact.findUnique({ where: { email: "kavya@greenleaf.example" } });
+  const arjun = await prisma.contact.findUnique({ where: { email: "arjun@finedge.example" } });
 
-  // Create workflows
-  await prisma.workflow.create({
-    data: {
-      name: "Auto-Send Payment Reminders",
-      description: "Automatically send email reminders when invoices are overdue",
-      trigger: "INVOICE_OVERDUE",
-      actions: JSON.stringify([
-        { type: "SEND_EMAIL", config: { template: "payment_reminder" } },
-        { type: "CREATE_NOTIFICATION", config: { title: "Invoice overdue" } },
-      ]),
-      isActive: true,
-      organizationId: org.id,
-    },
-  });
+  if ((await prisma.deal.count()) === 0 && rohan && kavya) {
+    await prisma.deal.createMany({
+      data: [
+        { title: "UrbanKart — performance marketing retainer", value: 600000, stage: "PROPOSAL", contactId: rohan.id, companyId: companies["UrbanKart"].id, campaignId: coldEmail.id },
+        { title: "GreenLeaf — brand campaign + AI chatbot", value: 850000, stage: "QUALIFIED", contactId: kavya.id, companyId: companies["GreenLeaf Organics"].id, campaignId: referrals.id },
+        { title: "GreenLeaf — festive campaign (won)", value: 450000, stage: "WON", companyId: companies["GreenLeaf Organics"].id, campaignId: referrals.id },
+        { title: "FinEdge — growth marketing pilot", value: 300000, stage: "LEAD_IN", contactId: arjun?.id, companyId: companies["FinEdge"].id, campaignId: linkedin.id },
+      ],
+    });
+  }
 
-  await prisma.workflow.create({
-    data: {
-      name: "Low Stock Alert",
-      description: "Notify when inventory falls below threshold",
-      trigger: "LOW_STOCK",
-      actions: JSON.stringify([
-        { type: "CREATE_NOTIFICATION", config: { title: "Low stock alert" } },
-        { type: "AI_SUGGEST", config: { task: "suggest_reorder_quantity" } },
-      ]),
-      isActive: true,
-      organizationId: org.id,
-    },
-  });
+  if ((await prisma.activity.count()) === 0 && rohan && kavya && arjun) {
+    await prisma.activity.createMany({
+      data: [
+        { type: "EMAIL", content: "Sent step 1 of cold sequence — D2C case study angle.", contactId: rohan.id },
+        { type: "EMAIL", content: "Rohan replied: interested, asked for pricing ranges and a relevant case study.", contactId: rohan.id },
+        { type: "TASK", content: "Send UrbanKart proposal follow-up with D2C case study", contactId: rohan.id, dueAt: new Date(Date.now() + 24 * 3600 * 1000) },
+        { type: "MEETING", content: "Intro call booked for Thursday — Kavya + their brand manager. Agenda: festive campaign + always-on chatbot.", contactId: kavya.id },
+        { type: "LINKEDIN", content: "Connected with Arjun, sent opener referencing their Series B announcement.", contactId: arjun.id },
+      ],
+    });
+  }
 
-  // Create reminders
-  await prisma.reminder.create({
-    data: {
-      type: "PAYMENT_DUE",
-      message: "Invoice INV-2024-002 payment due soon",
-      scheduledFor: new Date("2024-02-22T09:00:00Z"),
-      invoiceId: invoice2.id,
-      organizationId: org.id,
-    },
-  });
+  if ((await prisma.automation.count()) === 0) {
+    await prisma.automation.createMany({
+      data: [
+        {
+          name: "New apollo prospects → first-touch task",
+          trigger: "CONTACT_CREATED",
+          conditions: JSON.stringify({ source: "apollo" }),
+          actions: JSON.stringify([
+            { type: "ADD_TAG", value: "cold-outreach" },
+            { type: "CREATE_TASK", value: "Send personalised first outreach email" },
+          ]),
+        },
+        {
+          name: "Prospect replied → book the intro call",
+          trigger: "STATUS_CHANGED",
+          conditions: JSON.stringify({ status: "REPLIED" }),
+          actions: JSON.stringify([
+            { type: "ADD_TAG", value: "hot" },
+            { type: "CREATE_TASK", value: "Reply within 4 hours and propose two intro-call slots" },
+          ]),
+        },
+        {
+          name: "Meeting booked → open a pitch",
+          trigger: "STATUS_CHANGED",
+          conditions: JSON.stringify({ status: "MEETING_BOOKED" }),
+          actions: JSON.stringify([{ type: "CREATE_DEAL", title: "New-business pitch", value: 300000 }]),
+        },
+      ],
+    });
+  }
 
-  // Create notifications
-  await prisma.notification.create({
-    data: {
-      title: "Payment Received",
-      message: "Payment of $5,250.00 received from Acme Corp Client",
-      type: "PAYMENT",
-      userId: user.id,
-    },
-  });
+  // Backfill prospect scores
+  const { heuristicScore } = await import("../src/lib/scoring");
+  const allContacts = await prisma.contact.findMany({ include: { deals: true, activities: true } });
+  for (const contact of allContacts) {
+    const { score, reason } = heuristicScore(contact);
+    await prisma.contact.update({ where: { id: contact.id }, data: { score, scoreReason: reason } });
+  }
 
-  console.log("Database seeded successfully!");
-  console.log(`\nLogin credentials:\n  Email: admin@acme.com\n  Password: password123`);
+  console.log("Seed complete");
 }
 
 main()
   .catch((e) => {
-    console.error("Seed error:", e);
+    console.error(e);
     process.exit(1);
   })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .finally(() => prisma.$disconnect());
