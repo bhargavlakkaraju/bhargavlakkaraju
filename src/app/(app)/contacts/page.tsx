@@ -47,8 +47,8 @@ export default async function ContactsPage({
         action={<ContactFormModal companies={companies} campaigns={campaigns} />}
       />
       <ContactsToolbar campaigns={campaigns} />
-      <div className="card overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="card overflow-x-auto">
+        <table className="w-full min-w-[900px] text-sm">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
               <th className="px-4 py-3 font-medium">AI score</th>
