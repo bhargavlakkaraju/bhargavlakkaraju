@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { rescoreContact } from "@/lib/ingest";
+import { runAutomations } from "@/lib/automations";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +24,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
   }
   const { email, ...rest } = parsed.data;
+  const before = await prisma.contact.findUnique({ where: { id: params.id } });
   const contact = await prisma.contact.update({
     where: { id: params.id },
     data: {
@@ -31,6 +34,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       ...(rest.campaignId !== undefined ? { campaignId: rest.campaignId || null } : {}),
     },
   });
+  await rescoreContact(contact.id);
+  if (rest.status && before && rest.status !== before.status) {
+    await runAutomations("STATUS_CHANGED", contact.id);
+  }
   return NextResponse.json(contact);
 }
 

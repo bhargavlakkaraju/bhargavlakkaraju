@@ -67,6 +67,36 @@ async function main() {
     });
   }
 
+  if ((await prisma.automation.count()) === 0) {
+    await prisma.automation.createMany({
+      data: [
+        {
+          name: "Chatbot leads → hot-lead tag + call task",
+          trigger: "CONTACT_CREATED",
+          conditions: JSON.stringify({ source: "chatbot" }),
+          actions: JSON.stringify([
+            { type: "ADD_TAG", value: "hot-lead" },
+            { type: "CREATE_TASK", value: "Call this chatbot lead within 24 hours" },
+          ]),
+        },
+        {
+          name: "Pexalon qualified → open a deal",
+          trigger: "STATUS_CHANGED",
+          conditions: JSON.stringify({ campaign: "Pexalon", status: "QUALIFIED" }),
+          actions: JSON.stringify([{ type: "CREATE_DEAL", title: "Pexalon opportunity", value: 50000 }]),
+        },
+      ],
+    });
+  }
+
+  // Backfill lead scores for seeded contacts
+  const { heuristicScore } = await import("../src/lib/scoring");
+  const allContacts = await prisma.contact.findMany({ include: { deals: true, activities: true } });
+  for (const contact of allContacts) {
+    const { score, reason } = heuristicScore(contact);
+    await prisma.contact.update({ where: { id: contact.id }, data: { score, scoreReason: reason } });
+  }
+
   console.log("Seed complete");
 }
 

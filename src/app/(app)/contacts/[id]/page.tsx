@@ -20,6 +20,8 @@ import { formatMoney, fullName, STATUS_COLORS, STAGE_LABELS } from "@/lib/utils"
 import { ContactFormModal } from "@/components/contacts/ContactFormModal";
 import { ActivityComposer } from "@/components/contacts/ActivityComposer";
 import { DeleteButton, TaskToggle } from "@/components/contacts/RowActions";
+import { AiInsightsPanel } from "@/components/contacts/AiInsightsPanel";
+import { ScoreBadge } from "@/components/contacts/ScoreBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +65,7 @@ export default async function ContactDetailPage({ params }: { params: { id: stri
             <span className={`badge ${STATUS_COLORS[contact.status] ?? "bg-slate-100 text-slate-600"}`}>
               {contact.status}
             </span>
+            <ScoreBadge score={contact.score} reason={contact.scoreReason} />
           </div>
           <p className="mt-1 text-sm text-slate-500">
             {contact.title ?? "No title"} · added {format(contact.createdAt, "d MMM yyyy")} via{" "}
@@ -151,7 +154,8 @@ export default async function ContactDetailPage({ params }: { params: { id: stri
           </div>
         </div>
 
-        <div className="xl:col-span-2">
+        <div className="space-y-6 xl:col-span-2">
+          <AiInsightsPanel contactId={contact.id} cachedSummary={contact.aiSummary} />
           <div className="card p-5">
             <h2 className="mb-3 text-sm font-semibold text-slate-700">Activity</h2>
             <ActivityComposer contactId={contact.id} />

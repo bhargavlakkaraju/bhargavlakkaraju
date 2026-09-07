@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
+const inter = Inter({ subsets: ["latin"], display: "swap" });
+
 export const metadata: Metadata = {
-  title: "Hoopla CRM",
+  title: "Hoopla CRM — the agency operating system",
   description:
-    "Unified contact, deal & campaign tracking for Hoopla — with an open API so any tool can push data in.",
+    "AI-powered contact, deal & campaign tracking for Hoopla — with an open API so every tool pushes data into one source of truth.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }

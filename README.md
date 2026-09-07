@@ -2,7 +2,21 @@
 
 One source of truth for the agency's contacts, deals and campaign funnels — replacing the scattered
 Excel / Google Sheets tracking. Built so **any external tool can push data in** through a simple,
-key-authenticated HTTP API.
+key-authenticated HTTP API, with an **AI layer** (lead scoring, insights, automations) on top.
+
+## AI & automations
+
+- **AI lead scoring** — every contact carries a live 0–100 score with a plain-English explanation,
+  recomputed on every ingest/edit. Contacts sort hottest-first.
+- **AI copilot on each contact** — one click generates a relationship summary, next-best-actions and
+  a ready-to-send follow-up email draft.
+- **Today's briefing** on the dashboard — who to call first, overdue tasks, stale deals,
+  automation activity.
+- **Automations** — no-code rules: *when a contact arrives / changes status* and *conditions match*
+  (campaign, source, status, min score) *then* set status, add a tag, create a task, open a deal, or
+  **POST a webhook to another tool** (outbound integration). Every run is logged.
+- AI features use any **OpenAI-compatible provider** via `AI_API_KEY` / `AI_BASE_URL` / `AI_MODEL`.
+  Without a key, a deterministic rules engine powers the same features, so nothing breaks.
 
 ## What's inside
 

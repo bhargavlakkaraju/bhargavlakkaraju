@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { format, startOfDay, subDays } from "date-fns";
-import { Users, TrendingUp, IndianRupee, Trophy } from "lucide-react";
+import { Users, TrendingUp, IndianRupee, Trophy, Sparkles } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { formatMoney, fullName, STATUS_COLORS } from "@/lib/utils";
 import { StatCard } from "@/components/ui/StatCard";
@@ -22,6 +22,10 @@ export default async function DashboardPage() {
     recentContacts,
     recentEvents,
     recentForChart,
+    hotLeads,
+    overdueTasks,
+    staleDeals,
+    automationRunsToday,
   ] = await Promise.all([
     prisma.contact.count(),
     prisma.contact.count({ where: { createdAt: { gte: weekAgo } } }),
@@ -42,6 +46,18 @@ export default async function DashboardPage() {
       where: { createdAt: { gte: twoWeeksAgo } },
       select: { createdAt: true },
     }),
+    prisma.contact.findMany({
+      where: { status: { notIn: ["CUSTOMER", "LOST"] }, score: { gte: 50 } },
+      orderBy: { score: "desc" },
+      take: 3,
+    }),
+    prisma.activity.count({
+      where: { type: "TASK", completed: false, dueAt: { lt: new Date() } },
+    }),
+    prisma.deal.count({
+      where: { stage: { notIn: ["WON", "LOST"] }, updatedAt: { lt: subDays(new Date(), 7) } },
+    }),
+    prisma.automationRun.count({ where: { createdAt: { gte: startOfDay(new Date()) } } }),
   ]);
 
   const pipelineValue = openDeals.reduce((s, d) => s + d.value, 0);
@@ -63,6 +79,51 @@ export default async function DashboardPage() {
         title="Dashboard"
         description="Everything that used to live in scattered sheets, in one place."
       />
+
+      <div className="card mb-6 overflow-hidden">
+        <div className="bg-gradient-to-r from-slate-950 via-brand-950 to-slate-950 p-5 text-white">
+          <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+            <Sparkles className="h-4 w-4 text-brand-400" /> Today&apos;s briefing
+            <span className="ai-chip">AI</span>
+          </div>
+          <div className="grid gap-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
+            <div>
+              <div className="text-xs uppercase tracking-wide text-slate-400">Call these first</div>
+              {hotLeads.length ? (
+                <ul className="mt-1 space-y-0.5">
+                  {hotLeads.map((l) => (
+                    <li key={l.id}>
+                      <Link href={`/contacts/${l.id}`} className="font-medium text-brand-300 hover:underline">
+                        {fullName(l)}
+                      </Link>{" "}
+                      <span className="text-slate-400">· score {l.score}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-slate-400">No hot leads right now.</p>
+              )}
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wide text-slate-400">Overdue tasks</div>
+              <p className="mt-1 text-2xl font-bold">{overdueTasks}</p>
+              <p className="text-xs text-slate-400">{overdueTasks ? "clear these before EOD" : "all caught up"}</p>
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wide text-slate-400">Deals going stale</div>
+              <p className="mt-1 text-2xl font-bold">{staleDeals}</p>
+              <p className="text-xs text-slate-400">{staleDeals ? "no movement in 7+ days" : "pipeline is moving"}</p>
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wide text-slate-400">Automations today</div>
+              <p className="mt-1 text-2xl font-bold">{automationRunsToday}</p>
+              <Link href="/automations" className="text-xs text-brand-300 hover:underline">
+                view run history →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total contacts" value={String(totalContacts)} icon={Users} />

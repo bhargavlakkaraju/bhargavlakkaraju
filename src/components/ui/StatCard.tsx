@@ -14,14 +14,14 @@ export function StatCard({
   tone?: "brand" | "emerald" | "amber" | "sky";
 }) {
   const tones: Record<string, string> = {
-    brand: "bg-brand-50 text-brand-600",
-    emerald: "bg-emerald-50 text-emerald-600",
-    amber: "bg-amber-50 text-amber-600",
-    sky: "bg-sky-50 text-sky-600",
+    brand: "from-brand-500 to-fuchsia-600 shadow-brand-500/30",
+    emerald: "from-emerald-500 to-teal-600 shadow-emerald-500/30",
+    amber: "from-amber-500 to-orange-600 shadow-amber-500/30",
+    sky: "from-sky-500 to-blue-600 shadow-sky-500/30",
   };
   return (
-    <div className="card flex items-center gap-4 p-5">
-      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${tones[tone]}`}>
+    <div className="card card-hover flex items-center gap-4 p-5">
+      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg ${tones[tone]}`}>
         <Icon className="h-5 w-5" />
       </div>
       <div className="min-w-0">

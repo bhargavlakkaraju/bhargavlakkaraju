@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { prisma } from "./db";
+import { runAutomations } from "./automations";
+import { heuristicScore } from "./scoring";
 
 export const ingestContactSchema = z.object({
   firstName: z.string().min(1).optional(),
@@ -131,5 +133,27 @@ export async function upsertContact(input: IngestContact, defaultSource = "api")
     });
   }
 
+  await rescoreContact(contact.id);
+
+  if (!existing) {
+    await runAutomations("CONTACT_CREATED", contact.id);
+  } else if (input.status && input.status !== existing.status) {
+    await runAutomations("STATUS_CHANGED", contact.id);
+  }
+
   return { contact, created: !existing };
+}
+
+/** Recomputes the deterministic lead score and stores it on the contact. */
+export async function rescoreContact(contactId: string) {
+  const contact = await prisma.contact.findUnique({
+    where: { id: contactId },
+    include: { deals: true, activities: true },
+  });
+  if (!contact) return;
+  const { score, reason } = heuristicScore(contact);
+  await prisma.contact.update({
+    where: { id: contactId },
+    data: { score, scoreReason: reason },
+  });
 }

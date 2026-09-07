@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { rescoreContact } from "@/lib/ingest";
+import { runAutomations } from "@/lib/automations";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +34,8 @@ export async function POST(req: NextRequest) {
         source: "manual",
       },
     });
+    await rescoreContact(contact.id);
+    await runAutomations("CONTACT_CREATED", contact.id);
     return NextResponse.json(contact, { status: 201 });
   } catch (err: any) {
     if (err?.code === "P2002") {

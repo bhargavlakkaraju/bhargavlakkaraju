@@ -5,6 +5,7 @@ import { fullName, STATUS_COLORS } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ContactFormModal } from "@/components/contacts/ContactFormModal";
 import { ContactsToolbar } from "@/components/contacts/ContactsToolbar";
+import { ScoreBadge } from "@/components/contacts/ScoreBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export default async function ContactsPage({
         ...(searchParams.campaign ? { campaignId: searchParams.campaign } : {}),
       },
       include: { company: true, campaign: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ score: "desc" }, { createdAt: "desc" }],
       take: 200,
     }),
     prisma.company.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
@@ -50,6 +51,7 @@ export default async function ContactsPage({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+              <th className="px-4 py-3 font-medium">AI score</th>
               <th className="px-4 py-3 font-medium">Name</th>
               <th className="px-4 py-3 font-medium">Contact</th>
               <th className="px-4 py-3 font-medium">Company</th>
@@ -62,6 +64,9 @@ export default async function ContactsPage({
           <tbody className="divide-y divide-slate-100">
             {contacts.map((c) => (
               <tr key={c.id} className="transition hover:bg-slate-50">
+                <td className="px-4 py-3">
+                  <ScoreBadge score={c.score} reason={c.scoreReason} />
+                </td>
                 <td className="px-4 py-3">
                   <Link href={`/contacts/${c.id}`} className="font-medium text-slate-900 hover:text-brand-600">
                     {fullName(c)}
@@ -87,7 +92,7 @@ export default async function ContactsPage({
             ))}
             {!contacts.length && (
               <tr>
-                <td colSpan={7} className="px-4 py-16 text-center text-sm text-slate-400">
+                <td colSpan={8} className="px-4 py-16 text-center text-sm text-slate-400">
                   No contacts found. Add one manually, import a sheet, or push data via the API.
                 </td>
               </tr>

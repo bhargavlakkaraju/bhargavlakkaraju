@@ -48,6 +48,11 @@ model Contact {
   tags       String?
   // Arbitrary extra fields pushed by external tools, stored as JSON string
   customData String?
+  // AI lead score 0-100 with a human-readable explanation
+  score      Int?
+  scoreReason String?
+  // AI-generated relationship summary (from the insights panel)
+  aiSummary  String?
   companyId  String?
   company    Company?   @relation(fields: [companyId], references: [id], onDelete: SetNull)
   campaignId String?
@@ -109,6 +114,36 @@ model ApiKey {
   createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
   revoked    Boolean   @default(false)
+}
+
+// A no-code automation rule: when <trigger> and <conditions> match, run <actions>.
+model Automation {
+  id        String   @id @default(cuid())
+  name      String
+  // CONTACT_CREATED | STATUS_CHANGED
+  trigger   String
+  // JSON: { campaign?, source?, status?, minScore? }
+  conditions String  @default("{}")
+  // JSON array: [{ type: SET_STATUS|ADD_TAG|CREATE_TASK|CREATE_DEAL|WEBHOOK, ... }]
+  actions   String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  runs      AutomationRun[]
+}
+
+model AutomationRun {
+  id           String     @id @default(cuid())
+  automationId String
+  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  contactId    String?
+  contactName  String?
+  // SUCCESS | FAILED
+  status       String     @default("SUCCESS")
+  detail       String?
+  createdAt    DateTime   @default(now())
+
+  @@index([createdAt])
 }
 
 // Log of every payload pushed by an external tool, for debugging integrations.
