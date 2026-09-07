@@ -1,48 +1,33 @@
-import { cn } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
 
-interface StatCardProps {
-  title: string;
-  value: string;
-  change?: string;
-  changeType?: "positive" | "negative" | "neutral";
-  icon: React.ReactNode;
-  iconBg: string;
-}
-
-export default function StatCard({
-  title,
+export function StatCard({
+  label,
   value,
-  change,
-  changeType = "neutral",
-  icon,
-  iconBg,
-}: StatCardProps) {
+  sub,
+  icon: Icon,
+  tone = "brand",
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  icon: LucideIcon;
+  tone?: "brand" | "emerald" | "amber" | "sky";
+}) {
+  const tones: Record<string, string> = {
+    brand: "bg-brand-50 text-brand-600",
+    emerald: "bg-emerald-50 text-emerald-600",
+    amber: "bg-amber-50 text-amber-600",
+    sky: "bg-sky-50 text-sky-600",
+  };
   return (
-    <div className="card flex items-start justify-between">
-      <div>
-        <p className="text-sm font-medium text-gray-500">{title}</p>
-        <p className="mt-1 text-2xl font-bold text-gray-900">{value}</p>
-        {change && (
-          <p
-            className={cn(
-              "mt-1 text-sm font-medium",
-              changeType === "positive" && "text-green-600",
-              changeType === "negative" && "text-red-600",
-              changeType === "neutral" && "text-gray-500"
-            )}
-          >
-            {changeType === "positive" && "+"}
-            {change}
-          </p>
-        )}
+    <div className="card flex items-center gap-4 p-5">
+      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${tones[tone]}`}>
+        <Icon className="h-5 w-5" />
       </div>
-      <div
-        className={cn(
-          "flex h-12 w-12 items-center justify-center rounded-xl",
-          iconBg
-        )}
-      >
-        {icon}
+      <div className="min-w-0">
+        <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</div>
+        <div className="truncate text-2xl font-bold">{value}</div>
+        {sub && <div className="text-xs text-slate-500">{sub}</div>}
       </div>
     </div>
   );
