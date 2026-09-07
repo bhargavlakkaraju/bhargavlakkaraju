@@ -27,19 +27,23 @@ export function DealBoard({ deals }: { deals: BoardDeal[] }) {
 
   const stageOf = (d: BoardDeal) => moved[d.id] ?? d.stage;
 
+  async function setStage(dealId: string, stage: string) {
+    setMoved((m) => ({ ...m, [dealId]: stage }));
+    await fetch(`/api/deals/${dealId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stage }),
+    });
+    router.refresh();
+  }
+
   async function moveTo(stage: string) {
     if (!dragId) return;
     const deal = deals.find((d) => d.id === dragId);
     setOverStage(null);
     setDragId(null);
     if (!deal || stageOf(deal) === stage) return;
-    setMoved((m) => ({ ...m, [deal.id]: stage }));
-    await fetch(`/api/deals/${deal.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stage }),
-    });
-    router.refresh();
+    await setStage(deal.id, stage);
   }
 
   async function remove(id: string) {
@@ -92,19 +96,31 @@ export function DealBoard({ deals }: { deals: BoardDeal[] }) {
                     </div>
                     <GripVertical className="h-4 w-4 shrink-0 text-slate-300" />
                   </div>
-                  <div className="mt-2 flex items-center justify-between">
+                  <div className="mt-2 flex items-center justify-between gap-2">
                     <span className="text-sm font-semibold text-slate-700">
                       {formatMoney(d.value, d.currency)}
                     </span>
-                    <div className="flex items-center gap-1.5 opacity-0 transition group-hover:opacity-100">
+                    <div className="flex items-center gap-1.5">
                       {d.contactId && (
-                        <Link href={`/contacts/${d.contactId}`} className="text-[11px] font-medium text-brand-600 hover:underline">
+                        <Link href={`/contacts/${d.contactId}`} className="text-[11px] font-medium text-brand-600 opacity-0 transition hover:underline group-hover:opacity-100">
                           contact
                         </Link>
                       )}
-                      <button onClick={() => remove(d.id)} className="text-slate-300 hover:text-red-500">
+                      <button onClick={() => remove(d.id)} className="text-slate-300 opacity-0 transition hover:text-red-500 group-hover:opacity-100">
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
+                      <select
+                        value={stage}
+                        onChange={(e) => setStage(d.id, e.target.value)}
+                        title="Move to stage"
+                        className="rounded border border-slate-200 bg-slate-50 px-1 py-0.5 text-[11px] text-slate-600 outline-none hover:border-slate-300"
+                      >
+                        {DEAL_STAGES.map((s) => (
+                          <option key={s} value={s}>
+                            {STAGE_LABELS[s]}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                   {d.campaignName && (

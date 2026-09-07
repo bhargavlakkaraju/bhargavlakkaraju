@@ -6,9 +6,11 @@ import { ingestContactSchema, upsertContact } from "@/lib/ingest";
 
 export const dynamic = "force-dynamic";
 
+// The batch shape must be tried first: every field of a single contact is
+// optional, so `{ contacts: [...] }` would otherwise match as an empty contact.
 const bodySchema = z.union([
-  ingestContactSchema,
   z.object({ contacts: z.array(ingestContactSchema).min(1).max(500) }),
+  ingestContactSchema,
 ]);
 
 /**
