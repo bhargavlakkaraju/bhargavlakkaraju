@@ -18,12 +18,12 @@ import { cn } from "@/lib/utils";
 
 const nav: { href: string; label: string; icon: LucideIcon; ai?: boolean }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/contacts", label: "Contacts", icon: Users },
+  { href: "/contacts", label: "Prospects", icon: Users },
   { href: "/companies", label: "Companies", icon: Building2 },
-  { href: "/deals", label: "Deals", icon: Kanban },
-  { href: "/campaigns", label: "Campaigns", icon: Megaphone },
+  { href: "/deals", label: "Pipeline", icon: Kanban },
+  { href: "/campaigns", label: "Outreach", icon: Megaphone },
   { href: "/automations", label: "Automations", icon: Sparkles, ai: true },
-  { href: "/import", label: "Import Sheets", icon: Upload },
+  { href: "/import", label: "Import Lists", icon: Upload },
   { href: "/settings", label: "API & Integrations", icon: Plug },
 ];
 
@@ -37,7 +37,7 @@ export function Sidebar() {
         </div>
         <div>
           <div className="text-base font-bold text-white">Hoopla CRM</div>
-          <div className="text-[11px] text-slate-500">agency operating system</div>
+          <div className="text-[11px] text-slate-500">new-business engine</div>
         </div>
       </Link>
       <nav className="mt-2 flex-1 space-y-1 px-3">

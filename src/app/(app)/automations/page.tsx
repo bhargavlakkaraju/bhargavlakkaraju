@@ -9,8 +9,8 @@ import { DeleteButton } from "@/components/contacts/RowActions";
 export const dynamic = "force-dynamic";
 
 const TRIGGER_LABELS: Record<string, string> = {
-  CONTACT_CREATED: "New contact arrives",
-  STATUS_CHANGED: "Status changes",
+  CONTACT_CREATED: "New prospect arrives",
+  STATUS_CHANGED: "Stage changes",
 };
 
 function describeConditions(json: string) {
@@ -112,7 +112,7 @@ export default async function AutomationsPage() {
             <div className="card flex flex-col items-center gap-3 py-16 text-center">
               <Sparkles className="h-8 w-8 text-brand-400" />
               <div className="text-sm text-slate-500">
-                No automations yet. Try: <span className="font-medium text-slate-700">&quot;When a chatbot lead arrives on Pexalon → tag it hot-lead and create a call task.&quot;</span>
+                No automations yet. Try: <span className="font-medium text-slate-700">&quot;When a prospect replies → create a &apos;book intro call&apos; task and tag them hot.&quot;</span>
               </div>
             </div>
           )}

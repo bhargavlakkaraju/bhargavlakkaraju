@@ -32,8 +32,8 @@ export default async function DealsPage() {
   return (
     <div>
       <PageHeader
-        title="Deals"
-        description="Drag cards between stages to update the pipeline."
+        title="New-business pipeline"
+        description="Every pitch to a prospective client — drag cards between stages as conversations progress."
         action={
           <DealFormModal
             contacts={contacts.map((c) => ({ id: c.id, name: fullName(c) }))}

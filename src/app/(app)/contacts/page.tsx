@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { prisma } from "@/lib/db";
-import { fullName, STATUS_COLORS } from "@/lib/utils";
+import { fullName, STATUS_COLORS, STATUS_LABELS } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ContactFormModal } from "@/components/contacts/ContactFormModal";
 import { ContactsToolbar } from "@/components/contacts/ContactsToolbar";
@@ -42,8 +42,8 @@ export default async function ContactsPage({
   return (
     <div>
       <PageHeader
-        title="Contacts"
-        description={`${contacts.length} shown — every lead from every campaign, sheet and tool.`}
+        title="Prospects"
+        description={`${contacts.length} shown — every potential client from every list, tool and referral, hottest first.`}
         action={<ContactFormModal companies={companies} campaigns={campaigns} />}
       />
       <ContactsToolbar campaigns={campaigns} />
@@ -84,7 +84,7 @@ export default async function ContactsPage({
                 </td>
                 <td className="px-4 py-3">
                   <span className={`badge ${STATUS_COLORS[c.status] ?? "bg-slate-100 text-slate-600"}`}>
-                    {c.status}
+                    {STATUS_LABELS[c.status] ?? c.status}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-xs text-slate-500">{format(c.createdAt, "d MMM yyyy")}</td>
@@ -93,7 +93,7 @@ export default async function ContactsPage({
             {!contacts.length && (
               <tr>
                 <td colSpan={8} className="px-4 py-16 text-center text-sm text-slate-400">
-                  No contacts found. Add one manually, import a sheet, or push data via the API.
+                  No prospects found. Add one manually, import a list, or push data via the API.
                 </td>
               </tr>
             )}

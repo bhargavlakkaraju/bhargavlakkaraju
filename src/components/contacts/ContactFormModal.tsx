@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
-import { CONTACT_STATUSES } from "@/lib/utils";
+import { CONTACT_STATUSES, STATUS_LABELS } from "@/lib/utils";
 
 type Option = { id: string; name: string };
 
@@ -61,11 +61,11 @@ export function ContactFormModal({
       <span onClick={() => setOpen(true)}>
         {trigger ?? (
           <button className="btn-primary">
-            <Plus className="h-4 w-4" /> Add contact
+            <Plus className="h-4 w-4" /> Add prospect
           </button>
         )}
       </span>
-      <Modal title={contact ? "Edit contact" : "New contact"} open={open} onClose={() => setOpen(false)}>
+      <Modal title={contact ? "Edit prospect" : "New prospect"} open={open} onClose={() => setOpen(false)}>
         <form onSubmit={submit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -94,9 +94,11 @@ export function ContactFormModal({
             </div>
             <div>
               <label className="label">Status</label>
-              <select name="status" defaultValue={contact?.status ?? "NEW"} className="input">
+              <select name="status" defaultValue={contact?.status ?? "PROSPECT"} className="input">
                 {CONTACT_STATUSES.map((s) => (
-                  <option key={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {STATUS_LABELS[s]}
+                  </option>
                 ))}
               </select>
             </div>

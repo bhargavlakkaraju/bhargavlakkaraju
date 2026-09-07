@@ -14,32 +14,32 @@ const features = [
   {
     icon: Plug,
     title: "Open ingest API",
-    body: "Chatbots, landing pages, Zapier, lucky-draw backends — anything that speaks HTTP pushes leads straight in. Deduped, attributed, logged.",
+    body: "Apollo, Clay, LinkedIn scrapers, website forms, Zapier — anything that speaks HTTP pushes prospects straight in. Deduped, attributed, logged.",
   },
   {
     icon: Sparkles,
-    title: "AI lead scoring",
-    body: "Every contact gets a live 0–100 score with a plain-English explanation, so the team always knows who to call first.",
+    title: "AI prospect scoring",
+    body: "Every prospect gets a live 0–100 score with a plain-English explanation, so you always know who to work first.",
   },
   {
     icon: Workflow,
-    title: "Automations",
-    body: "When a lead arrives, rules fire: tag it, open a deal, create a follow-up task, or ping another tool via webhook. No code.",
+    title: "Outreach automations",
+    body: "A prospect replies? Rules fire: tag them, open a pitch, create a book-the-call task, or ping your other tools via webhook. No code.",
   },
   {
     icon: Kanban,
-    title: "Pipeline that moves",
-    body: "A drag-and-drop deal board with per-stage totals — the whole agency's revenue picture at a glance.",
+    title: "New-business pipeline",
+    body: "Opportunity → discovery → proposal → won, on a drag-and-drop board with per-stage totals. The agency's growth picture at a glance.",
   },
   {
     icon: Upload,
-    title: "Sheet-to-CRM in minutes",
-    body: "Upload any campaign tracking sheet as CSV, map columns visually, and re-import without ever creating duplicates.",
+    title: "List-to-CRM in minutes",
+    body: "Upload any prospect list as CSV, map columns visually, and re-import without ever creating duplicates.",
   },
   {
     icon: Gauge,
-    title: "Campaign funnels",
-    body: "Leads → qualified → customers per campaign, with conversion rates and won value. Full-funnel tracking, day one to close.",
+    title: "Reply-rate funnels",
+    body: "Contacted → replied → meeting → client per outreach campaign, with reply rates and won value. Know which channel actually lands clients.",
   },
 ];
 
@@ -67,15 +67,16 @@ export default function LandingPage() {
         <section className="py-20 text-center">
           <div className="animate-fade-up mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-slate-300">
             <Sparkles className="h-3.5 w-3.5 text-brand-400" />
-            AI-native · API-first · built for agencies
+            AI-native · API-first · built for winning new clients
           </div>
           <h1 className="animate-fade-up mx-auto max-w-3xl text-5xl font-extrabold leading-tight tracking-tight sm:text-6xl" style={{ animationDelay: "80ms" }}>
-            Every lead. Every deal.{" "}
-            <span className="gradient-text">One source of truth.</span>
+            Every prospect. Every pitch.{" "}
+            <span className="gradient-text">One outreach engine.</span>
           </h1>
           <p className="animate-fade-up mx-auto mt-6 max-w-2xl text-lg text-slate-400" style={{ animationDelay: "160ms" }}>
-            Hoopla CRM replaces the maze of tracking sheets with a single system your whole
-            stack pushes into — then layers AI scoring, insights and automations on top.
+            Hoopla CRM turns scattered prospect sheets into a single new-business system — every
+            lead-gen tool pushes in, AI scores who to work first, and automations keep every
+            thread moving until the deal is won.
           </p>
           <div className="animate-fade-up mt-9 flex justify-center gap-3" style={{ animationDelay: "240ms" }}>
             <Link href="/dashboard" className="btn-primary !px-6 !py-3 !text-base">
@@ -99,10 +100,11 @@ export default function LandingPage() {
             <pre className="overflow-x-auto p-5 text-[13px] leading-relaxed text-slate-300">
 {`curl -X POST https://crm.hoopla.agency/api/v1/ingest \\
   -H "Authorization: Bearer hoopla_xxx" \\
-  -d '{ "name": "Asha Patel", "email": "asha@x.com",
-        "campaign": "Pexalon", "source": "chatbot" }'
+  -d '{ "name": "Rohan Mehta", "title": "Founder",
+        "company": "UrbanKart", "source": "apollo",
+        "campaign": "Cold email — D2C founders Q4" }'
 
-→ { "processed": 1, "score": 62, "automations": "fired" }`}
+→ { "processed": 1, "score": 58, "automations": "fired" }`}
             </pre>
           </div>
         </section>
@@ -125,7 +127,7 @@ export default function LandingPage() {
       </main>
 
       <footer className="relative border-t border-white/5 py-8 text-center text-xs text-slate-600">
-        Hoopla CRM — the agency operating system. No more sheets.
+        Hoopla CRM — the agency&apos;s new-business engine. No more sheets.
       </footer>
     </div>
   );

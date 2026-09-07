@@ -14,9 +14,10 @@ import {
   CalendarClock,
   ListTodo,
   Bot,
+  Linkedin,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { formatMoney, fullName, STATUS_COLORS, STAGE_LABELS } from "@/lib/utils";
+import { formatMoney, fullName, STATUS_COLORS, STATUS_LABELS, STAGE_LABELS } from "@/lib/utils";
 import { ContactFormModal } from "@/components/contacts/ContactFormModal";
 import { ActivityComposer } from "@/components/contacts/ActivityComposer";
 import { DeleteButton, TaskToggle } from "@/components/contacts/RowActions";
@@ -29,6 +30,7 @@ const activityIcons: Record<string, React.ReactNode> = {
   NOTE: <StickyNote className="h-4 w-4 text-amber-500" />,
   CALL: <PhoneCall className="h-4 w-4 text-sky-500" />,
   EMAIL: <Mail className="h-4 w-4 text-violet-500" />,
+  LINKEDIN: <Linkedin className="h-4 w-4 text-blue-600" />,
   MEETING: <CalendarClock className="h-4 w-4 text-emerald-500" />,
   TASK: <ListTodo className="h-4 w-4 text-orange-500" />,
   SYSTEM: <Bot className="h-4 w-4 text-slate-400" />,
@@ -55,7 +57,7 @@ export default async function ContactDetailPage({ params }: { params: { id: stri
   return (
     <div>
       <Link href="/contacts" className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800">
-        <ArrowLeft className="h-4 w-4" /> All contacts
+        <ArrowLeft className="h-4 w-4" /> All prospects
       </Link>
 
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -63,7 +65,7 @@ export default async function ContactDetailPage({ params }: { params: { id: stri
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold">{fullName(contact)}</h1>
             <span className={`badge ${STATUS_COLORS[contact.status] ?? "bg-slate-100 text-slate-600"}`}>
-              {contact.status}
+              {STATUS_LABELS[contact.status] ?? contact.status}
             </span>
             <ScoreBadge score={contact.score} reason={contact.scoreReason} />
           </div>

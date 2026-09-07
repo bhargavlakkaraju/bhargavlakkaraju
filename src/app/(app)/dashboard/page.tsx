@@ -1,8 +1,15 @@
 import Link from "next/link";
 import { format, startOfDay, subDays } from "date-fns";
-import { Users, TrendingUp, IndianRupee, Trophy, Sparkles } from "lucide-react";
+import { Users, Reply, IndianRupee, Trophy, Sparkles } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { formatMoney, fullName, STATUS_COLORS } from "@/lib/utils";
+import {
+  formatMoney,
+  fullName,
+  STATUS_COLORS,
+  STATUS_LABELS,
+  OUTREACHED_STATUSES,
+  REPLIED_STATUSES,
+} from "@/lib/utils";
 import { StatCard } from "@/components/ui/StatCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LeadsByCampaignChart, LeadsOverTimeChart } from "@/components/dashboard/Charts";
@@ -16,6 +23,8 @@ export default async function DashboardPage() {
   const [
     totalContacts,
     newThisWeek,
+    outreachedCount,
+    repliedCount,
     openDeals,
     wonDeals,
     campaigns,
@@ -23,12 +32,15 @@ export default async function DashboardPage() {
     recentEvents,
     recentForChart,
     hotLeads,
-    overdueTasks,
-    staleDeals,
+    waitingOnReply,
+    needsFollowUp,
+    meetingsBooked,
     automationRunsToday,
   ] = await Promise.all([
     prisma.contact.count(),
     prisma.contact.count({ where: { createdAt: { gte: weekAgo } } }),
+    prisma.contact.count({ where: { status: { in: OUTREACHED_STATUSES } } }),
+    prisma.contact.count({ where: { status: { in: REPLIED_STATUSES } } }),
     prisma.deal.findMany({ where: { stage: { notIn: ["WON", "LOST"] } } }),
     prisma.deal.findMany({ where: { stage: "WON" } }),
     prisma.campaign.findMany({
@@ -47,21 +59,21 @@ export default async function DashboardPage() {
       select: { createdAt: true },
     }),
     prisma.contact.findMany({
-      where: { status: { notIn: ["CUSTOMER", "LOST"] }, score: { gte: 50 } },
+      where: { status: { notIn: ["CLIENT", "NOT_INTERESTED"] }, score: { gte: 50 } },
       orderBy: { score: "desc" },
       take: 3,
     }),
-    prisma.activity.count({
-      where: { type: "TASK", completed: false, dueAt: { lt: new Date() } },
+    prisma.contact.count({ where: { status: "CONTACTED" } }),
+    prisma.contact.count({
+      where: { status: "CONTACTED", updatedAt: { lt: subDays(new Date(), 3) } },
     }),
-    prisma.deal.count({
-      where: { stage: { notIn: ["WON", "LOST"] }, updatedAt: { lt: subDays(new Date(), 7) } },
-    }),
+    prisma.contact.count({ where: { status: "MEETING_BOOKED" } }),
     prisma.automationRun.count({ where: { createdAt: { gte: startOfDay(new Date()) } } }),
   ]);
 
   const pipelineValue = openDeals.reduce((s, d) => s + d.value, 0);
   const wonValue = wonDeals.reduce((s, d) => s + d.value, 0);
+  const replyRate = outreachedCount ? Math.round((repliedCount / outreachedCount) * 100) : 0;
 
   const days = Array.from({ length: 14 }, (_, i) => {
     const d = startOfDay(subDays(new Date(), 13 - i));
@@ -77,7 +89,7 @@ export default async function DashboardPage() {
     <div>
       <PageHeader
         title="Dashboard"
-        description="Everything that used to live in scattered sheets, in one place."
+        description="Hoopla's new-business outreach, in one place — no more scattered sheets."
       />
 
       <div className="card mb-6 overflow-hidden">
@@ -88,7 +100,7 @@ export default async function DashboardPage() {
           </div>
           <div className="grid gap-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
             <div>
-              <div className="text-xs uppercase tracking-wide text-slate-400">Call these first</div>
+              <div className="text-xs uppercase tracking-wide text-slate-400">Work these first</div>
               {hotLeads.length ? (
                 <ul className="mt-1 space-y-0.5">
                   {hotLeads.map((l) => (
@@ -101,18 +113,20 @@ export default async function DashboardPage() {
                   ))}
                 </ul>
               ) : (
-                <p className="mt-1 text-slate-400">No hot leads right now.</p>
+                <p className="mt-1 text-slate-400">No hot prospects right now.</p>
               )}
             </div>
             <div>
-              <div className="text-xs uppercase tracking-wide text-slate-400">Overdue tasks</div>
-              <p className="mt-1 text-2xl font-bold">{overdueTasks}</p>
-              <p className="text-xs text-slate-400">{overdueTasks ? "clear these before EOD" : "all caught up"}</p>
+              <div className="text-xs uppercase tracking-wide text-slate-400">Waiting on reply</div>
+              <p className="mt-1 text-2xl font-bold">{waitingOnReply}</p>
+              <p className="text-xs text-slate-400">
+                {needsFollowUp ? `${needsFollowUp} quiet for 3+ days — follow up` : "all threads are fresh"}
+              </p>
             </div>
             <div>
-              <div className="text-xs uppercase tracking-wide text-slate-400">Deals going stale</div>
-              <p className="mt-1 text-2xl font-bold">{staleDeals}</p>
-              <p className="text-xs text-slate-400">{staleDeals ? "no movement in 7+ days" : "pipeline is moving"}</p>
+              <div className="text-xs uppercase tracking-wide text-slate-400">Meetings booked</div>
+              <p className="mt-1 text-2xl font-bold">{meetingsBooked}</p>
+              <p className="text-xs text-slate-400">{meetingsBooked ? "prep before the call" : "push for the next one"}</p>
             </div>
             <div>
               <div className="text-xs uppercase tracking-wide text-slate-400">Automations today</div>
@@ -126,19 +140,30 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Total contacts" value={String(totalContacts)} icon={Users} />
-        <StatCard label="New leads (7 days)" value={String(newThisWeek)} icon={TrendingUp} tone="sky" />
+        <StatCard
+          label="Prospects"
+          value={String(totalContacts)}
+          sub={`${newThisWeek} added this week`}
+          icon={Users}
+        />
+        <StatCard
+          label="Reply rate"
+          value={`${replyRate}%`}
+          sub={`${repliedCount} of ${outreachedCount} outreached`}
+          icon={Reply}
+          tone="sky"
+        />
         <StatCard
           label="Open pipeline"
           value={formatMoney(pipelineValue)}
-          sub={`${openDeals.length} open deals`}
+          sub={`${openDeals.length} open pitches`}
           icon={IndianRupee}
           tone="amber"
         />
         <StatCard
           label="Won"
           value={formatMoney(wonValue)}
-          sub={`${wonDeals.length} deals closed`}
+          sub={`${wonDeals.length} new clients closed`}
           icon={Trophy}
           tone="emerald"
         />
@@ -146,15 +171,15 @@ export default async function DashboardPage() {
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <div className="card p-5">
-          <h2 className="mb-4 text-sm font-semibold text-slate-700">Leads by campaign</h2>
+          <h2 className="mb-4 text-sm font-semibold text-slate-700">Prospects by outreach campaign</h2>
           {byCampaign.length ? (
             <LeadsByCampaignChart data={byCampaign} />
           ) : (
-            <p className="py-16 text-center text-sm text-slate-400">No campaigns yet</p>
+            <p className="py-16 text-center text-sm text-slate-400">No outreach campaigns yet</p>
           )}
         </div>
         <div className="card p-5">
-          <h2 className="mb-4 text-sm font-semibold text-slate-700">New leads — last 14 days</h2>
+          <h2 className="mb-4 text-sm font-semibold text-slate-700">New prospects — last 14 days</h2>
           <LeadsOverTimeChart data={days} />
         </div>
       </div>
@@ -162,7 +187,7 @@ export default async function DashboardPage() {
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <div className="card p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-700">Latest contacts</h2>
+            <h2 className="text-sm font-semibold text-slate-700">Latest prospects</h2>
             <Link href="/contacts" className="text-xs font-medium text-brand-600 hover:underline">
               View all
             </Link>
@@ -179,13 +204,13 @@ export default async function DashboardPage() {
                   </div>
                 </div>
                 <span className={`badge ${STATUS_COLORS[c.status] ?? "bg-slate-100 text-slate-600"}`}>
-                  {c.status}
+                  {STATUS_LABELS[c.status] ?? c.status}
                 </span>
               </li>
             ))}
             {!recentContacts.length && (
               <li className="py-8 text-center text-sm text-slate-400">
-                No contacts yet — import a sheet or connect a tool.
+                No prospects yet — import a list or connect a lead-gen tool.
               </li>
             )}
           </ul>

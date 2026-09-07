@@ -50,12 +50,12 @@ export function CampaignFormModal({
         <form onSubmit={submit} className="space-y-4">
           <div>
             <label className="label">Campaign name *</label>
-            <input name="name" required defaultValue={campaign?.name} className="input" placeholder="Pexalon Q4" />
+            <input name="name" required defaultValue={campaign?.name} className="input" placeholder="Cold email — D2C founders Q4" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Client</label>
-              <input name="client" defaultValue={campaign?.client ?? ""} className="input" placeholder="Syngenta" />
+              <label className="label">Target segment</label>
+              <input name="client" defaultValue={campaign?.client ?? ""} className="input" placeholder="D2C brands, ₹5Cr+ revenue" />
             </div>
             <div>
               <label className="label">Status</label>

@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
-import { CONTACT_STATUSES } from "@/lib/utils";
+import { CONTACT_STATUSES, STATUS_LABELS } from "@/lib/utils";
 
 export function ContactsToolbar({ campaigns }: { campaigns: { id: string; name: string }[] }) {
   const router = useRouter();
@@ -31,9 +31,11 @@ export function ContactsToolbar({ campaigns }: { campaigns: { id: string; name: 
         onChange={(e) => setParam("status", e.target.value)}
         className="input w-40"
       >
-        <option value="">All statuses</option>
+        <option value="">All stages</option>
         {CONTACT_STATUSES.map((s) => (
-          <option key={s}>{s}</option>
+          <option key={s} value={s}>
+            {STATUS_LABELS[s]}
+          </option>
         ))}
       </select>
       <select

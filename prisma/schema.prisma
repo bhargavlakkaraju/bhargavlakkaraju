@@ -40,9 +40,9 @@ model Contact {
   email      String?    @unique
   phone      String?
   title      String?
-  // Lead lifecycle: NEW | CONTACTED | QUALIFIED | CUSTOMER | LOST
-  status     String     @default("NEW")
-  // Where this contact came from (e.g. "google-sheet", "chatbot", "zapier", "manual")
+  // Outreach lifecycle: PROSPECT | CONTACTED | REPLIED | MEETING_BOOKED | CLIENT | NOT_INTERESTED
+  status     String     @default("PROSPECT")
+  // Where this prospect came from (e.g. "apollo", "linkedin", "referral", "website-form", "manual")
   source     String     @default("manual")
   // Comma-separated tags
   tags       String?

@@ -72,9 +72,13 @@ async function generateWithAi(contact: FullContact): Promise<Insights | null> {
       {
         role: "system",
         content:
-          "You are a CRM copilot for Hoopla, a marketing agency in India. Given a contact record, respond with JSON: " +
-          '{"summary": "2-3 sentence relationship summary", "actions": ["3-4 concrete next best actions"], ' +
-          '"emailDraft": "a short, warm, professional follow-up email with subject line"}. Be specific to the data given.',
+          "You are a new-business outreach copilot for Hoopla, a marketing agency in India pitching its services " +
+          "(campaign strategy, performance marketing, AI chatbots, full-funnel tracking) to prospective clients. " +
+          "Given a prospect record, respond with JSON: " +
+          '{"summary": "2-3 sentence summary of where this prospect is in the outreach funnel", ' +
+          '"actions": ["3-4 concrete next outreach moves"], ' +
+          '"emailDraft": "a short, personalised outreach or follow-up email with subject line, pitching Hoopla\'s services, tailored to the prospect\'s company/industry and funnel stage"}. ' +
+          "Be specific to the data given; never invent facts about the prospect.",
       },
       { role: "user", content: JSON.stringify(context) },
     ],
@@ -93,20 +97,28 @@ async function generateWithAi(contact: FullContact): Promise<Insights | null> {
 function generateWithRules(contact: FullContact): Insights {
   const name = fullName(contact);
   const first = contact.firstName;
+  const companyBit = contact.company ? ` at ${contact.company.name}` : "";
   const openDeals = contact.deals.filter((d) => !["WON", "LOST"].includes(d.stage));
   const openTasks = contact.activities.filter((a) => a.type === "TASK" && !a.completed);
-  const lastTouch = contact.activities[0];
+  const lastTouch = contact.activities.find((a) => a.type !== "TASK");
   const daysSinceTouch = lastTouch ? differenceInDays(new Date(), lastTouch.createdAt) : null;
 
+  const stageLine: Record<string, string> = {
+    PROSPECT: `${name}${companyBit} is an unworked prospect from ${contact.source} — no outreach sent yet`,
+    CONTACTED: `${name}${companyBit} has been contacted via ${contact.source} and hasn't replied yet`,
+    REPLIED: `${name}${companyBit} replied to our outreach — the conversation is live`,
+    MEETING_BOOKED: `${name}${companyBit} has a meeting booked — prep is the priority`,
+    CLIENT: `${name}${companyBit} is now a client`,
+    NOT_INTERESTED: `${name}${companyBit} passed on our pitch for now`,
+  };
   const summaryParts = [
-    `${name} is a ${contact.status.toLowerCase()} lead from ${contact.source}` +
-      (contact.campaign ? ` on the ${contact.campaign.name} campaign` : "") +
-      (contact.company ? `, linked to ${contact.company.name}` : "") +
+    (stageLine[contact.status] ?? `${name}${companyBit} is in the outreach funnel`) +
+      (contact.campaign ? ` (${contact.campaign.name})` : "") +
       ".",
   ];
   if (openDeals.length) {
     summaryParts.push(
-      `There ${openDeals.length === 1 ? "is" : "are"} ${openDeals.length} open deal${openDeals.length > 1 ? "s" : ""} worth ₹${openDeals.reduce((s, d) => s + d.value, 0).toLocaleString("en-IN")} (${openDeals.map((d) => STAGE_LABELS[d.stage] ?? d.stage).join(", ")}).`
+      `There ${openDeals.length === 1 ? "is" : "are"} ${openDeals.length} open pitch${openDeals.length > 1 ? "es" : ""} worth ₹${openDeals.reduce((s, d) => s + d.value, 0).toLocaleString("en-IN")} (${openDeals.map((d) => STAGE_LABELS[d.stage] ?? d.stage).join(", ")}).`
     );
   }
   summaryParts.push(
@@ -116,25 +128,31 @@ function generateWithRules(contact: FullContact): Insights {
   );
 
   const actions: string[] = [];
-  if (contact.status === "NEW") actions.push("Make first contact within 24 hours — fresh leads convert best.");
-  if (!contact.phone) actions.push("Collect a phone number on the next touch — reachability lifts the lead score.");
-  if (daysSinceTouch != null && daysSinceTouch > 7) actions.push(`Re-engage: no activity for ${daysSinceTouch} days.`);
+  if (contact.status === "PROSPECT") actions.push("Send the first outreach — personalise the opener with their company or industry.");
+  if (contact.status === "CONTACTED" && daysSinceTouch != null && daysSinceTouch >= 3)
+    actions.push(`No reply for ${daysSinceTouch} days — send follow-up with a new angle (case study or result, not a "just checking in").`);
+  if (contact.status === "REPLIED") actions.push("They replied — propose two concrete time slots for a 20-minute intro call.");
+  if (contact.status === "MEETING_BOOKED") actions.push("Prep the meeting: research their current marketing, bring one relevant case study and a strawman scope.");
+  if (contact.status === "MEETING_BOOKED" && !openDeals.length) actions.push("Open a pitch in the pipeline so the meeting has a deal attached.");
+  if (!contact.phone && contact.status !== "PROSPECT") actions.push("Get a phone/WhatsApp number on the next touch — faster loops than email.");
   if (openTasks.length) actions.push(`Clear ${openTasks.length} pending task${openTasks.length > 1 ? "s" : ""}: "${openTasks[0].content.slice(0, 60)}…"`);
-  if (contact.status === "QUALIFIED" && !openDeals.length) actions.push("Qualified with no open deal — create one so the pipeline reflects reality.");
-  if (openDeals.length) actions.push(`Push "${openDeals[0].title}" to the next stage or log why it's blocked.`);
-  if (!actions.length) actions.push("Log a check-in call to keep the relationship warm.");
+  if (openDeals.length) actions.push(`Move "${openDeals[0].title}" forward or log what's blocking it.`);
+  if (!actions.length) actions.push("Log the next touchpoint to keep the thread warm.");
 
+  const isFollowUp = contact.status !== "PROSPECT";
+  const industryBit = contact.company?.industry ? ` ${contact.company.industry.toLowerCase()}` : "";
   const emailDraft = [
-    `Subject: Quick follow-up from Hoopla${contact.campaign ? ` — ${contact.campaign.name}` : ""}`,
+    `Subject: ${isFollowUp ? `Re: Hoopla × ${contact.company?.name ?? first}` : `Growing ${contact.company?.name ?? "your brand"} — an idea from Hoopla`}`,
     "",
     `Hi ${first},`,
     "",
-    contact.campaign
-      ? `Thanks for your interest in the ${contact.campaign.name} campaign. I wanted to check in and see how we can help you take the next step.`
-      : "I wanted to follow up on our recent conversation and see how we can help you take the next step.",
-    openDeals.length ? `On our side, "${openDeals[0].title}" is ready to move whenever you are.` : "Happy to set up a quick call this week if that's easier.",
+    isFollowUp
+      ? `Following up on my last note — I know inboxes are brutal. We've been helping${industryBit} brands run full-funnel campaigns (strategy, performance marketing, AI chatbots) and I think there's a fit with ${contact.company?.name ?? "your team"}.`
+      : `I run new business at Hoopla — we build full-funnel campaigns (strategy, performance marketing, AI chatbots, end-to-end tracking) for${industryBit} brands, and ${contact.company?.name ?? "your company"} looks like exactly the kind of team we do our best work with.`,
     "",
-    "Best regards,",
+    "Worth a 20-minute call this week? Happy to share a case study relevant to your space either way.",
+    "",
+    "Best,",
     "Team Hoopla",
   ].join("\n");
 

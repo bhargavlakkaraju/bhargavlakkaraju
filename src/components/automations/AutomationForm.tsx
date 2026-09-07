@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Plus, Trash2, Sparkles } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
-import { CONTACT_STATUSES } from "@/lib/utils";
+import { CONTACT_STATUSES, STATUS_LABELS } from "@/lib/utils";
 
 type ActionDraft = {
   type: "SET_STATUS" | "ADD_TAG" | "CREATE_TASK" | "CREATE_DEAL" | "WEBHOOK";
@@ -88,14 +88,14 @@ export function AutomationForm({ campaigns }: { campaigns: { id: string; name: s
         <form onSubmit={submit} className="space-y-5">
           <div>
             <label className="label">Name *</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} required className="input" placeholder="Hot chatbot leads → task + tag" />
+            <input value={name} onChange={(e) => setName(e.target.value)} required className="input" placeholder="Replied → book intro call task" />
           </div>
 
           <div>
             <label className="label">When</label>
             <select value={trigger} onChange={(e) => setTrigger(e.target.value as typeof trigger)} className="input">
-              <option value="CONTACT_CREATED">A new contact arrives</option>
-              <option value="STATUS_CHANGED">A contact&apos;s status changes</option>
+              <option value="CONTACT_CREATED">A new prospect arrives</option>
+              <option value="STATUS_CHANGED">A prospect&apos;s stage changes</option>
             </select>
           </div>
 
@@ -110,11 +110,13 @@ export function AutomationForm({ campaigns }: { campaigns: { id: string; name: s
                   </option>
                 ))}
               </select>
-              <input value={source} onChange={(e) => setSource(e.target.value)} className="input" placeholder="Source, e.g. chatbot" />
+              <input value={source} onChange={(e) => setSource(e.target.value)} className="input" placeholder="Source, e.g. linkedin" />
               <select value={status} onChange={(e) => setStatus(e.target.value)} className="input">
-                <option value="">Any status</option>
+                <option value="">Any stage</option>
                 {CONTACT_STATUSES.map((s) => (
-                  <option key={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {STATUS_LABELS[s]}
+                  </option>
                 ))}
               </select>
               <input value={minScore} onChange={(e) => setMinScore(e.target.value)} type="number" min={0} max={100} className="input" placeholder="Min AI score" />
@@ -146,9 +148,11 @@ export function AutomationForm({ campaigns }: { campaigns: { id: string; name: s
                   </div>
                   {a.type === "SET_STATUS" && (
                     <select value={a.value ?? ""} onChange={(e) => updateAction(i, { value: e.target.value })} className="input" required>
-                      <option value="">Choose status…</option>
+                      <option value="">Choose stage…</option>
                       {CONTACT_STATUSES.map((s) => (
-                        <option key={s}>{s}</option>
+                        <option key={s} value={s}>
+                          {STATUS_LABELS[s]}
+                        </option>
                       ))}
                     </select>
                   )}

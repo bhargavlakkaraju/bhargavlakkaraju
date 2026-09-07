@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { formatMoney } from "@/lib/utils";
+import { formatMoney, OUTREACHED_STATUSES, REPLIED_STATUSES } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { CampaignFormModal } from "@/components/campaigns/CampaignFormModal";
 import { DeleteButton } from "@/components/contacts/RowActions";
@@ -26,42 +26,47 @@ export default async function CampaignsPage() {
   return (
     <div>
       <PageHeader
-        title="Campaigns"
-        description="Track every campaign's funnel — from first touch to conversion — instead of a shared sheet."
+        title="Outreach campaigns"
+        description="Every outreach push — cold email, LinkedIn, referrals — with its funnel from first touch to signed client."
         action={<CampaignFormModal />}
       />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {campaigns.map((c) => {
-          const customers = c.contacts.filter((x) => x.status === "CUSTOMER").length;
-          const qualified = c.contacts.filter((x) => x.status === "QUALIFIED").length;
+          const outreached = c.contacts.filter((x) => OUTREACHED_STATUSES.includes(x.status)).length;
+          const replied = c.contacts.filter((x) => REPLIED_STATUSES.includes(x.status)).length;
+          const clients = c.contacts.filter((x) => x.status === "CLIENT").length;
           const won = c.deals.filter((d) => d.stage === "WON").reduce((s, d) => s + d.value, 0);
-          const conversion = c._count.contacts ? Math.round((customers / c._count.contacts) * 100) : 0;
+          const replyRate = outreached ? Math.round((replied / outreached) * 100) : 0;
           return (
-            <div key={c.id} className="card p-5">
+            <div key={c.id} className="card card-hover p-5">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h3 className="font-semibold">{c.name}</h3>
-                  <p className="text-xs text-slate-500">{c.client ?? "No client set"}</p>
+                  <p className="text-xs text-slate-500">{c.client ?? "No target segment set"}</p>
                 </div>
                 <span className={`badge ${statusStyle[c.status] ?? "bg-slate-100 text-slate-600"}`}>{c.status}</span>
               </div>
-              <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+              <div className="mt-4 grid grid-cols-4 gap-2 text-center">
                 <div className="rounded-lg bg-slate-50 py-2">
                   <div className="text-lg font-bold">{c._count.contacts}</div>
-                  <div className="text-[11px] text-slate-500">Leads</div>
+                  <div className="text-[11px] text-slate-500">Prospects</div>
                 </div>
                 <div className="rounded-lg bg-slate-50 py-2">
-                  <div className="text-lg font-bold">{qualified}</div>
-                  <div className="text-[11px] text-slate-500">Qualified</div>
+                  <div className="text-lg font-bold">{outreached}</div>
+                  <div className="text-[11px] text-slate-500">Contacted</div>
                 </div>
                 <div className="rounded-lg bg-slate-50 py-2">
-                  <div className="text-lg font-bold">{customers}</div>
-                  <div className="text-[11px] text-slate-500">Customers</div>
+                  <div className="text-lg font-bold">{replied}</div>
+                  <div className="text-[11px] text-slate-500">Replied</div>
+                </div>
+                <div className="rounded-lg bg-slate-50 py-2">
+                  <div className="text-lg font-bold">{clients}</div>
+                  <div className="text-[11px] text-slate-500">Clients</div>
                 </div>
               </div>
               <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
                 <span>
-                  Conversion <span className="font-semibold text-slate-700">{conversion}%</span>
+                  Reply rate <span className="font-semibold text-slate-700">{replyRate}%</span>
                 </span>
                 <span>
                   Won <span className="font-semibold text-slate-700">{won ? formatMoney(won) : "—"}</span>
@@ -69,7 +74,7 @@ export default async function CampaignsPage() {
               </div>
               <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
                 <Link href={`/contacts?campaign=${c.id}`} className="text-xs font-medium text-brand-600 hover:underline">
-                  View leads
+                  View prospects
                 </Link>
                 <div className="flex items-center gap-1">
                   <CampaignFormModal campaign={c} />
@@ -81,7 +86,7 @@ export default async function CampaignsPage() {
         })}
         {!campaigns.length && (
           <div className="card col-span-full py-16 text-center text-sm text-slate-400">
-            No campaigns yet. Campaigns are auto-created when tools push leads with a campaign name.
+            No outreach campaigns yet. They&apos;re auto-created when tools push prospects with a campaign name.
           </div>
         )}
       </div>

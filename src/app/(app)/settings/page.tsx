@@ -9,20 +9,20 @@ const INGEST_EXAMPLE = `curl -X POST https://YOUR-CRM-DOMAIN/api/v1/ingest \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "name": "Asha Patel",
-    "email": "asha@example.com",
-    "phone": "+91 98xxxxxx01",
-    "company": "Syngenta",
-    "campaign": "Pexalon",
-    "source": "chatbot",
-    "note": "Asked about pricing on the landing page",
-    "customData": { "crop": "cotton", "district": "Nagpur" }
+    "name": "Rohan Mehta",
+    "email": "rohan@urbankart.example",
+    "title": "Founder",
+    "company": "UrbanKart",
+    "campaign": "Cold email — D2C founders Q4",
+    "source": "apollo",
+    "note": "Downloaded our D2C case study",
+    "customData": { "industry": "D2C", "employees": "51-200" }
   }'`;
 
 const BATCH_EXAMPLE = `{
   "contacts": [
-    { "name": "Lead One", "email": "one@x.com", "campaign": "Tej/Page" },
-    { "name": "Lead Two", "phone": "+91 97xxxxxx02", "campaign": "Tej/Page" }
+    { "name": "Prospect One", "email": "one@x.com", "campaign": "LinkedIn — agritech CMOs" },
+    { "name": "Prospect Two", "phone": "+91 97xxxxxx02", "campaign": "LinkedIn — agritech CMOs" }
   ]
 }`;
 
@@ -36,7 +36,7 @@ export default async function SettingsPage() {
     <div>
       <PageHeader
         title="API & Integrations"
-        description="Create a key per tool, point it at the ingest endpoint, and data lands in the CRM automatically."
+        description="Create a key per tool, point it at the ingest endpoint, and prospects land in the CRM automatically."
       />
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -56,17 +56,18 @@ export default async function SettingsPage() {
             <h2 className="mb-3 text-sm font-semibold text-slate-700">How other tools push data in</h2>
             <div className="space-y-4 text-sm text-slate-600">
               <p>
-                Any tool that can send an HTTP request — Zapier, Make, Google Apps Script, your chatbot backend,
-                a landing-page form — can push leads with a single <code className="rounded bg-slate-100 px-1">POST</code>:
+                Any tool that can send an HTTP request — Apollo/Clay exports via Zapier or Make, LinkedIn scrapers,
+                your website&apos;s contact form, referral forms — can push prospects with a single{" "}
+                <code className="rounded bg-slate-100 px-1">POST</code>:
               </p>
               <pre className="overflow-x-auto rounded-lg bg-slate-950 p-4 text-xs leading-relaxed text-slate-200">
                 {INGEST_EXAMPLE}
               </pre>
               <ul className="list-inside list-disc space-y-1 text-xs">
-                <li>Contacts are matched by <strong>email</strong> (then phone) — pushing twice updates, never duplicates.</li>
+                <li>Prospects are matched by <strong>email</strong> (then phone) — pushing twice updates, never duplicates.</li>
                 <li><strong>company</strong> and <strong>campaign</strong> are auto-created by name if they don&apos;t exist.</li>
-                <li>Anything in <strong>customData</strong> is stored and shown on the contact page.</li>
-                <li>Optionally include a <strong>deal</strong> object to open a pipeline deal in the same call.</li>
+                <li>Anything in <strong>customData</strong> is stored and shown on the prospect page.</li>
+                <li>Optionally include a <strong>deal</strong> object to open a pitch in the pipeline in the same call.</li>
               </ul>
               <p className="text-xs">
                 Batch mode — send up to 500 at once:
@@ -75,7 +76,9 @@ export default async function SettingsPage() {
                 {BATCH_EXAMPLE}
               </pre>
               <p className="text-xs">
-                Read data back with <code className="rounded bg-slate-100 px-1">GET /api/v1/contacts?campaign=Pexalon&amp;status=NEW</code> using the same key.
+                Read data back with{" "}
+                <code className="rounded bg-slate-100 px-1">GET /api/v1/contacts?status=REPLIED</code> using the same
+                key — handy for sequencing tools that need to know who answered.
               </p>
             </div>
           </div>

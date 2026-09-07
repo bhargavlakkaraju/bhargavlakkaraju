@@ -104,7 +104,7 @@ export async function upsertContact(input: IngestContact, defaultSource = "api")
           email,
           phone,
           title: input.title,
-          status: input.status ?? "NEW",
+          status: input.status ?? "PROSPECT",
           source: input.source ?? defaultSource,
           tags,
           customData,

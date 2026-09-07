@@ -5,8 +5,8 @@ export default function ImportPage() {
   return (
     <div>
       <PageHeader
-        title="Import sheets"
-        description="Bring your existing Excel / Google Sheets tracking into the CRM. Rows are matched by email or phone, so re-importing an updated sheet never creates duplicates."
+        title="Import prospect lists"
+        description="Bring in any prospect list — exported sheets, Apollo/Lusha exports, conference attendee lists. Rows are matched by email or phone, so re-importing never creates duplicates."
       />
       <CsvImporter />
     </div>

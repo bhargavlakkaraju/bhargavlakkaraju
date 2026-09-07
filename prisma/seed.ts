@@ -3,66 +3,84 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  const syngenta = await prisma.company.upsert({
-    where: { name: "Syngenta" },
-    create: { name: "Syngenta", industry: "Agritech", location: "Pune" },
-    update: {},
-  });
-  const bharatAgro = await prisma.company.upsert({
-    where: { name: "Bharat Agro Retail" },
-    create: { name: "Bharat Agro Retail", industry: "Agri retail", location: "Nagpur" },
-    update: {},
-  });
+  // Prospective client companies
+  const companies = Object.fromEntries(
+    await Promise.all(
+      (
+        [
+          { name: "UrbanKart", domain: "urbankart.example", industry: "D2C e-commerce", location: "Bengaluru" },
+          { name: "GreenLeaf Organics", domain: "greenleaf.example", industry: "FMCG / Organic foods", location: "Mumbai" },
+          { name: "FinEdge", domain: "finedge.example", industry: "Fintech", location: "Gurugram" },
+          { name: "AgroSpark", domain: "agrospark.example", industry: "Agritech", location: "Pune" },
+          { name: "NimbusStay", domain: "nimbusstay.example", industry: "Travel / Hospitality", location: "Goa" },
+        ] as const
+      ).map(async (c) => [c.name, await prisma.company.upsert({ where: { name: c.name }, create: c, update: {} })])
+    )
+  );
 
-  const pexalon = await prisma.campaign.upsert({
-    where: { name: "Pexalon" },
-    create: { name: "Pexalon", client: "Syngenta", status: "ACTIVE", notes: "Full-funnel CRM tracking from day one." },
+  // Outreach campaigns (channels/pushes), `client` = target segment
+  const coldEmail = await prisma.campaign.upsert({
+    where: { name: "Cold email — D2C founders Q4" },
+    create: {
+      name: "Cold email — D2C founders Q4",
+      client: "D2C brands, ₹5Cr+ revenue",
+      status: "ACTIVE",
+      notes: "Apollo list, 3-step sequence pitching performance marketing + AI chatbots.",
+    },
     update: {},
   });
-  const tejPage = await prisma.campaign.upsert({
-    where: { name: "Tej/Page AI Chatbot" },
-    create: { name: "Tej/Page AI Chatbot", client: "Syngenta", status: "ACTIVE" },
+  const linkedin = await prisma.campaign.upsert({
+    where: { name: "LinkedIn — agritech & fintech CMOs" },
+    create: {
+      name: "LinkedIn — agritech & fintech CMOs",
+      client: "CMOs / growth heads",
+      status: "ACTIVE",
+    },
     update: {},
   });
-  const segways = await prisma.campaign.upsert({
-    where: { name: "Segways" },
-    create: { name: "Segways", client: "Syngenta", status: "PAUSED" },
+  const referrals = await prisma.campaign.upsert({
+    where: { name: "Referral follow-ups" },
+    create: { name: "Referral follow-ups", client: "Warm intros from existing clients", status: "ACTIVE" },
     update: {},
   });
 
   const seedContacts = [
-    { firstName: "Asha", lastName: "Patel", email: "asha.patel@example.com", phone: "+91 9812340001", status: "QUALIFIED", source: "chatbot", campaignId: tejPage.id, companyId: bharatAgro.id, customData: JSON.stringify({ crop: "cotton", district: "Nagpur" }) },
-    { firstName: "Ravi", lastName: "Deshmukh", email: "ravi.d@example.com", phone: "+91 9812340002", status: "NEW", source: "landing-page", campaignId: pexalon.id },
-    { firstName: "Meera", lastName: "Iyer", email: "meera.iyer@example.com", status: "CONTACTED", source: "csv-import", campaignId: pexalon.id },
-    { firstName: "Snehal", lastName: "Kulkarni", email: "snehal.k@syngenta-example.com", title: "Marketing Lead", status: "CUSTOMER", source: "manual", companyId: syngenta.id, campaignId: pexalon.id },
-    { firstName: "Vikram", lastName: "Rao", email: "vikram.rao@example.com", phone: "+91 9812340005", status: "NEW", source: "lucky-draw", campaignId: segways.id },
-    { firstName: "Priya", lastName: "Nair", email: "priya.nair@example.com", status: "LOST", source: "chatbot", campaignId: tejPage.id },
+    { firstName: "Rohan", lastName: "Mehta", email: "rohan@urbankart.example", phone: "+91 9812340001", title: "Founder", status: "REPLIED", source: "apollo", campaignId: coldEmail.id, companyId: companies["UrbanKart"].id, customData: JSON.stringify({ industry: "D2C", employees: "51-200", monthlyAdSpend: "₹40L" }) },
+    { firstName: "Kavya", lastName: "Sharma", email: "kavya@greenleaf.example", title: "CMO", status: "MEETING_BOOKED", source: "referral", campaignId: referrals.id, companyId: companies["GreenLeaf Organics"].id, phone: "+91 9812340002" },
+    { firstName: "Arjun", lastName: "Bansal", email: "arjun@finedge.example", title: "Head of Growth", status: "CONTACTED", source: "linkedin", campaignId: linkedin.id, companyId: companies["FinEdge"].id },
+    { firstName: "Neha", lastName: "Kulkarni", email: "neha@agrospark.example", title: "Co-founder", status: "CONTACTED", source: "linkedin", campaignId: linkedin.id, companyId: companies["AgroSpark"].id },
+    { firstName: "Dev", lastName: "Pillai", email: "dev@nimbusstay.example", title: "CEO", status: "PROSPECT", source: "apollo", campaignId: coldEmail.id, companyId: companies["NimbusStay"].id },
+    { firstName: "Ishita", lastName: "Rao", email: "ishita.rao@example.com", title: "Marketing Director", status: "CLIENT", source: "referral", campaignId: referrals.id, companyId: companies["GreenLeaf Organics"].id },
+    { firstName: "Sameer", lastName: "Joshi", email: "sameer.j@example.com", title: "Founder", status: "NOT_INTERESTED", source: "apollo", campaignId: coldEmail.id },
   ];
 
   for (const c of seedContacts) {
-    await prisma.contact.upsert({ where: { email: c.email }, create: c, update: {} });
+    await prisma.contact.upsert({ where: { email: c.email }, create: c, update: c });
   }
 
-  const snehal = await prisma.contact.findUnique({ where: { email: "snehal.k@syngenta-example.com" } });
-  const asha = await prisma.contact.findUnique({ where: { email: "asha.patel@example.com" } });
+  const rohan = await prisma.contact.findUnique({ where: { email: "rohan@urbankart.example" } });
+  const kavya = await prisma.contact.findUnique({ where: { email: "kavya@greenleaf.example" } });
+  const arjun = await prisma.contact.findUnique({ where: { email: "arjun@finedge.example" } });
 
-  if ((await prisma.deal.count()) === 0) {
+  if ((await prisma.deal.count()) === 0 && rohan && kavya) {
     await prisma.deal.createMany({
       data: [
-        { title: "Pexalon retainer renewal", value: 450000, stage: "NEGOTIATION", contactId: snehal?.id, companyId: syngenta.id, campaignId: pexalon.id },
-        { title: "Lucky draw backend build", value: 300000, stage: "WON", companyId: syngenta.id, campaignId: segways.id },
-        { title: "Root Scan QR rollout — phase 2", value: 250000, stage: "PROPOSAL", companyId: syngenta.id },
-        { title: "Bharat Agro dealer activation", value: 120000, stage: "LEAD_IN", contactId: asha?.id, companyId: bharatAgro.id, campaignId: tejPage.id },
+        { title: "UrbanKart — performance marketing retainer", value: 600000, stage: "PROPOSAL", contactId: rohan.id, companyId: companies["UrbanKart"].id, campaignId: coldEmail.id },
+        { title: "GreenLeaf — brand campaign + AI chatbot", value: 850000, stage: "QUALIFIED", contactId: kavya.id, companyId: companies["GreenLeaf Organics"].id, campaignId: referrals.id },
+        { title: "GreenLeaf — festive campaign (won)", value: 450000, stage: "WON", companyId: companies["GreenLeaf Organics"].id, campaignId: referrals.id },
+        { title: "FinEdge — growth marketing pilot", value: 300000, stage: "LEAD_IN", contactId: arjun?.id, companyId: companies["FinEdge"].id, campaignId: linkedin.id },
       ],
     });
   }
 
-  if ((await prisma.activity.count()) === 0 && snehal && asha) {
+  if ((await prisma.activity.count()) === 0 && rohan && kavya && arjun) {
     await prisma.activity.createMany({
       data: [
-        { type: "MEETING", content: "Kickoff review — client wants full CRM tracking from day one to end of funnel.", contactId: snehal.id },
-        { type: "TASK", content: "Reconcile pending retainer invoices (Jan–Mar) and share new invoice structure.", contactId: snehal.id, dueAt: new Date(Date.now() + 3 * 24 * 3600 * 1000) },
-        { type: "CALL", content: "Asked about nematode detection accuracy; shared Root Scan demo link.", contactId: asha.id },
+        { type: "EMAIL", content: "Sent step 1 of cold sequence — D2C case study angle.", contactId: rohan.id },
+        { type: "EMAIL", content: "Rohan replied: interested, asked for pricing ranges and a relevant case study.", contactId: rohan.id },
+        { type: "TASK", content: "Send UrbanKart proposal follow-up with D2C case study", contactId: rohan.id, dueAt: new Date(Date.now() + 24 * 3600 * 1000) },
+        { type: "MEETING", content: "Intro call booked for Thursday — Kavya + their brand manager. Agenda: festive campaign + always-on chatbot.", contactId: kavya.id },
+        { type: "LINKEDIN", content: "Connected with Arjun, sent opener referencing their Series B announcement.", contactId: arjun.id },
       ],
     });
   }
@@ -71,25 +89,34 @@ async function main() {
     await prisma.automation.createMany({
       data: [
         {
-          name: "Chatbot leads → hot-lead tag + call task",
+          name: "New apollo prospects → first-touch task",
           trigger: "CONTACT_CREATED",
-          conditions: JSON.stringify({ source: "chatbot" }),
+          conditions: JSON.stringify({ source: "apollo" }),
           actions: JSON.stringify([
-            { type: "ADD_TAG", value: "hot-lead" },
-            { type: "CREATE_TASK", value: "Call this chatbot lead within 24 hours" },
+            { type: "ADD_TAG", value: "cold-outreach" },
+            { type: "CREATE_TASK", value: "Send personalised first outreach email" },
           ]),
         },
         {
-          name: "Pexalon qualified → open a deal",
+          name: "Prospect replied → book the intro call",
           trigger: "STATUS_CHANGED",
-          conditions: JSON.stringify({ campaign: "Pexalon", status: "QUALIFIED" }),
-          actions: JSON.stringify([{ type: "CREATE_DEAL", title: "Pexalon opportunity", value: 50000 }]),
+          conditions: JSON.stringify({ status: "REPLIED" }),
+          actions: JSON.stringify([
+            { type: "ADD_TAG", value: "hot" },
+            { type: "CREATE_TASK", value: "Reply within 4 hours and propose two intro-call slots" },
+          ]),
+        },
+        {
+          name: "Meeting booked → open a pitch",
+          trigger: "STATUS_CHANGED",
+          conditions: JSON.stringify({ status: "MEETING_BOOKED" }),
+          actions: JSON.stringify([{ type: "CREATE_DEAL", title: "New-business pitch", value: 300000 }]),
         },
       ],
     });
   }
 
-  // Backfill lead scores for seeded contacts
+  // Backfill prospect scores
   const { heuristicScore } = await import("../src/lib/scoring");
   const allContacts = await prisma.contact.findMany({ include: { deals: true, activities: true } });
   for (const contact of allContacts) {
