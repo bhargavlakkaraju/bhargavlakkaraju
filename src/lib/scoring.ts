@@ -61,8 +61,8 @@ export function heuristicScore(c: ScorableContact): { score: number; reason: str
 }
 
 export function scoreTone(score: number | null | undefined) {
-  if (score == null) return "bg-slate-100 text-slate-400";
-  if (score >= 75) return "bg-emerald-100 text-emerald-700";
-  if (score >= 50) return "bg-amber-100 text-amber-700";
-  return "bg-slate-100 text-slate-500";
+  if (score == null) return "bg-slate-50 text-slate-400";
+  if (score >= 75) return "bg-emerald-50 text-emerald-700";
+  if (score >= 50) return "bg-amber-50 text-amber-700";
+  return "bg-slate-50 text-slate-500";
 }

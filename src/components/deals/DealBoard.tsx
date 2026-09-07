@@ -66,13 +66,16 @@ export function DealBoard({ deals }: { deals: BoardDeal[] }) {
             }}
             onDragLeave={() => setOverStage((s) => (s === stage ? null : s))}
             onDrop={() => moveTo(stage)}
-            className={`w-72 shrink-0 rounded-xl border-t-4 bg-slate-100/70 ${STAGE_COLORS[stage]} ${
-              overStage === stage ? "ring-2 ring-brand-400" : ""
+            className={`w-72 shrink-0 rounded-lg border bg-slate-50 ${
+              overStage === stage ? "border-slate-400" : "border-slate-200"
             }`}
           >
             <div className="flex items-center justify-between px-3 py-2.5">
-              <span className="text-sm font-semibold text-slate-700">{STAGE_LABELS[stage]}</span>
-              <span className="text-xs text-slate-500">
+              <span className="flex items-center gap-2 text-[13px] font-medium text-slate-700">
+                <span className={`h-2 w-2 rounded-full ${STAGE_COLORS[stage]}`} />
+                {STAGE_LABELS[stage]}
+              </span>
+              <span className="text-xs text-slate-400">
                 {items.length} · {formatMoney(total)}
               </span>
             </div>
@@ -124,8 +127,8 @@ export function DealBoard({ deals }: { deals: BoardDeal[] }) {
                     </div>
                   </div>
                   {d.campaignName && (
-                    <div className="mt-1.5">
-                      <span className="badge bg-brand-50 text-brand-700">{d.campaignName}</span>
+                    <div className="mt-2">
+                      <span className="badge bg-slate-50 text-slate-500">{d.campaignName}</span>
                     </div>
                   )}
                 </div>

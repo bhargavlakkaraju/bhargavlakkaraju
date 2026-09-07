@@ -5,7 +5,7 @@ export function ScoreBadge({ score, reason }: { score: number | null; reason?: s
   return (
     <span
       title={reason ?? undefined}
-      className={`inline-flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 text-xs font-bold ${scoreTone(score)}`}
+      className={`inline-flex h-6 min-w-8 items-center justify-center rounded-md px-1.5 text-xs font-semibold ring-1 ring-inset ring-black/5 ${scoreTone(score)}`}
     >
       {score}
     </span>

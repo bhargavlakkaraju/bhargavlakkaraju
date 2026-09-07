@@ -45,59 +45,61 @@ const features = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[560px] bg-[radial-gradient(ellipse_at_top,rgba(139,92,246,0.28),transparent_60%)]" />
-
-      <header className="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-fuchsia-600">
-            <Zap className="h-5 w-5" />
+    <div className="min-h-screen bg-white text-slate-950">
+      <header className="border-b border-slate-200">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-900">
+              <Zap className="h-4 w-4 text-white" />
+            </div>
+            <span className="text-sm font-semibold">Hoopla CRM</span>
           </div>
-          <span className="text-lg font-bold">Hoopla CRM</span>
+          <Link href="/dashboard" className="btn-primary !py-1.5">
+            Open dashboard
+          </Link>
         </div>
-        <Link
-          href="/dashboard"
-          className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-200"
-        >
-          Open dashboard
-        </Link>
       </header>
 
-      <main className="relative mx-auto max-w-6xl px-6">
-        <section className="py-20 text-center">
-          <div className="animate-fade-up mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-slate-300">
-            <Sparkles className="h-3.5 w-3.5 text-brand-400" />
+      <main className="mx-auto max-w-6xl px-6">
+        <section className="border-x border-slate-200 px-6 pb-16 pt-20 text-center sm:px-12">
+          <div className="animate-fade-up mx-auto mb-8 inline-flex items-center gap-2 rounded-full border border-slate-200 px-3.5 py-1 text-xs font-medium text-slate-500">
+            <Sparkles className="h-3.5 w-3.5 text-brand-600" />
             AI-native · API-first · built for winning new clients
           </div>
-          <h1 className="animate-fade-up mx-auto max-w-3xl text-5xl font-extrabold leading-tight tracking-tight sm:text-6xl" style={{ animationDelay: "80ms" }}>
-            Every prospect. Every pitch.{" "}
-            <span className="gradient-text">One outreach engine.</span>
+          <h1
+            className="animate-fade-up mx-auto max-w-3xl text-5xl font-semibold leading-[1.1] tracking-tight sm:text-6xl"
+            style={{ animationDelay: "60ms" }}
+          >
+            Every prospect. Every pitch.
+            <br />
+            <span className="text-brand-600">One outreach engine.</span>
           </h1>
-          <p className="animate-fade-up mx-auto mt-6 max-w-2xl text-lg text-slate-400" style={{ animationDelay: "160ms" }}>
+          <p
+            className="animate-fade-up mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-500"
+            style={{ animationDelay: "120ms" }}
+          >
             Hoopla CRM turns scattered prospect sheets into a single new-business system — every
-            lead-gen tool pushes in, AI scores who to work first, and automations keep every
-            thread moving until the deal is won.
+            lead-gen tool pushes in, AI scores who to work first, and automations keep every thread
+            moving until the deal is won.
           </p>
-          <div className="animate-fade-up mt-9 flex justify-center gap-3" style={{ animationDelay: "240ms" }}>
-            <Link href="/dashboard" className="btn-primary !px-6 !py-3 !text-base">
+          <div className="animate-fade-up mt-9 flex justify-center gap-3" style={{ animationDelay: "180ms" }}>
+            <Link href="/dashboard" className="btn-primary !px-5 !py-2.5">
               Go to dashboard <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link
-              href="/settings"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-base font-medium text-white transition hover:bg-white/10"
-            >
+            <Link href="/settings" className="btn-secondary !px-5 !py-2.5">
               Connect a tool
             </Link>
           </div>
 
-          <div className="animate-fade-up mx-auto mt-16 max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80 text-left shadow-2xl shadow-brand-950/50" style={{ animationDelay: "320ms" }}>
-            <div className="flex items-center gap-1.5 border-b border-white/5 px-4 py-3">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
-              <span className="h-2.5 w-2.5 rounded-full bg-amber-500/70" />
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/70" />
-              <span className="ml-3 text-xs text-slate-500">any tool → Hoopla CRM</span>
+          <div
+            className="animate-fade-up mx-auto mt-16 max-w-3xl overflow-hidden rounded-lg border border-slate-200 text-left"
+            style={{ animationDelay: "240ms" }}
+          >
+            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-2.5">
+              <span className="text-xs font-medium text-slate-500">any tool → Hoopla CRM</span>
+              <span className="font-mono text-[11px] text-slate-400">POST /api/v1/ingest</span>
             </div>
-            <pre className="overflow-x-auto p-5 text-[13px] leading-relaxed text-slate-300">
+            <pre className="overflow-x-auto bg-slate-950 p-5 text-[13px] leading-relaxed text-slate-300">
 {`curl -X POST https://crm.hoopla.agency/api/v1/ingest \\
   -H "Authorization: Bearer hoopla_xxx" \\
   -d '{ "name": "Rohan Mehta", "title": "Founder",
@@ -109,24 +111,18 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="grid gap-5 pb-24 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map((f, i) => (
-            <div
-              key={f.title}
-              className="animate-fade-up rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-brand-500/40 hover:bg-white/[0.06]"
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500/20 to-fuchsia-500/20 text-brand-300">
-                <f.icon className="h-5 w-5" />
-              </div>
-              <h3 className="mb-1.5 font-semibold">{f.title}</h3>
-              <p className="text-sm leading-relaxed text-slate-400">{f.body}</p>
+        <section className="grid gap-px border-x border-t border-slate-200 bg-slate-200 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((f) => (
+            <div key={f.title} className="group bg-white p-7 transition-colors hover:bg-slate-50">
+              <f.icon className="mb-4 h-5 w-5 text-slate-400 transition-colors group-hover:text-brand-600" />
+              <h3 className="mb-1.5 text-sm font-semibold">{f.title}</h3>
+              <p className="text-sm leading-relaxed text-slate-500">{f.body}</p>
             </div>
           ))}
         </section>
       </main>
 
-      <footer className="relative border-t border-white/5 py-8 text-center text-xs text-slate-600">
+      <footer className="border-t border-slate-200 py-8 text-center text-xs text-slate-400">
         Hoopla CRM — the agency&apos;s new-business engine. No more sheets.
       </footer>
     </div>

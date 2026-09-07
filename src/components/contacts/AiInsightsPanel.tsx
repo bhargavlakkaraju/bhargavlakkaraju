@@ -30,16 +30,16 @@ export function AiInsightsPanel({ contactId, cachedSummary }: { contactId: strin
 
   return (
     <div className="card overflow-hidden">
-      <div className="flex items-center justify-between bg-gradient-to-r from-brand-600 to-fuchsia-600 px-5 py-3.5">
-        <div className="flex items-center gap-2 text-sm font-semibold text-white">
-          <Sparkles className="h-4 w-4" /> AI copilot
+      <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+        <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
+          <Sparkles className="h-4 w-4 text-brand-600" /> AI copilot
         </div>
         <button
           onClick={generate}
           disabled={loading}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur transition hover:bg-white/25 disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-slate-700 disabled:opacity-60"
         >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
           {loading ? "Thinking…" : insights ? "Regenerate" : "Generate insights"}
         </button>
       </div>
@@ -60,7 +60,7 @@ export function AiInsightsPanel({ contactId, cachedSummary }: { contactId: strin
               <ul className="space-y-1.5">
                 {insights.actions.map((a, i) => (
                   <li key={i} className="flex gap-2">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gradient-to-r from-brand-500 to-fuchsia-500" />
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-600" />
                     <span className="text-slate-600">{a}</span>
                   </li>
                 ))}
@@ -74,7 +74,7 @@ export function AiInsightsPanel({ contactId, cachedSummary }: { contactId: strin
                   {copied ? "Copied" : "Copy"}
                 </button>
               </div>
-              <pre className="whitespace-pre-wrap rounded-xl bg-slate-50 p-3 font-sans text-xs leading-relaxed text-slate-600">
+              <pre className="whitespace-pre-wrap rounded-md border border-slate-100 bg-slate-50 p-3 font-sans text-xs leading-relaxed text-slate-600">
                 {insights.emailDraft}
               </pre>
             </div>

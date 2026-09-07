@@ -44,21 +44,22 @@ export const STAGE_LABELS: Record<string, string> = {
 };
 
 export const STATUS_COLORS: Record<string, string> = {
-  PROSPECT: "bg-blue-100 text-blue-700",
-  CONTACTED: "bg-amber-100 text-amber-700",
-  REPLIED: "bg-violet-100 text-violet-700",
-  MEETING_BOOKED: "bg-sky-100 text-sky-700",
-  CLIENT: "bg-emerald-100 text-emerald-700",
-  NOT_INTERESTED: "bg-slate-100 text-slate-500",
+  PROSPECT: "bg-blue-50 text-blue-700",
+  CONTACTED: "bg-amber-50 text-amber-700",
+  REPLIED: "bg-violet-50 text-violet-700",
+  MEETING_BOOKED: "bg-sky-50 text-sky-700",
+  CLIENT: "bg-emerald-50 text-emerald-700",
+  NOT_INTERESTED: "bg-slate-50 text-slate-500",
 };
 
+// Dot colors for pipeline stage indicators
 export const STAGE_COLORS: Record<string, string> = {
-  LEAD_IN: "border-blue-400",
-  QUALIFIED: "border-violet-400",
-  PROPOSAL: "border-amber-400",
-  NEGOTIATION: "border-orange-400",
-  WON: "border-emerald-400",
-  LOST: "border-slate-300",
+  LEAD_IN: "bg-blue-500",
+  QUALIFIED: "bg-violet-500",
+  PROPOSAL: "bg-amber-500",
+  NEGOTIATION: "bg-orange-500",
+  WON: "bg-emerald-500",
+  LOST: "bg-slate-300",
 };
 
 export const ACTIVITY_TYPES = [

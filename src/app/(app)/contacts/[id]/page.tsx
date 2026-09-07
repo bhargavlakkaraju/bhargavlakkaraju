@@ -63,7 +63,7 @@ export default async function ContactDetailPage({ params }: { params: { id: stri
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">{fullName(contact)}</h1>
+            <h1 className="text-xl font-semibold tracking-tight">{fullName(contact)}</h1>
             <span className={`badge ${STATUS_COLORS[contact.status] ?? "bg-slate-100 text-slate-600"}`}>
               {STATUS_LABELS[contact.status] ?? contact.status}
             </span>

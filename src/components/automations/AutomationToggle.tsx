@@ -19,7 +19,7 @@ export function AutomationToggle({ id, enabled }: { id: string; enabled: boolean
         });
         router.refresh();
       }}
-      className={`relative h-6 w-11 rounded-full transition ${on ? "bg-gradient-to-r from-brand-500 to-fuchsia-600" : "bg-slate-200"}`}
+      className={`relative h-6 w-11 rounded-full transition-colors ${on ? "bg-slate-900" : "bg-slate-200"}`}
     >
       <span
         className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${on ? "left-[22px]" : "left-0.5"}`}

@@ -109,7 +109,7 @@ export function CsvImporter() {
 
   return (
     <div className="space-y-6">
-      <label className="card flex cursor-pointer flex-col items-center justify-center gap-3 border-2 border-dashed border-slate-300 bg-white/50 py-12 transition hover:border-brand-400 hover:bg-brand-50/40">
+      <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-300 bg-white py-12 transition-colors hover:border-slate-400 hover:bg-slate-50">
         <FileSpreadsheet className="h-10 w-10 text-slate-400" />
         <div className="text-center">
           <div className="text-sm font-medium">{fileName ?? "Drop or choose a CSV file"}</div>

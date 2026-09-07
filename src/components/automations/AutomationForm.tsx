@@ -127,7 +127,7 @@ export function AutomationForm({ campaigns }: { campaigns: { id: string; name: s
             <label className="label">Then</label>
             <div className="space-y-2">
               {actions.map((a, i) => (
-                <div key={i} className="space-y-2 rounded-xl border border-slate-200 p-3">
+                <div key={i} className="space-y-2 rounded-md border border-slate-200 p-3">
                   <div className="flex items-center gap-2">
                     <select
                       value={a.type}

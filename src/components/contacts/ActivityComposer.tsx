@@ -34,8 +34,10 @@ export function ActivityComposer({ contactId, dealId }: { contactId?: string; de
             key={t}
             type="button"
             onClick={() => setType(t)}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-              type === t ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+              type === t
+                ? "bg-slate-900 text-white"
+                : "border border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700"
             }`}
           >
             {t.charAt(0) + t.slice(1).toLowerCase()}

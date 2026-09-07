@@ -93,8 +93,8 @@ export default async function DashboardPage() {
       />
 
       <div className="card mb-6 overflow-hidden">
-        <div className="bg-gradient-to-r from-slate-950 via-brand-950 to-slate-950 p-5 text-white">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+        <div className="bg-slate-950 p-5 text-white">
+          <div className="mb-4 flex items-center gap-2 text-sm font-medium">
             <Sparkles className="h-4 w-4 text-brand-400" /> Today&apos;s briefing
             <span className="ai-chip">AI</span>
           </div>
@@ -235,10 +235,10 @@ export default async function DashboardPage() {
                 <span
                   className={`badge ${
                     e.status === "PROCESSED"
-                      ? "bg-emerald-100 text-emerald-700"
+                      ? "bg-emerald-50 text-emerald-700"
                       : e.status === "FAILED"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-slate-100 text-slate-600"
+                        ? "bg-red-50 text-red-700"
+                        : "bg-slate-50 text-slate-600"
                   }`}
                 >
                   {e.status}

@@ -80,7 +80,7 @@ export default async function AutomationsPage() {
             <div key={a.id} className="card card-hover p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500/15 to-fuchsia-500/15 text-brand-600">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-brand-600">
                     <Sparkles className="h-4 w-4" />
                   </div>
                   <div>
@@ -96,9 +96,9 @@ export default async function AutomationsPage() {
                 </div>
               </div>
               <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-                <span className="badge bg-slate-900 text-white">{TRIGGER_LABELS[a.trigger] ?? a.trigger}</span>
+                <span className="badge bg-slate-900 text-white ring-0">{TRIGGER_LABELS[a.trigger] ?? a.trigger}</span>
                 <span className="text-slate-400">if</span>
-                <span className="badge bg-slate-100 text-slate-600">{describeConditions(a.conditions)}</span>
+                <span className="badge bg-slate-50 text-slate-600">{describeConditions(a.conditions)}</span>
                 <ArrowRight className="h-3.5 w-3.5 text-slate-300" />
                 {describeActions(a.actions).map((d, i) => (
                   <span key={i} className="badge bg-brand-50 text-brand-700">
@@ -122,7 +122,7 @@ export default async function AutomationsPage() {
           <h2 className="mb-3 text-sm font-semibold text-slate-700">Run history</h2>
           <ul className="space-y-2.5">
             {runs.map((r) => (
-              <li key={r.id} className="rounded-xl border border-slate-100 p-3 text-sm">
+              <li key={r.id} className="rounded-md border border-slate-100 p-3 text-sm">
                 <div className="flex items-center justify-between gap-2">
                   <span className="truncate font-medium">{r.automation.name}</span>
                   <span className={`badge shrink-0 ${r.status === "SUCCESS" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
