@@ -33,6 +33,7 @@ function HomePage() {
   const pipeline = usePipeline();
   const [portrait, setPortrait] = useState<{ file: File; preview: string } | null>(null);
   const [form, setForm] = useState<TestimonialFormValue>(DEFAULT_FORM_VALUE);
+  const [previewMissing, setPreviewMissing] = useState(false);
   const phase = pipeline.phase;
   const busy = phase.kind === "running";
 
@@ -140,8 +141,10 @@ function HomePage() {
             </div>
           ) : (
             <div className="glass-card overflow-hidden">
-              <div className="relative aspect-[9/16] w-full">
-                <img src={HERO_PREVIEW} alt="Example vertical farmer testimonial frame" className="h-full w-full object-cover" />
+              <div className="relative aspect-[9/16] w-full bg-gradient-to-b from-brand-blue/60 via-panel to-brand-green/30">
+                {previewMissing ? null : (
+                  <img src={HERO_PREVIEW} alt="Example vertical farmer testimonial frame" className="h-full w-full object-cover" onError={() => setPreviewMissing(true)} />
+                )}
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4">
                   <p className="text-xs font-semibold uppercase tracking-wider text-brand-green-light">Example</p>
                   <p className="text-sm text-white/85">Vertical 9:16, mid-torso, natural daylight</p>
