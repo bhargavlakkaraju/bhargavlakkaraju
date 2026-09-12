@@ -62,3 +62,15 @@ bun run typecheck && bun run lint && bun run check:adapted && bun run build
 ```
 
 Deploys go through the Higgsfield website tools (`deploy_website`), which build from the app repo.
+
+## Smoke test
+
+`smoke/home.smoke.mjs` drives the home page at phone and desktop widths with Playwright and checks
+the heading, input tabs, consent checkbox, Gallery link, Generate button and horizontal overflow, then
+hits `/gallery`, `/robots.txt`, `/admin` and `/admin/usage`. Run it against a local dev server
+(`cd app && bun run dev`) because the live `*.higgsfield.app` host answers anonymous requests with a
+platform-level 401 until the visitor is signed in to Higgsfield:
+
+```bash
+npm i -g playwright && node smoke/home.smoke.mjs http://127.0.0.1:3000
+```

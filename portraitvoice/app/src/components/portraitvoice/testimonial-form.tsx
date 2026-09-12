@@ -15,6 +15,7 @@ import { estimateSpeechSeconds } from "@/lib/portraitvoice/estimate";
 import {
   GENDERS,
   LANGUAGES,
+  languageLabel,
   MAX_AUDIO_SECONDS,
   MAX_SCRIPT_CHARS,
   type Gender,
@@ -68,7 +69,7 @@ export function LanguageSelect({ value, onChange, disabled }: { value: LanguageC
   return (
     <Select.Root value={value} onValueChange={(next) => onChange(String(next) as LanguageCode)} disabled={disabled}>
       <Select.Trigger bare render={<SettingTrigger label="Language" start={<Icon size="sm" as={IconLanguages} />} />}>
-        <Select.Value placeholder="Language" />
+        <Select.Value placeholder="Language">{languageLabel(value)}</Select.Value>
       </Select.Trigger>
       <Select.Content {...PICKER_POPUP}>
         {LANGUAGES.map((language) => (
@@ -89,7 +90,7 @@ export function GenderSelect({ value, onChange, disabled }: { value: Gender; onC
   return (
     <Select.Root value={value} onValueChange={(next) => onChange(String(next) as Gender)} disabled={disabled}>
       <Select.Trigger bare render={<SettingTrigger label="Voice" start={<Icon size="sm" as={IconVoice} />} />}>
-        <Select.Value placeholder="Voice" />
+        <Select.Value placeholder="Voice">{GENDER_LABELS[value]}</Select.Value>
       </Select.Trigger>
       <Select.Content {...PICKER_POPUP}>
         {GENDERS.map((gender) => (

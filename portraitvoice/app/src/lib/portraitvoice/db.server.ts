@@ -1,5 +1,4 @@
 import type { D1Database } from "@cloudflare/workers-types";
-import { bindings } from "@/lib/bindings.server";
 import type {
   AiUsageEvent,
   EntryStatus,
@@ -9,9 +8,15 @@ import type {
   UsageSummaryRow,
 } from "./types";
 
-function db(): D1Database {
+/**
+ * `cloudflare:workers` only exists on the deployed Worker. Loading the bindings
+ * module lazily keeps local `vite dev` from crashing at import time, so the
+ * routes render a calm "database unavailable" state instead of a 500.
+ */
+async function db(): Promise<D1Database> {
+  const { bindings } = await import("@/lib/bindings.server").catch(() => ({ bindings: () => ({}) as { DB?: D1Database } }));
   const database = bindings().DB;
-  if (!database) throw new Error("The database is not provisioned for this deployment yet.");
+  if (!database) throw new Error("The database is not available in this environment yet.");
   return database;
 }
 
@@ -33,7 +38,7 @@ export type NewEntry = Pick<
 >;
 
 export async function insertEntry(entry: NewEntry): Promise<TestimonialEntry> {
-  await db()
+  await (await db())
     .prepare(
       `INSERT INTO testimonial_entries (id, status, current_stage, input_mode, language, voice_gender, voice_name, script_text, source_portrait_url, audio_url, audio_seconds, owner_id)
        VALUES (?1, 'processing', 'portrait', ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
@@ -55,7 +60,7 @@ export async function insertEntry(entry: NewEntry): Promise<TestimonialEntry> {
 }
 
 export async function getEntry(id: string): Promise<TestimonialEntry> {
-  const row = await db()
+  const row = await (await db())
     .prepare(`SELECT ${ENTRY_COLUMNS} FROM testimonial_entries WHERE id = ?1`)
     .bind(id)
     .first<TestimonialEntry>();
@@ -86,7 +91,7 @@ export async function updateEntry(id: string, patch: Patch): Promise<Testimonial
   if (keys.length === 0) return getEntry(id);
   const assignments = keys.map((key, index) => `${key} = ?${index + 2}`).join(", ");
   const values = keys.map((key) => patch[key] ?? null);
-  await db()
+  await (await db())
     .prepare(`UPDATE testimonial_entries SET ${assignments} WHERE id = ?1`)
     .bind(id, ...values)
     .run();
@@ -102,7 +107,7 @@ export async function markFailed(id: string, message: string): Promise<void> {
 }
 
 export async function listCompletedEntries(limit = 60): Promise<TestimonialEntry[]> {
-  const { results } = await db()
+  const { results } = await (await db())
     .prepare(
       `SELECT ${ENTRY_COLUMNS} FROM testimonial_entries
        WHERE status = 'completed' AND video_url IS NOT NULL
@@ -114,7 +119,7 @@ export async function listCompletedEntries(limit = 60): Promise<TestimonialEntry
 }
 
 export async function listAllEntries(limit = 200): Promise<TestimonialEntry[]> {
-  const { results } = await db()
+  const { results } = await (await db())
     .prepare(`SELECT ${ENTRY_COLUMNS} FROM testimonial_entries ORDER BY created_at DESC LIMIT ?1`)
     .bind(limit)
     .all<TestimonialEntry>();
@@ -130,7 +135,7 @@ export async function insertUsage(event: {
   unitType: string;
   credits: number;
 }): Promise<void> {
-  await db()
+  await (await db())
     .prepare(
       `INSERT INTO ai_usage_events (id, entry_id, provider, model, stage, units, unit_type, credits)
        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`,
@@ -149,7 +154,7 @@ export async function insertUsage(event: {
 }
 
 export async function listUsageEvents(limit = 500): Promise<AiUsageEvent[]> {
-  const { results } = await db()
+  const { results } = await (await db())
     .prepare(
       `SELECT id, entry_id, provider, model, stage, units, unit_type, credits, created_at, updated_at
        FROM ai_usage_events ORDER BY created_at DESC LIMIT ?1`,
@@ -160,7 +165,7 @@ export async function listUsageEvents(limit = 500): Promise<AiUsageEvent[]> {
 }
 
 export async function summarizeUsage(): Promise<UsageSummaryRow[]> {
-  const { results } = await db()
+  const { results } = await (await db())
     .prepare(
       `SELECT provider, model, stage, COUNT(*) AS events, SUM(units) AS units, SUM(credits) AS credits
        FROM ai_usage_events GROUP BY provider, model, stage ORDER BY credits DESC`,

@@ -19,7 +19,7 @@ export function BrandBar({ active }: { active: "home" | "gallery" }) {
           height={44}
           className="h-9 w-auto rounded-q-300"
         />
-        <span className="truncate text-q-label-lg-semi-bold text-q-text-secondary">Farmer testimonials</span>
+        <span className="hidden truncate text-q-label-lg-semi-bold text-q-text-secondary sm:inline">Farmer testimonials</span>
       </Link>
       <Button
         variant={active === "gallery" ? "brandSoft" : "tertiary"}

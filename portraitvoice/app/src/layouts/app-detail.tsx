@@ -198,7 +198,7 @@ function Hero({ libraryItems, libraryPagination, onUpload }: HeroProps) {
   return (
     <Card
       surface="solid"
-      className="flex flex-col gap-2 rounded-q-600 border border-q-border-subtle p-2 lg:min-h-[680px] lg:flex-row"
+      className="flex flex-col gap-2 rounded-q-600 border border-q-border-subtle p-2 lg:h-[720px] lg:flex-row"
     >
       <SignInModal
         open={pendingSignInUrl != null}
@@ -218,10 +218,10 @@ function Hero({ libraryItems, libraryPagination, onUpload }: HeroProps) {
       >
         <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pr-1 sm:gap-6 lg:pb-32 lg:scroll-pb-32">
           <div className="flex min-w-0 flex-col gap-1">
-            <Typography as="h1" variant="accent-xl-bold" color="primary" className="truncate">
+            <Typography as="h1" variant="accent-xl-bold" color="primary" className="lg:truncate">
               Create a testimonial video
             </Typography>
-            <Typography as="p" variant="body-md-regular" color="secondary" truncate>
+            <Typography as="p" variant="body-md-regular" color="secondary" className="lg:truncate">
               One photo and a testimonial become a vertical talking-head video.
             </Typography>
           </div>
@@ -293,12 +293,12 @@ function Hero({ libraryItems, libraryPagination, onUpload }: HeroProps) {
       <div
         className={
           phase.kind === "idle"
-            ? "relative mx-auto hidden aspect-[9/16] w-full max-w-[380px] shrink-0 lg:block lg:h-full lg:w-auto lg:max-w-none lg:flex-none lg:self-stretch"
-            : "relative mx-auto w-full max-w-[480px] shrink-0 lg:mx-0 lg:h-full lg:w-[380px] lg:max-w-none lg:flex-none"
+            ? "relative hidden shrink-0 lg:flex lg:h-full lg:w-[396px] lg:flex-none lg:items-center lg:justify-center"
+            : "relative mx-auto w-full max-w-[480px] shrink-0 lg:mx-0 lg:flex lg:h-full lg:w-[396px] lg:max-w-none lg:flex-none lg:items-stretch"
         }
       >
         {phase.kind === "running" ? (
-          <WaitingScreen state={phase} className="lg:h-full" />
+          <WaitingScreen state={phase} className="lg:h-full lg:w-full" />
         ) : phase.kind === "done" ? (
           <VideoResult
             videoUrl={phase.videoUrl}
@@ -309,17 +309,17 @@ function Hero({ libraryItems, libraryPagination, onUpload }: HeroProps) {
               setForm(DEFAULT_FORM_VALUE);
               setPortrait(null);
             }}
-            className="h-full"
+            className="h-full w-full"
           />
         ) : phase.kind === "failed" ? (
-          <div className="flex h-full flex-col gap-3">
+          <div className="flex h-full w-full flex-col gap-3">
             <GenerationTile state="failed" failureLabel={phase.message} ratio="portrait" className="min-h-0 flex-1" />
             <Button variant="tertiary" size="md" onClick={pipeline.reset}>
               Try again
             </Button>
           </div>
         ) : (
-          <Media ratio="portrait" rounded="md" className="h-full w-full">
+          <Media ratio={9 / 16} rounded="md" className="max-h-full w-full">
             <Media.Image src={HERO_PREVIEW} alt="Example vertical farmer testimonial frame" />
           </Media>
         )}
