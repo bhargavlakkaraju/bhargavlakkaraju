@@ -1,76 +1,61 @@
-# PortraitVoice
+# PortraitVoice (Syngenta)
 
 AI testimonial video generator for Indian farmers and farmer ambassadors: one portrait photo plus a
-testimonial becomes a vertical 9:16 talking-head video with lip-sync. Built for Syngenta's farmer
-programme.
+testimonial becomes a vertical 9:16 talking-head video with audio-driven lip-sync.
 
-Built as a **Higgsfield app** (TanStack Start + React 19, SSR, Cloudflare Worker) using Higgsfield's
-`fnf` SDK for every generation and Cloudflare D1 for persistence. Live at
-https://portraitvoice.higgsfield.app. This folder mirrors the Higgsfield app repository
-(`app/` is the project root; the repo is bun-only).
+Stack: TanStack Start (React 19, SSR) on Vite 8 + Nitro, Tailwind CSS v4, shadcn-style components,
+Vercel Blob for files, Neon / Vercel Postgres for data. Deploys to Vercel with zero extra config.
 
-## Pipeline (three stages, each a server function the client polls every ~6 s)
+## Pipeline (three stages; each is a server function the client polls every ~6 s)
 
-| Stage | Model (Higgsfield job set) | Notes |
+| Stage | Provider / model | What happens |
 | --- | --- | --- |
-| Portrait | `nano_banana_2` (Nano Banana 2 image edit) | Re-frames the photo to a 9:16 rural UGC composition, identity preserved |
-| Voice | uploaded recording, or spoken natively by the video model | Text and note modes: the video model speaks the script in the chosen language with a female or male voice. Audio mode: the recording is used as-is |
-| Video | `grok_video_v15` (Grok Video 1.5) for clips up to 15 s; `seedance_2_5` for 16 to 30 s | Grok gets the reframed portrait as `start_image` and the recording as `audio_references`, which drives the lips |
+| Portrait | xAI `grok-imagine-image-2.0` (`POST /v1/images/edits`) | Re-frames the photo into a 9:16 rural UGC composition; result mirrored to Blob |
+| Voice | ElevenLabs `eleven_v3` | Text and note modes are synthesised (speed 0.94, standard female/male voice by language). Audio mode uses the recording as-is |
+| Video | xAI `grok-imagine-video-1.5` (`/v1/videos/generations`, `/v1/videos/extensions`) then sync.so `lipsync-2-pro` | Grok animates the portrait for the audio length (15 s clip plus 10 s extensions), sync.so re-times the mouth to the real audio |
 
-Handwritten notes are transcribed by the platform LLM rail (`https://fnf.internal/llm`) with the
-original language kept; the text is editable before generation (max 700 characters).
+Handwritten notes are transcribed by xAI `grok-4.6` (vision) with the original language kept; the
+text is editable before generation (max 700 characters). Testimonials are capped at 60 seconds of
+speech (about six Grok extensions).
 
-Server functions: `createTestimonialEntry`, `submitTestimonialJob`, `checkTestimonialJob`,
-`getTestimonialJobResult`, `extractNoteText`, `listGalleryEntries`, `listAdminEntries`,
-`listAdminUsage` in `app/src/lib/portraitvoice/pipeline.functions.ts`. The browser orchestrates the
-stages in `app/src/lib/portraitvoice/use-pipeline.ts`.
+`XAI_REFERENCE_AUDIO=true` (trusted xAI partner accounts only) passes the audio straight into Grok
+as a reference clip for testimonials up to 15 s and skips the sync.so step.
+
+Server functions live in `src/server/fns.ts`: `uploadMedia`, `extractNoteText`,
+`createTestimonialEntry`, `submitTestimonialJob`, `checkTestimonialJob`, `getTestimonialJobResult`,
+`listGalleryEntries`, `listAdminEntries`, `listAdminUsage`. Provider clients and stage logic are in
+`src/lib/services/` and `src/lib/pipeline/`; the browser orchestration is `src/lib/use-pipeline.ts`.
 
 ## Routes
 
-- `/` generator (mobile-first, sticky 9:16 preview on desktop, waiting screen with progress, ETA,
-  stages and farming facts, finished video with download)
-- `/gallery` public grid of completed videos
-- `/admin` all entries; `/admin/usage` AI credit usage grouped by provider, model and stage.
-  Internal only: not linked anywhere, `robots.txt` disallows `/admin`, `noindex` meta. There is
-  **no auth** on these screens beyond URL obscurity.
+- `/` generator: single screen, mobile-first, sticky 9:16 preview aside on desktop, full waiting
+  screen (stage, percentage, elapsed and remaining time, three stages, rotating farming facts),
+  finished video with download.
+- `/gallery` public grid of completed videos.
+- `/admin` all entries; `/admin/usage` AI credit usage grouped by provider, model and stage with
+  totals. Internal only: never linked, `robots.txt` disallows `/admin`, `noindex` meta. There is
+  no login; URL obscurity is the only protection.
 
-## Persistence
+## Setup
 
-`app/migrations/0002_portraitvoice.sql` creates `testimonial_entries` and `ai_usage_events` in D1
-(SQLite). Credits recorded per event come from the SDK cost estimate for the submitted job (Higgsfield
-display credits). LLM extraction has no published price on the platform rail, so it is logged with
-token units and zero credits.
+1. Create a Neon (or Vercel Postgres) database and a Vercel Blob store.
+2. Copy `.env.example` to `.env` and fill `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, `XAI_API_KEY`,
+   `ELEVENLABS_API_KEY`, `SYNC_API_KEY`.
+3. `npm install`, then `npm run db:migrate` (applies `db/migrations/*.sql`).
+4. `npm run dev` for local work; `npm run typecheck` and `npm run test:smoke` before shipping.
 
-## Platform constraints to know
+On Vercel, set the same variables in the project settings (link the Blob store and Postgres
+integration and they are injected automatically), then deploy from this folder as the root
+directory. Nitro selects the Vercel preset on its own.
 
-- Higgsfield apps require **Sign in with Higgsfield** before any generation; generations are billed
-  to the signed-in visitor's credits and each stage asks for the host approval dialog.
-- Higgsfield's pre-deploy code scan rejects third-party brand marks, so the deployed app ships a
-  neutral PortraitVoice mark (`app/public/assets/brand/portraitvoice-logo.svg`) in the Syngenta
-  blue/green palette instead of the Syngenta wordmark.
-- Clip length is model-bound: Grok Video 1.5 renders 2 to 15 s, Seedance 2.5 up to 30 s, so the UI
-  blocks testimonials that would run longer than 30 s (roughly 280 Hindi characters).
-- The Higgsfield fnf catalog does not expose a standalone TTS job, which is why typed text is spoken
-  by the video model rather than a separate voice model.
+## Credits
 
-## Develop
+`src/lib/usage-rates.ts` holds the per-unit rates written to `ai_usage_events`. One credit is one US
+cent of list price: portrait 4 per image, note extraction 0.3 per 1k tokens, voice 3 per 1k chars,
+video 8 per second, lip-sync 7.5 per second.
 
-```bash
-cd portraitvoice/app
-bun install
-bun run typecheck && bun run lint && bun run check:adapted && bun run build
-```
+## Notes
 
-Deploys go through the Higgsfield website tools (`deploy_website`), which build from the app repo.
-
-## Smoke test
-
-`smoke/home.smoke.mjs` drives the home page at phone and desktop widths with Playwright and checks
-the heading, input tabs, consent checkbox, Gallery link, Generate button and horizontal overflow, then
-hits `/gallery`, `/robots.txt`, `/admin` and `/admin/usage`. Run it against a local dev server
-(`cd app && bun run dev`) because the live `*.higgsfield.app` host answers anonymous requests with a
-platform-level 401 until the visitor is signed in to Higgsfield:
-
-```bash
-npm i -g playwright && node smoke/home.smoke.mjs http://127.0.0.1:3000
-```
+- `public/syngenta-logo.svg` is a stand-in wordmark. Replace it with the official Syngenta file.
+- Grok Imagine Video's public API accepts reference audio only for approved partners, which is why
+  sync.so does the audio-driven lip-sync in the default configuration.

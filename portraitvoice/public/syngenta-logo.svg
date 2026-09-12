@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="56" viewBox="0 0 220 56" role="img" aria-label="Syngenta">
+  <rect width="220" height="56" rx="8" fill="#000"/>
+  <text x="14" y="38" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700" letter-spacing="-0.5" fill="#0B2E6A">syngenta</text>
+  <g transform="translate(180 10)">
+    <path d="M2 30 C 2 12, 16 4, 30 2 C 30 16, 22 30, 2 30 Z" fill="#78BE20"/>
+    <path d="M4 28 C 12 20, 20 12, 28 4" stroke="#000" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>
