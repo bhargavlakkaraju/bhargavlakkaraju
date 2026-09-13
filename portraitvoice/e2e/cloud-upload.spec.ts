@@ -20,7 +20,7 @@ test("production photo upload reaches provider without submitting a paid job", a
     const m = built.match(
       new RegExp('id: "([a-f0-9]+)",\\s+name: "' + name + '"'),
     );
-    if (!m) throw new Error("Missing server function");
+    if (!m?.[1]) throw new Error("Missing server function");
     return m[1];
   };
   const upload = id("uploadMedia"),
