@@ -9,7 +9,7 @@ export function isWriteConflict(error: unknown) {
   return (
     error instanceof BlobPreconditionFailedError ||
     (error instanceof Error &&
-      /already exists|precondition/i.test(error.message))
+      /already exists|precondition|conflicting operation/i.test(error.message))
   );
 }
 export async function readCloudJson<T>(
@@ -18,6 +18,8 @@ export async function readCloudJson<T>(
   const result = await get(cloudPath(name), {
     access: "private",
     useCache: false,
+    // Compression weakens HTTP ETags, which cannot be used for conditional writes.
+    headers: { "Accept-Encoding": "identity" },
   });
   if (!result) return null;
   if (!result.stream) throw new Error("Could not read saved video state.");

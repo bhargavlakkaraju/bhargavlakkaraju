@@ -52,9 +52,13 @@ Model IDs and media schemas were checked against the authenticated Higgsfield CL
 ## Published release — 14 September 2026 (IST)
 
 - Production: https://portraitvoice.vercel.app
-- Deployment: `dpl_3PTqUZLrC6HhAECLpkFvzPmiie9N`, Vercel READY.
+- Deployment: `dpl_D5RABAYzB9X1KedkWd7ofn4Yfrc3`, Vercel READY.
 - Typecheck and four unit tests passed. Linux production build passed and executed the bundled FFmpeg binary successfully.
 - All six browser tests passed on the public URL (desktop and mobile): forms, consent, ambience preview, example playback, gallery, admin pages, completed-job recovery and download.
 - Cloud persistence passed six concurrent updates and three exclusive lease users. A 5,488,042-byte signed private upload passed exact byte readback and receipt-tampering rejection.
 - Existing entry and workflow JSON was migrated to private cloud storage and compared on readback. Completed-job recovery reused the existing video.
 - No additional paid video generation was run for publication. The previously approved HeyGen/Kanika example is included; automatic generation remains the documented Higgsfield pipeline.
+
+The final production upload check passed: a 5,488,042-byte portrait uploaded from a real browser directly to private storage, then reached Higgsfield and registered successfully. The test blocked the subsequent paid generation request before it reached the server. No extra video-generation credits were spent. Large-record concurrent storage checks passed after requesting uncompressed reads to preserve strong revision tags and retrying both conditional-write conflict responses.
+
+At publication the account API returned 0.48 Higgsfield credits; a top-up is required for new video generation.

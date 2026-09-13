@@ -30,7 +30,25 @@ import { MAX_SCRIPT_CHARS } from "@/lib/pipeline/voice";
 
 function friendly(err: unknown): never {
   const e = toFriendlyError(err);
-  console.error("[portraitvoice]", e.message);
+  console.error(
+    "[portraitvoice]",
+    e.message,
+    err instanceof Error
+      ? {
+          type: err.name,
+          detail: err.message
+            .replace(/https?:\/\/\S+/g, "[remote URL]")
+            .replace(
+              /(?:Bearer\s+|vercel_blob_rw_|hf_)[A-Za-z0-9_.-]+/g,
+              "[credential]",
+            ),
+          code: (err.cause as { code?: string } | undefined)?.code,
+          frame: err.stack
+            ?.split("\n")
+            .find((line) => line.trim().startsWith("at ")),
+        }
+      : {},
+  );
   throw new Error(e.friendly);
 }
 
