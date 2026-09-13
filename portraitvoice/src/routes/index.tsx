@@ -1,159 +1,344 @@
-import { useCallback, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ImagePlus, Loader2, Sparkles, X } from "lucide-react";
-import { toast } from "sonner";
+import { useEffect, useState } from "react";
+import {
+  ArrowRight,
+  AudioLines,
+  FileImage,
+  Type,
+  ShieldCheck,
+  AlertCircle,
+  Sparkles,
+  Check,
+  LoaderCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { DEFAULT_FORM_VALUE, TestimonialForm, type TestimonialFormValue } from "@/components/pv/testimonial-form";
-import { VideoResult } from "@/components/pv/video-result";
-import { WaitingScreen } from "@/components/pv/waiting-screen";
-import { extractNoteText } from "@/server/fns";
-import { MAX_AUDIO_SECONDS } from "@/lib/types";
-import { plannedSeconds, uploadFile, usePipeline } from "@/lib/use-pipeline";
-import { cn } from "@/lib/utils";
-import { SITE_URL } from "./__root";
-
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { UploadZone } from "@/components/upload-zone";
+import { AmbienceControl } from "@/components/ambience-control";
+import { PortraitPreview } from "@/components/preview";
+import { GenerationScreen } from "@/components/generation-screen";
+import {
+  useTestimonialPipeline,
+  extractTextFromNote,
+} from "@/lib/client/pipeline";
+import { LANGUAGES } from "@/lib/languages";
+import type { InputMode, VoiceGender } from "@/lib/types";
+import { toast } from "sonner";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Create a testimonial video · PortraitVoice by Syngenta" },
-      { name: "description", content: "Upload one portrait and a testimonial in Hindi, Tamil, Telugu or seven more languages, and get a vertical lip-synced talking-head video." },
-      { property: "og:title", content: "Create a testimonial video · PortraitVoice" },
-      { property: "og:description", content: "One photo and a testimonial become a vertical talking-head video for farmers and farmer ambassadors." },
-      { property: "og:url", content: `${SITE_URL}/` },
+      { title: "PortraitVoice by Syngenta — Create a testimonial video" },
+      {
+        name: "description",
+        content:
+          "Turn a portrait and your own words into a natural testimonial video. Ten Indian languages. Text, handwritten notes, or your own voice.",
+      },
     ],
-    links: [{ rel: "canonical", href: `${SITE_URL}/` }],
   }),
-  component: HomePage,
+  component: Home,
 });
-
-const HERO_PREVIEW = "/assets/hero-preview.jpg";
-
-function HomePage() {
-  const pipeline = usePipeline();
-  const [portrait, setPortrait] = useState<{ file: File; preview: string } | null>(null);
-  const [form, setForm] = useState<TestimonialFormValue>(DEFAULT_FORM_VALUE);
-  const [previewMissing, setPreviewMissing] = useState(false);
-  const phase = pipeline.phase;
-  const busy = phase.kind === "running";
-
-  const hasTestimonial = form.mode === "audio" ? form.audioFile != null : form.scriptText.trim().length > 0;
-  const planned = plannedSeconds(form, null);
-  const canGenerate = portrait != null && hasTestimonial && form.consent && planned <= MAX_AUDIO_SECONDS && !busy;
-
-  const handleExtractNote = useCallback(async (file: File) => {
-    const url = await uploadFile(file, "image");
-    const result = await extractNoteText({ data: { imageUrl: url } });
-    if (!result.ok) throw new Error(result.error.message);
-    return result.value.text;
-  }, []);
-
-  const choosePortrait = (file: File | undefined) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please choose a JPG, PNG or WebP photo.");
+function Home() {
+  const [portrait, setPortrait] = useState<File | null>(null),
+    [preview, setPreview] = useState<string | null>(null),
+    [mode, setMode] = useState<InputMode>("text"),
+    [script, setScript] = useState(""),
+    [language, setLanguage] = useState("hi"),
+    [gender, setGender] = useState<VoiceGender>("female"),
+    [consent, setConsent] = useState(false),
+    [ambience, setAmbience] = useState<boolean | null>(null),
+    [note, setNote] = useState<File | null>(null),
+    [audio, setAudio] = useState<File | null>(null),
+    [reading, setReading] = useState(false),
+    [confirmed, setConfirmed] = useState(false),
+    [extraction, setExtraction] = useState<{
+      entryId: string;
+      token: string;
+    } | null>(null);
+  const { state, generate, reset, resume } = useTestimonialPipeline();
+  useEffect(() => {
+    if (!portrait) {
+      setPreview(null);
       return;
     }
-    if (portrait) URL.revokeObjectURL(portrait.preview);
-    setPortrait({ file, preview: URL.createObjectURL(file) });
-  };
-
-  const handleGenerate = () => {
-    if (!portrait) return toast.error("Upload a portrait photo first.");
-    if (!hasTestimonial) return toast.error(form.mode === "audio" ? "Upload a voice recording." : "Add the testimonial text.");
-    if (!form.consent) return toast.error("Please confirm the farmer's consent.");
-    if (planned > MAX_AUDIO_SECONDS) return toast.error(`Keep the testimonial under ${MAX_AUDIO_SECONDS} seconds.`);
-    void pipeline.start({
-      portraitFile: portrait.file,
-      mode: form.mode,
-      language: form.language,
-      gender: form.gender,
-      scriptText: form.scriptText.trim(),
-      audioFile: form.audioFile,
-    });
-  };
-
-  const resetAll = () => {
-    pipeline.reset();
-    setForm(DEFAULT_FORM_VALUE);
-    if (portrait) URL.revokeObjectURL(portrait.preview);
-    setPortrait(null);
-  };
-
+    const url = URL.createObjectURL(portrait);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [portrait]);
+  const ready = Boolean(
+    portrait &&
+    consent &&
+    (mode === "audio"
+      ? audio
+      : script.trim() &&
+        script.length <= 700 &&
+        (mode === "text" || (confirmed && extraction))),
+  );
+  async function readNote() {
+    if (!note) return;
+    setReading(true);
+    try {
+      const result = await extractTextFromNote(note, language);
+      setScript(result.text);
+      setExtraction(result);
+      setConfirmed(false);
+      toast.success(
+        result.text.length > 700
+          ? "Your note is longer than 700 characters. Please shorten it before confirming."
+          : "Your note is ready to review.",
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not read this note.");
+    } finally {
+      setReading(false);
+    }
+  }
+  if (
+    state.phase === "uploading" ||
+    state.phase === "running" ||
+    state.phase === "done"
+  )
+    return <GenerationScreen state={state} onReset={reset} />;
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 pb-10 pt-4 sm:px-6 sm:pt-8">
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
-        {/* Generator. On phones the waiting screen or result replaces it. */}
-        <Card className={cn(busy || phase.kind === "done" ? "hidden lg:block" : "block")}>
-          <CardContent className="flex flex-col gap-5">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Create a testimonial video</h1>
-              <p className="mt-1 text-sm text-white/60">One photo and a testimonial become a vertical talking-head video.</p>
+    <main className="generator-shell">
+      <section className="generator-main">
+        <div className="intro">
+          <h1>Create a testimonial video.</h1>
+          <p>One photo. Your words. Brought to life.</p>
+        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!ready || !portrait) return;
+            void generate({
+              portrait,
+              inputMode: mode,
+              language,
+              gender: mode === "audio" ? null : gender,
+              scriptText: mode === "audio" ? null : script,
+              audioFile: mode === "audio" ? audio : null,
+              extraction: mode === "note" ? extraction : null,
+              consent: true,
+              ambience: ambience ?? mode !== "audio",
+            });
+          }}
+          className="generator-form"
+        >
+          <div className="form-section">
+            <div className="section-label">
+              <span className="step-number">1</span>
+              <h2>Your portrait</h2>
             </div>
-
-            <div className="flex flex-col gap-1.5">
-              <span className="text-sm font-medium text-white/85">Portrait photo</span>
-              {portrait ? (
-                <div className="flex items-center gap-3 rounded-xl border border-line bg-black/20 p-2">
-                  <img src={portrait.preview} alt="Selected portrait" className="size-16 rounded-lg object-cover" />
-                  <div className="min-w-0 flex-1 text-sm">
-                    <p className="truncate font-medium">{portrait.file.name}</p>
-                    <p className="text-xs text-white/50">Re-framed to 9:16 automatically</p>
-                  </div>
-                  <button type="button" aria-label="Remove portrait" className="rounded-md p-1 text-white/60 hover:bg-white/10 hover:text-white" disabled={busy} onClick={() => setPortrait(null)}>
-                    <X className="size-4" />
-                  </button>
-                </div>
-              ) : (
-                <label htmlFor="portrait-file" className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-white/20 bg-black/20 px-3 py-6 text-center transition hover:border-brand-green/60 hover:bg-white/5">
-                  <input id="portrait-file" type="file" accept="image/*" className="sr-only" disabled={busy} onChange={(event) => choosePortrait(event.target.files?.[0])} />
-                  <ImagePlus className="size-6 text-brand-green-light" />
-                  <span className="text-sm font-medium">Upload portrait</span>
-                  <span className="text-xs text-white/50">Clear, front-facing photo of the farmer</span>
+            <UploadZone
+              kind="portrait"
+              file={portrait}
+              onChange={setPortrait}
+              preview={preview}
+            />
+          </div>
+          <div className="form-section">
+            <div className="section-label">
+              <span className="step-number">2</span>
+              <h2>Your story</h2>
+            </div>
+            <Tabs
+              value={mode}
+              onValueChange={(v) => {
+                setMode(v as InputMode);
+                setAmbience(null);
+              }}
+            >
+              <TabsList aria-label="Testimonial input">
+                <TabsTrigger value="text" disabled={reading}>
+                  <Type size={16} /> Text
+                </TabsTrigger>
+                <TabsTrigger value="note" disabled={reading}>
+                  <FileImage size={16} /> Note photo
+                </TabsTrigger>
+                <TabsTrigger value="audio" disabled={reading}>
+                  <AudioLines size={16} /> Audio
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            {mode === "note" && (
+              <div className="note-input">
+                <UploadZone
+                  kind="note"
+                  disabled={reading}
+                  file={note}
+                  onChange={(f) => {
+                    setNote(f);
+                    setConfirmed(false);
+                    setExtraction(null);
+                    setScript("");
+                  }}
+                />
+                <Button
+                  variant="secondary"
+                  onClick={() => void readNote()}
+                  disabled={!note || reading}
+                >
+                  {reading ? (
+                    <LoaderCircle size={15} className="spin" />
+                  ) : (
+                    <Sparkles size={15} />
+                  )}{" "}
+                  {reading ? "Reading your note…" : "Read note"}
+                </Button>
+              </div>
+            )}
+            {mode === "audio" ? (
+              <div className="audio-input">
+                <UploadZone kind="audio" file={audio} onChange={setAudio} />
+                {audio && <AudioPreview file={audio} />}
+                <p className="field-hint">
+                  Your original voice will be used in the video.
+                </p>
+              </div>
+            ) : (
+              <div className="script-wrap">
+                <label htmlFor="testimonial" className="sr-only">
+                  Your testimonial
                 </label>
-              )}
-            </div>
-
-            <TestimonialForm value={form} onChange={setForm} onExtractNote={handleExtractNote} disabled={busy} />
-
-            {phase.kind === "failed" ? (
-              <p className="rounded-xl border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm text-red-200" role="alert">{phase.message}</p>
-            ) : null}
-
-            <Button size="lg" className="w-full" disabled={!canGenerate} onClick={handleGenerate}>
-              {busy ? <Loader2 className="animate-spin" /> : <Sparkles />}
-              {busy ? "Creating…" : "Generate video"}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Preview aside: sticky 9:16 example on desktop, waiting screen or result while working. */}
-        <aside className={cn("w-full lg:sticky lg:top-20", phase.kind === "idle" ? "hidden lg:block" : "block")}>
-          {phase.kind === "running" ? (
-            <WaitingScreen state={phase} />
-          ) : phase.kind === "done" ? (
-            <VideoResult videoUrl={phase.videoUrl} posterUrl={phase.portraitUrl} onCreateAnother={resetAll} className="fade-up" />
-          ) : phase.kind === "failed" ? (
-            <div className="glass-card flex flex-col gap-3 p-5">
-              <p className="text-sm font-semibold">The video could not be created</p>
-              <p className="text-sm text-white/70">{phase.message}</p>
-              <Button variant="secondary" onClick={pipeline.reset}>Try again</Button>
-            </div>
-          ) : (
-            <div className="glass-card overflow-hidden">
-              <div className="relative aspect-[9/16] w-full bg-gradient-to-b from-brand-blue/60 via-panel to-brand-green/30">
-                {previewMissing ? null : (
-                  <img src={HERO_PREVIEW} alt="Example vertical farmer testimonial frame" className="h-full w-full object-cover" onError={() => setPreviewMissing(true)} />
-                )}
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-brand-green-light">Example</p>
-                  <p className="text-sm text-white/85">Vertical 9:16, mid-torso, natural daylight</p>
+                <Textarea
+                  id="testimonial"
+                  disabled={reading}
+                  rows={4}
+                  maxLength={700}
+                  placeholder={
+                    mode === "note"
+                      ? "Read your note, then review the words here."
+                      : language === "hi"
+                        ? "अपनी कहानी यहाँ लिखें…"
+                        : "Share your experience in your own words…"
+                  }
+                  value={script}
+                  onChange={(e) => {
+                    setScript(e.target.value);
+                    if (mode === "note") setConfirmed(false);
+                  }}
+                />
+                <div className="textarea-footer">
+                  <span>
+                    {mode === "note"
+                      ? "Check the words before continuing."
+                      : "Write in your selected language"}
+                  </span>
+                  <span
+                    className={script.length === 700 ? "text-brand-leaf" : ""}
+                  >
+                    {script.length}
+                    <span> / 700</span>
+                  </span>
                 </div>
               </div>
+            )}
+            {mode === "note" && script && (
+              <label className="check-line note-confirm">
+                <Checkbox
+                  checked={confirmed}
+                  onCheckedChange={(v) => setConfirmed(v === true)}
+                />
+                <span>I have checked the extracted text.</span>
+              </label>
+            )}
+            <div className="preferences">
+              <div className="language-field">
+                <label htmlFor="language">Language</label>
+                <Select
+                  id="language"
+                  disabled={reading}
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                >
+                  {LANGUAGES.map((l) => (
+                    <option key={l.code} value={l.code}>
+                      {l.native}
+                      {l.code === "en" ? "" : ` · ${l.label}`}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              {mode !== "audio" && (
+                <fieldset className="gender-field">
+                  <legend>Voice</legend>
+                  <div className="gender-toggle">
+                    {(["female", "male"] as const).map((g) => (
+                      <button
+                        type="button"
+                        key={g}
+                        aria-pressed={gender === g}
+                        onClick={() => setGender(g)}
+                        className={gender === g ? "selected" : ""}
+                      >
+                        {g === "female" ? "Female" : "Male"}
+                        {gender === g && <Check size={13} />}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
             </div>
-          )}
-        </aside>
-      </div>
+            <AmbienceControl
+              key={mode}
+              enabled={ambience ?? mode !== "audio"}
+              onChange={setAmbience}
+            />
+          </div>
+          <div className="form-bottom">
+            <label className="check-line">
+              <Checkbox
+                checked={consent}
+                onCheckedChange={(v) => setConsent(v === true)}
+                aria-label="Consent to create and publicly share this AI video"
+              />
+              <span>
+                I have permission to create this AI video and share the photo,
+                voice and testimonial in the public gallery.
+              </span>
+            </label>
+            {state.error && (
+              <div role="alert" className="error-banner">
+                <AlertCircle size={18} />
+                <div>
+                  <strong>We couldn’t finish your video</strong>
+                  <p>{state.error}</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void resume()}
+                  >
+                    Resume existing request
+                  </Button>
+                </div>
+              </div>
+            )}
+            <Button
+              type="submit"
+              size="lg"
+              className="generate-button"
+              disabled={!ready || reading}
+            >
+              <Sparkles size={18} /> Create my video <ArrowRight size={19} />
+            </Button>
+            <p className="privacy-note">
+              <ShieldCheck size={13} /> No sign-in needed
+            </p>
+          </div>
+        </form>
+      </section>
+      <PortraitPreview image={preview} />
     </main>
   );
+}
+function AudioPreview({ file }: { file: File }) {
+  const [url, setUrl] = useState("");
+  useEffect(() => {
+    const src = URL.createObjectURL(file);
+    setUrl(src);
+    return () => URL.revokeObjectURL(src);
+  }, [file]);
+  return <audio src={url} controls className="audio-preview" />;
 }

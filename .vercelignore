@@ -1,0 +1,9 @@
+**/.data/**
+**/.env*
+**/node_modules/**
+**/.vercel/**
+**/work/**
+**/test-results/**
+**/playwright-report/**
+**/dist/**
+**/.git/**

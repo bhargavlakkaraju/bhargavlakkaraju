@@ -1,61 +1,83 @@
-# PortraitVoice (Syngenta)
+# PortraitVoice by Syngenta
 
-AI testimonial video generator for Indian farmers and farmer ambassadors: one portrait photo plus a
-testimonial becomes a vertical 9:16 talking-head video with audio-driven lip-sync.
+A standalone, server-rendered portrait-to-testimonial generator powered by Higgsfield. The existing Syngenta assets were recovered from the original unfinished project; that project was preserved.
 
-Stack: TanStack Start (React 19, SSR) on Vite 8 + Nitro, Tailwind CSS v4, shadcn-style components,
-Vercel Blob for files, Neon / Vercel Postgres for data. Deploys to Vercel with zero extra config.
+## Run
 
-## Pipeline (three stages; each is a server function the client polls every ~6 s)
+Requires Node 22.12+ (tested with Node 24), npm, and the authenticated Higgsfield CLI on the server.
 
-| Stage | Provider / model | What happens |
-| --- | --- | --- |
-| Portrait | xAI `grok-imagine-image-2.0` (`POST /v1/images/edits`) | Re-frames the photo into a 9:16 rural UGC composition; result mirrored to Blob |
-| Voice | ElevenLabs `eleven_v3` | Text and note modes are synthesised (speed 0.94, standard female/male voice by language). Audio mode uses the recording as-is |
-| Video | xAI `grok-imagine-video-1.5` (`/v1/videos/generations`, `/v1/videos/extensions`) then sync.so `lipsync-2-pro` | Grok animates the portrait for the audio length (15 s clip plus 10 s extensions), sync.so re-times the mouth to the real audio |
+```sh
+npm ci
+higgsfield account status
+npm run dev
+```
 
-Handwritten notes are transcribed by xAI `grok-4.6` (vision) with the original language kept; the
-text is editable before generation (max 700 characters). Testimonials are capped at 60 seconds of
-speech (about six Grok extensions).
+Open http://localhost:3000. The server reads the owner's existing CLI session using `higgsfield auth token` in memory, caches it for 60 seconds, and never exposes it to the client. Alternatively configure `HIGGSFIELD_API_KEY` in a private `.env`. An expired session requires the administrator to run `higgsfield auth login` on the host.
 
-`XAI_REFERENCE_AUDIO=true` (trusted xAI partner accounts only) passes the audio straight into Grok
-as a reference clip for testimonials up to 15 s and skips the sync.so step.
+```sh
+npm run typecheck
+npm run test:unit
+npm run test:e2e
+npm run build
+npm start
+```
 
-Server functions live in `src/server/fns.ts`: `uploadMedia`, `extractNoteText`,
-`createTestimonialEntry`, `submitTestimonialJob`, `checkTestimonialJob`, `getTestimonialJobResult`,
-`listGalleryEntries`, `listAdminEntries`, `listAdminUsage`. Provider clients and stage logic are in
-`src/lib/services/` and `src/lib/pipeline/`; the browser orchestration is `src/lib/use-pipeline.ts`.
+The Playwright config uses installed Google Chrome. For environments without Chrome, install Playwright Chromium and remove `channel: 'chrome'`. The local production server is `server.mjs`, serving the built SSR handler and static files. It defaults to localhost; set `HOST=0.0.0.0` only when preparing an intentional public deployment.
 
-## Routes
+## Generation
 
-- `/` generator: single screen, mobile-first, sticky 9:16 preview aside on desktop, full waiting
-  screen (stage, percentage, elapsed and remaining time, three stages, rotating farming facts),
-  finished video with download.
-- `/gallery` public grid of completed videos.
-- `/admin` all entries; `/admin/usage` AI credit usage grouped by provider, model and stage with
-  totals. Internal only: never linked, `robots.txt` disallows `/admin`, `noindex` meta. There is
-  no login; URL obscurity is the only protection.
+| Stage          | Provider / model                                  | Behavior                                                             |
+| -------------- | ------------------------------------------------- | -------------------------------------------------------------------- |
+| Portrait       | Higgsfield / Seedream 4.5                         | Calm, front-facing 9:16 interview close-up; hands outside frame       |
+| Read note      | Higgsfield / GPT-5 vision (`llm_text`)            | Original-language transcription; author edits and confirms           |
+| Voice          | Higgsfield / Text to Speech V2, ElevenLabs engine | Standard gender-matched preset; original script is spoken            |
+| Video          | Higgsfield / Grok Video 1.5                       | Relaxed interview: gentle breathing and small irregular posture adjustments |
+| Final lip-sync | Higgsfield / Sync Lipsync 3                       | Exact full recording drives the mouth; extends motion with loop mode |
 
-## Setup
+Grok rejects combining a start frame and audio references. Consequently the video stage uses Grok for movement and Sync for audio-driven lip-sync. Uploaded recordings skip synthesis and are not trimmed; non-MP3 inputs are transcoded only for compatibility. Both server and browser measure audio duration. Maximums are 700 text characters, 15 MB per image, and 30 MB / 180 seconds per recording.
 
-1. Create a Neon (or Vercel Postgres) database and a Vercel Blob store.
-2. Copy `.env.example` to `.env` and fill `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, `XAI_API_KEY`,
-   `ELEVENLABS_API_KEY`, `SYNC_API_KEY`.
-3. `npm install`, then `npm run db:migrate` (applies `db/migrations/*.sql`).
-4. `npm run dev` for local work; `npm run typecheck` and `npm run test:smoke` before shipping.
+The motion prompt allows relaxed shoulders, gentle visible breathing and a small irregular posture adjustment, with moments of rest. Large gestures, repeated swaying and camera movement remain excluded. Sync adds speech afterward. These instructions need visual review on each generated output; a successful render alone does not establish realistic motion.
 
-On Vercel, set the same variables in the project settings (link the Blob store and Postgres
-integration and they are injected automatically), then deploy from this folder as the root
-directory. Nitro selects the Vercel preset on its own.
+Long testimonials use the same short motion base in Sync's loop mode. The audio stays complete, but gestures/background motion may repeat. A native speaker should approve pronunciation and mouth movement before campaign release.
 
-## Credits
+All ten requested language options are present: Hindi, Bengali, Tamil, Telugu, Kannada, Marathi, Gujarati, Punjabi, Malayalam, English. Write in the chosen language; selecting a language does not translate the script. The current Higgsfield catalog exposes preset gender but no dependable regional-accent metadata, so Maya / Arthur are multilingual defaults, not verified native regional voices. `src/lib/voices.ts` holds standard-preset overrides. No voice cloning or voice picker is exposed. Cross-language quality still needs native-speaker acceptance; the engine version behind Higgsfield's ElevenLabs selector is provider controlled.
 
-`src/lib/usage-rates.ts` holds the per-unit rates written to `ai_usage_events`. One credit is one US
-cent of list price: portrait 4 per image, note extraction 0.3 per 1k tokens, voice 3 per 1k chars,
-video 8 per second, lip-sync 7.5 per second.
+The example portrait is a fictional AI-generated person, clearly labeled in the preview. It is not a real farmer endorsement. Test scripts use an explicitly identified technical-test message.
 
-## Notes
+## White interface and outdoor ambience
 
-- `public/syngenta-logo.svg` is a stand-in wordmark. Replace it with the official Syngenta file.
-- Grok Imagine Video's public API accepts reference audio only for approved partners, which is why
-  sync.so does the audio-driven lip-sync in the default configuration.
+The white interface uses a compact two-step form, minimal guidance, an optional sound preview, and a playable 9:16 example on desktop. Gallery, progress, results and internal pages share the same light visual language. Text and note modes start with outdoor ambience on; uploaded recordings start with it off so an existing environment recording is not doubled. The user can change the setting before generation.
+
+`src/lib/ambience.ts` mixes the bundled field bed after lip-sync, ducks it beneath speech and fades its edges. Audio mixing and final muxing are separate to preserve complete speech on short clips. The original video packets are copied. Existing videos are unchanged. Retries reuse a persisted final upload when available. FFmpeg and `public/audio/outdoor-ambience.mp3` must be included on the server; the normal source package contains both the asset and the FFmpeg dependency.
+
+`public/demo-ugc.mp4` is the separate HeyGen motion audition with the user-approved Kanika Hindi audio and the same ambience mix. It is a fictional AI speaker and a neutral demonstration, not a product endorsement. The app's automatic generation pipeline remains Higgsfield; connector authentication does not configure a standalone HeyGen API key. Kanika/HeyGen integration into the generation backend is not claimed by this UI update. The sound source and processing notes are in `public/audio/outdoor-ambience.json`.
+
+## Persistence and recovery
+
+Production uses a private Vercel Blob store (`PV_STORAGE=blob`) for entries, credit usage, and the workflow registry. Conditional writes protect concurrent updates; shared leases prevent duplicate submissions across server instances. Uploaded files go directly to private storage with signed, size-limited grants, then pass server validation before provider upload. This supports the full photo/audio size limits on Vercel. See `DEPLOYMENT.md`.
+
+Local development defaults to atomic files in `.data`. A local file registry requires one Node process and durable storage. Supabase is also available for entries and usage by applying the supplied migration. Private workflow tokens, credentials, and `.data` are excluded from source packages.
+
+Stages use `submitTestimonialJob`, `checkTestimonialJob`, and `getTestimonialJobResult` server functions. Polling is every six seconds. Browser state permits refresh/resume without resubmitting completed jobs. Closing all tabs pauses orchestration between stages; an already-submitted provider job keeps running, and reopening the generator resumes advancement.
+
+Accepted jobs record a cost quote once. A failed transport with an uncertain submit result is held for administrator recovery rather than automatically resubmitted. If a provider response was lost, inspect recent Higgsfield jobs and the private registry before resolving the guard. Never clear it blindly. The credit dashboard shows estimates from the live quote endpoint with labeled fallback estimates, not a reconciled provider invoice.
+
+OCR is billed and recorded against a draft entry immediately, including abandoned notes. The draft becomes the generation entry after consent. Consent is validated on the server. Publicly discoverable entry IDs alone cannot submit or resolve somebody else's workflow.
+
+## Routes and the no-auth limitation
+
+- `/` — generator, progress, result and download
+- `/gallery` — completed videos, language filter and click-to-play
+- `/admin` — all entries and stage/error/media/timestamp details
+- `/admin/usage` — credits grouped by provider, model and stage
+- `/api/download/:id` — completed-video attachment download
+
+Only Gallery is linked in the public header. The admin routes have noindex metadata and robots.txt exclusions. **URL obscurity is not access control.** As requested, admin pages have no authentication, and the SQL grants public SELECT on both business tables, including scripts, source media, errors and usage. Anyone who discovers these URLs or knows the Supabase configuration can read them. The published app retains this requested no-login behavior.
+
+## Structure and verification
+
+`src/routes` contains thin route views. Components are under `src/components`, including shadcn-style Radix primitives. Business logic, provider integration, persistence and client orchestration live under `src/lib`. Server functions validate input and map errors in `src/server/fns.ts`. TanStack Start 1, React 19, Vite 7, Tailwind 4; strict TypeScript checked with `tsgo`.
+
+`e2e/smoke.spec.ts` covers desktop/mobile forms, tabs, disabled and enabled consent states, file inputs, gallery, internal routes, metadata, robots and horizontal overflow. Unit tests exercise server-side consent, ownership, stage binding, idempotency, file signatures and URL validation. `scripts/live-check.ts` is a separately invoked acceptance test that spends real Higgsfield credits; it is never run by normal tests.
+
+See `VERIFICATION.md` for the actual checks and current limitations.

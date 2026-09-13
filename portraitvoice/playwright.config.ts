@@ -1,19 +1,38 @@
-import { defineConfig } from "@playwright/test";
-
+import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
-  testDir: "./tests",
-  timeout: 90_000,
+  testDir: "./e2e",
+  fullyParallel: false,
+  workers: 1,
+  retries: 0,
+  timeout: 45000,
+  reporter: [
+    ["list"],
+    ["html", { open: "never", outputFolder: "playwright-report" }],
+  ],
   use: {
-    baseURL: process.env.SMOKE_BASE_URL ?? "http://127.0.0.1:3000",
-    // Point at a preinstalled Chromium in CI sandboxes that block browser downloads.
-    ...(process.env.PW_CHROMIUM_PATH ? { launchOptions: { executablePath: process.env.PW_CHROMIUM_PATH } } : {}),
+    baseURL: process.env.PV_BASE_URL || "http://127.0.0.1:3000",
+    channel: "chrome",
+    trace: "retain-on-failure",
+    screenshot: "only-on-failure",
   },
-  webServer: process.env.SMOKE_BASE_URL
+  projects: [
+    {
+      name: "desktop",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 1000 },
+      },
+    },
+    {
+      name: "mobile",
+      use: { ...devices["iPhone 13"], defaultBrowserType: "chromium" },
+    },
+  ],
+  webServer: process.env.PV_BASE_URL
     ? undefined
     : {
         command: "npm run dev -- --host 127.0.0.1",
         url: "http://127.0.0.1:3000",
         reuseExistingServer: true,
-        timeout: 120_000,
       },
 });

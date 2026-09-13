@@ -1,0 +1,8 @@
+{
+  "name": "Outdoor ambience",
+  "source": "HeyGen sound-effects library",
+  "source_id": "1504abbcf042b8ef",
+  "source_name": "Birdsong ambience",
+  "processing": "Quiet filtered birds with a soft generated breeze bed; integrated target -30 LUFS; 1.5-second edge fades. Final mix additionally attenuates and ducks the bed under speech.",
+  "duration_seconds": 30
+}

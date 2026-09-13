@@ -1,21 +1,11 @@
-/** Rotating Indian agriculture facts shown while a video renders. */
-export const FARMING_FACTS: readonly string[] = [
-  "India is the world's largest producer of milk, pulses and jute.",
-  "Nearly half of India's workforce depends on agriculture for a living.",
-  "Kharif crops are sown with the monsoon in June and harvested around October.",
-  "Rabi crops such as wheat and mustard are sown after the monsoon and harvested in spring.",
-  "India grows more than 100 mango varieties, including Alphonso, Dasheri and Langra.",
-  "Drip irrigation can cut water use by 30 to 50 percent compared with flooding a field.",
-  "Millets like bajra, jowar and ragi thrive on dry land with very little water.",
-  "India is the second largest producer of rice, wheat, sugarcane and cotton in the world.",
-  "A soil test every two or three years helps set the right fertiliser dose.",
-  "Rotating cereals with pulses adds nitrogen to the soil naturally.",
-  "Kerala's spice gardens made it the spice capital of the ancient world.",
-  "Bees pollinating mustard, sunflower and vegetables lift yields noticeably.",
-  "Maharashtra leads India in grape, onion and pomegranate production.",
-  "Guntur in Andhra Pradesh is famous worldwide for its chillies.",
-  "Pheromone traps help spot pests early and reduce spraying.",
-  "Mulching keeps soil moist, cools roots and suppresses weeds between rows.",
-  "India has about 140 million farm holdings, most under two hectares.",
-  "Punjab and Haryana grow a large share of India's wheat on a small share of its land.",
-];
+/** Stable, non-prescriptive farming facts. */
+export const AGRI_FACTS: readonly string[] = [
+  "Kharif is the monsoon cropping season; rabi is the winter cropping season.",
+  "Millets such as jowar, bajra and ragi have been grown in India for generations.",
+  "Assam and Darjeeling are two of India’s best-known tea-growing regions.",
+  "The flowers of mustard fields provide food for bees and other pollinators.",
+  "Paddy is rice before the husk is removed.",
+  "A crop’s roots do more than anchor it: they also take up water and nutrients.",
+  "Coir, the fibre from coconut husks, is used in mats, ropes and growing media.",
+  "Different regions of India celebrate the harvest with festivals such as Pongal, Baisakhi and Bihu.",
+] as const;

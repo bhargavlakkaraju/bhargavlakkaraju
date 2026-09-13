@@ -1,79 +1,121 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { formatDate } from "@/lib/format";
-import { languageLabel, type TestimonialEntry } from "@/lib/types";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { Play, Film, ArrowRight } from "lucide-react";
 import { listGalleryEntries } from "@/server/fns";
-import { SITE_URL } from "./__root";
-
+import { languageLabel, LANGUAGES } from "@/lib/languages";
+import { Select } from "@/components/ui/select";
 export const Route = createFileRoute("/gallery")({
   head: () => ({
     meta: [
-      { title: "Gallery · PortraitVoice by Syngenta" },
-      { name: "description", content: "Finished farmer testimonial videos created with PortraitVoice." },
-      { property: "og:title", content: "PortraitVoice gallery" },
-      { property: "og:url", content: `${SITE_URL}/gallery` },
+      { title: "Farmer stories — PortraitVoice by Syngenta" },
+      {
+        name: "description",
+        content:
+          "Hear the stories of farmers, in their own words and their own language. Explore completed PortraitVoice testimonial videos.",
+      },
     ],
-    links: [{ rel: "canonical", href: `${SITE_URL}/gallery` }],
   }),
-  loader: async () => {
-    const result = await listGalleryEntries();
-    return result.ok ? { entries: result.value, error: null } : { entries: [], error: result.error.message };
-  },
-  component: GalleryPage,
+  loader: () => listGalleryEntries(),
+  component: Gallery,
 });
-
-const MODE_LABELS: Record<TestimonialEntry["input_mode"], string> = { text: "Typed", note: "Handwritten note", audio: "Voice recording" };
-
-function GalleryCard({ entry }: { entry: TestimonialEntry }) {
-  if (!entry.video_url) return null;
-  return (
-    <figure className="flex min-w-0 flex-col gap-2">
-      <div className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl border border-line bg-black">
-        <video
-          className="h-full w-full object-contain"
-          src={entry.video_url}
-          poster={entry.portrait_url ?? undefined}
-          controls
-          playsInline
-          preload="none"
-          onClick={(event) => {
-            const video = event.currentTarget;
-            if (video.paused) void video.play();
-          }}
-        />
-      </div>
-      <figcaption className="flex flex-col gap-1">
-        <div className="flex flex-wrap gap-1">
-          <Badge tone="green">{languageLabel(entry.language)}</Badge>
-          {entry.voice_gender ? <Badge tone="blue">{entry.voice_gender}</Badge> : null}
-          <Badge>{MODE_LABELS[entry.input_mode]}</Badge>
-        </div>
-        <p className="text-xs text-white/50">{formatDate(entry.completed_at ?? entry.created_at)}</p>
-      </figcaption>
-    </figure>
+function Gallery() {
+  const entries = Route.useLoaderData(),
+    [filter, setFilter] = useState("all"),
+    [playing, setPlaying] = useState<string | null>(null);
+  const visible = entries.filter(
+    (e) => filter === "all" || e.language === filter,
   );
-}
-
-function GalleryPage() {
-  const { entries, error } = Route.useLoaderData();
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
-      <h1 className="text-2xl font-bold tracking-tight">Gallery</h1>
-      <p className="mt-1 text-sm text-white/60">Finished testimonial videos. Tap a video to play it.</p>
-      {error ? (
-        <div className="glass-card mt-6 flex flex-col items-start gap-3 p-5">
-          <p className="text-sm text-red-200">{error}</p>
-          <Button variant="secondary" asChild><a href="/gallery">Retry</a></Button>
+    <main className="page-shell">
+      <div className="page-heading">
+        <div>
+          <h1>Stories from the field.</h1>
+          <p>Created with PortraitVoice.</p>
         </div>
-      ) : entries.length === 0 ? (
-        <div className="glass-card mt-6 flex flex-col items-start gap-3 p-5">
-          <p className="text-sm font-semibold">No videos yet</p>
-          <p className="text-sm text-white/60">The first finished testimonial will appear here.</p>
+        {entries.length > 0 && (
+          <div className="gallery-filter">
+            <label htmlFor="gallery-language">Language</label>
+            <Select
+              id="gallery-language"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            >
+              <option value="all">All languages</option>
+              {LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+        )}
+      </div>
+      {visible.length ? (
+        <div className="gallery-grid">
+          {visible.map((e) => (
+            <article className="video-card" key={e.id}>
+              {playing === e.id ? (
+                <video
+                  src={e.video_url ?? undefined}
+                  controls
+                  autoPlay
+                  playsInline
+                  aria-label={`${languageLabel(e.language)} testimonial video`}
+                />
+              ) : (
+                <button
+                  onClick={() => setPlaying(e.id)}
+                  aria-label={`Play ${languageLabel(e.language)} testimonial`}
+                >
+                  {(e.portrait_url || e.source_portrait_url) && (
+                    <img
+                      src={e.portrait_url ?? e.source_portrait_url ?? ""}
+                      alt="Farmer portrait"
+                      loading="lazy"
+                    />
+                  )}
+                  <span>
+                    <Play size={22} fill="currentColor" />
+                  </span>
+                </button>
+              )}
+              <div className="video-meta">
+                <span>
+                  {languageLabel(e.language)} ·{" "}
+                  {e.voice_gender ?? "Original voice"}
+                </span>
+                <span>
+                  {e.input_mode === "note"
+                    ? "Note photo"
+                    : e.input_mode === "audio"
+                      ? "Recording"
+                      : "Text"}
+                </span>
+              </div>
+              <p>
+                {new Date(e.completed_at ?? e.created_at).toLocaleDateString(
+                  "en-IN",
+                  { day: "numeric", month: "short", year: "numeric" },
+                )}{" "}
+                · AI-generated
+              </p>
+            </article>
+          ))}
         </div>
       ) : (
-        <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {entries.map((entry) => <GalleryCard key={entry.id} entry={entry} />)}
+        <div className="empty-state">
+          <Film size={34} strokeWidth={1} />
+          <h2>
+            {entries.length
+              ? "No stories in this language yet."
+              : "The first story could be yours."}
+          </h2>
+          <p>
+            Create your first video to see it here.
+          </p>
+          <Link to="/">
+            Create a testimonial <ArrowRight size={15} />
+          </Link>
         </div>
       )}
     </main>
