@@ -13,7 +13,7 @@ test("live note photo is transcribed in Hindi and remains editable before consen
   await page.getByRole("tab", { name: "Note photo" }).click();
   await page
     .getByLabel("Upload your handwritten note")
-    .setInputFiles(path.resolve("work/note-test.png"));
+    .setInputFiles(path.resolve("e2e/fixtures/hindi-note.png"));
   await page.getByRole("button", { name: "Read note", exact: true }).click();
   await expect(page.getByLabel("Your testimonial")).toHaveValue(/नमस्ते/, {
     timeout: 120000,
