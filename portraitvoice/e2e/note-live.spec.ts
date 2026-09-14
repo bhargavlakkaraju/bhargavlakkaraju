@@ -10,6 +10,11 @@ test("live note photo is transcribed in Hindi and remains editable before consen
   );
   test.setTimeout(150000);
   await page.goto("/");
+  await expect(page.getByLabel("Upload a portrait photo")).toBeEnabled();
+  await page
+    .getByLabel("Upload a portrait photo")
+    .setInputFiles(path.resolve("e2e/fixtures/example-portrait.png"));
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("tab", { name: "Note photo" }).click();
   await page
     .getByLabel("Upload your handwritten note")
@@ -26,6 +31,6 @@ test("live note photo is transcribed in Hindi and remains editable before consen
     .getByLabel("Your testimonial")
     .fill("नमस्ते। मैंने अपने शब्द जाँच लिए हैं।");
   await expect(
-    page.getByRole("button", { name: "Create my video" }),
+    page.getByRole("button", { name: "Continue", exact: true }),
   ).toBeDisabled();
 });

@@ -1,9 +1,9 @@
 # PortraitVoice design
 
-A farmer ambassador or field team member uses a phone in daylight to make a short testimonial. A white canvas, dark readable type, and concise steps make this feel like a calm creative tool.
+A calm, white video studio for farmer ambassadors and field teams. Use a single system sans serif, readable dark type, Syngenta's supplied navy logo, and restrained green selections. Pale sage supports the portrait preview; the rest of the canvas stays white. No decorative gradients, glow, or stacked cards.
 
-White is the primary surface. Syngenta navy anchors the main action and wordmark; green marks selection and progress. Cool, faintly tinted surfaces support the preview and inputs. No decorative gradients or glow. One system sans-serif family, 12–16px surface radii, consistent controls, generous space around the two-step form.
+Creation is a guided sequence: Photo, Story, Finish. One primary action per step. The preview sits beside the form on desktop and becomes a compact, persistent portrait summary on phones. Completed steps remain editable without losing inputs. Put language beside the native-script editor, and voice, ambience, and explicit public-gallery consent in the final step. Note transcription must be reviewed and confirmed before continuing. Uploaded recordings retain their original voice; ambience defaults off for recordings.
 
-Desktop pairs a compact form with a sticky video preview. Mobile gives the form the full width. The preview example plays only on request. Audio ambience is optional, previews on request, and defaults off for uploaded recordings. Explicit consent and note review remain required. Public navigation has only Gallery; internal dashboards retain their separate routes.
+Use 14–16px controls, 12–16px surface radii, clear focus/disabled/error states, and large touch targets. Step changes move keyboard focus to their heading. The example plays in a dismissible native dialog with Escape and focus return. Respect reduced motion. Keep public navigation limited to Gallery; internal dashboards retain their separate routes.
 
-Respect reduced motion. Preserve the original-language script, uploaded portrait, and voice performance. Distinguish the completed HeyGen example from the currently configured generation provider.
+Gallery and completed-video screens share the studio spacing, typography, and restrained controls. The active generation pipeline uses HeyGen Avatar IV with its ElevenLabs voice engine. Preserve the original-language script and uploaded portrait. Do not expose provider implementation details in the creation flow.

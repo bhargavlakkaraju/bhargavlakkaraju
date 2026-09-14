@@ -59,32 +59,37 @@ export function GenerationScreen({
   if (state.phase === "done")
     return (
       <main className="result-page">
-        <div className="success-mark">
-          <Check size={23} />
+        <div className="result-preview">
+          <video
+            src={state.videoUrl ?? undefined}
+            poster={state.portraitUrl ?? undefined}
+            controls
+            playsInline
+            className="result-video"
+            aria-label="Your completed testimonial"
+          />
         </div>
-        <h1>Your story is ready.</h1>
-
-        <video
-          src={state.videoUrl ?? undefined}
-          poster={state.portraitUrl ?? undefined}
-          controls
-          playsInline
-          className="result-video"
-        />
-        <div className="result-actions">
-          <a
-            className="download-link"
-            href={`/api/download/${state.entry?.id}`}
-          >
-            <Download size={17} /> Download video
-          </a>
-          <Button variant="secondary" onClick={onReset}>
-            <ArrowLeft size={16} /> Create another
-          </Button>
+        <div className="result-copy">
+          <div className="success-mark">
+            <Check size={22} />
+          </div>
+          <h1>Your story is ready.</h1>
+          <p>Your words. Your voice. Ready to share.</p>
+          <div className="result-actions">
+            <a
+              className="download-link"
+              href={`/api/download/${state.entry?.id}`}
+            >
+              <Download size={17} /> Download video
+            </a>
+            <Button variant="secondary" onClick={onReset}>
+              <ArrowLeft size={16} /> Create another
+            </Button>
+          </div>
+          <small>
+            AI-generated video · Shared in the gallery with your consent
+          </small>
         </div>
-        <small>
-          AI-generated video · Shared in the gallery with your consent
-        </small>
       </main>
     );
   return (

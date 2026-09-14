@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   Upload,
   ImagePlus,
@@ -17,6 +17,9 @@ interface Props {
   disabled?: boolean;
 }
 export function UploadZone({ kind, file, onChange, preview, disabled }: Props) {
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const unavailable = disabled || !hydrated;
   const id = useId(),
     input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -56,13 +59,13 @@ export function UploadZone({ kind, file, onChange, preview, disabled }: Props) {
       )}
       onDragOver={(e) => {
         e.preventDefault();
-        if (!disabled) setDragging(true);
+        if (!unavailable) setDragging(true);
       }}
       onDragLeave={() => setDragging(false)}
       onDrop={(e) => {
         e.preventDefault();
         setDragging(false);
-        if (!disabled) choose(e.dataTransfer.files[0]);
+        if (!unavailable) choose(e.dataTransfer.files[0]);
       }}
     >
       <input
@@ -71,7 +74,7 @@ export function UploadZone({ kind, file, onChange, preview, disabled }: Props) {
         aria-label={title}
         type="file"
         accept={accept}
-        disabled={disabled}
+        disabled={unavailable}
         onChange={(e) => choose(e.target.files?.[0])}
         className="file-input"
       />
@@ -123,7 +126,7 @@ export function UploadZone({ kind, file, onChange, preview, disabled }: Props) {
         <button
           type="button"
           className="remove-upload"
-          disabled={disabled}
+          disabled={unavailable}
           aria-label={`Remove ${kind}`}
           onClick={() => {
             onChange(null);

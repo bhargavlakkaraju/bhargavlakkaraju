@@ -26,12 +26,20 @@ function Gallery() {
     (e) => filter === "all" || e.language === filter,
   );
   return (
-    <main className="page-shell">
+    <main className="page-shell gallery-page">
       <div className="page-heading">
         <div>
           <h1>Stories from the field.</h1>
-          <p>Created with PortraitVoice.</p>
+          <p>Every story has a voice.</p>
         </div>
+        <Link to="/" className="gallery-create">
+          Create a video <ArrowRight size={16} />
+        </Link>
+      </div>
+      <div className="gallery-toolbar">
+        <span>
+          {visible.length} {visible.length === 1 ? "story" : "stories"}
+        </span>
         {entries.length > 0 && (
           <div className="gallery-filter">
             <label htmlFor="gallery-language">Language</label>
@@ -80,16 +88,9 @@ function Gallery() {
                 </button>
               )}
               <div className="video-meta">
-                <span>
-                  {languageLabel(e.language)} ·{" "}
-                  {e.voice_gender ?? "Original voice"}
-                </span>
-                <span>
-                  {e.input_mode === "note"
-                    ? "Note photo"
-                    : e.input_mode === "audio"
-                      ? "Recording"
-                      : "Text"}
+                <span>{languageLabel(e.language)}</span>
+                <span className="voice-label">
+                  {e.input_mode === "audio" ? "Original voice" : "AI voice"}
                 </span>
               </div>
               <p>
@@ -110,9 +111,7 @@ function Gallery() {
               ? "No stories in this language yet."
               : "The first story could be yours."}
           </h2>
-          <p>
-            Create your first video to see it here.
-          </p>
+          <p>Create your first video to see it here.</p>
           <Link to="/">
             Create a testimonial <ArrowRight size={15} />
           </Link>
