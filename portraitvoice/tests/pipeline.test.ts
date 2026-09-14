@@ -35,9 +35,18 @@ test("HeyGen submits once, binds ownership and stages, persists final video with
         data: {
           asset_id: "asset_test",
           upload_url: "https://heygen-test.s3.amazonaws.com/photo",
+          upload_headers: {
+            "content-type": "image/png",
+            "x-amz-server-side-encryption": "AES256",
+          },
         },
       });
-    if (init?.method === "PUT") return new Response(null);
+    if (init?.method === "PUT") {
+      const headers = new Headers(init.headers);
+      assert.equal(headers.get("content-type"), "image/png");
+      assert.equal(headers.get("x-amz-server-side-encryption"), "AES256");
+      return new Response(null);
+    }
     if (url.endsWith("/assets/asset_test/complete"))
       return Response.json({ data: { id: "asset_test" } });
     if (url.endsWith("/v3/videos") && init?.method === "POST") {

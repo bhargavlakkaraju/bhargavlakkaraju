@@ -108,17 +108,30 @@ export async function uploadAsset(
     !url.hostname.endsWith(".amazonaws.com")
   )
     throw new Error("Unrecognized upload destination.");
+  const uploadHeaders = new Headers(slot.upload_headers);
+  if (!uploadHeaders.has("content-type"))
+    uploadHeaders.set("content-type", contentType);
   const put = await fetch(url, {
     method: "PUT",
-    headers: { "Content-Type": contentType, ...slot.upload_headers },
+    headers: uploadHeaders,
     body: Buffer.from(bytes),
     signal: AbortSignal.timeout(120_000),
     redirect: "error",
   });
-  if (!put.ok)
-    throw new Error(
+  if (!put.ok) {
+    const code =
+      /<Code>([^<]+)<\/Code>/.exec(await put.text())?.[1] ?? "upload_failed";
+    console.error("[portraitvoice] HeyGen asset upload", {
+      status: put.status,
+      code,
+      headerNames: [...uploadHeaders.keys()],
+    });
+    throw new HeyGenError(
+      put.status,
+      code,
       "The photo or recording upload was interrupted. Please resume.",
     );
+  }
   await heygen(
     `/assets/${encodeURIComponent(slot.asset_id)}/complete`,
     {},
