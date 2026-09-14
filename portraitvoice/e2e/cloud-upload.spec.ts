@@ -46,11 +46,10 @@ test("production photo upload is saved without submitting a paid job", async ({
   await page
     .getByLabel("Upload a portrait photo")
     .setInputFiles(path.resolve("e2e/fixtures/example-portrait.png"));
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page
     .getByLabel("Your testimonial")
     .fill("मेरी कहानी मेरी अपनी आवाज़ में।");
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Review video", exact: true }).click();
   await page
     .getByRole("checkbox", {
       name: "Consent to create and publicly share this AI video",

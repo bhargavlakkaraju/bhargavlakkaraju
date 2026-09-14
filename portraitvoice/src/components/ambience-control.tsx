@@ -40,8 +40,8 @@ export function AmbienceControl({
       <div className="ambience-copy">
         <Leaf size={18} strokeWidth={1.6} />
         <div>
-          <strong id="ambience-label">Outdoor ambience</strong>
-          <small>Soft field sounds, beneath your voice</small>
+          <strong id="ambience-label">Background sound</strong>
+          <small>Quiet wind and birds behind the voice</small>
         </div>
       </div>
       <div className="ambience-actions">
@@ -49,7 +49,7 @@ export function AmbienceControl({
           type="button"
           className="sound-preview"
           aria-label={
-            playing ? "Stop ambience preview" : "Preview outdoor ambience"
+            playing ? "Stop sound preview" : "Preview background sound"
           }
           onClick={() => void togglePreview()}
         >

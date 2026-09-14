@@ -7,7 +7,7 @@ test("guided creation preserves inputs, gates consent and works on phones", asyn
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Make it personal." }),
+    page.getByRole("heading", { name: "Create a testimonial." }),
   ).toBeVisible();
   await expect(
     page.getByRole("img", { name: "Syngenta", exact: true }),
@@ -16,9 +16,12 @@ test("guided creation preserves inputs, gates consent and works on phones", asyn
     page.getByRole("navigation", { name: "Main navigation" }).getByRole("link"),
   ).toHaveCount(1);
   await expect(page.locator('header a[href^="/admin"]')).toHaveCount(0);
-  const next = page.getByRole("button", { name: "Continue", exact: true });
+  const next = page.getByRole("button", { name: "Review video", exact: true });
   const steps = page.getByRole("navigation", { name: "Creation steps" });
-  await expect(next).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Choose photo", exact: true }),
+  ).toBeVisible();
+  await expect(next).toHaveCount(0);
   await expect(steps.getByRole("button", { name: "2 Story" })).toBeDisabled();
   await expect(page.locator(".preview-aside")).toBeVisible();
   await page.getByRole("button", { name: "Watch example" }).click();
@@ -41,18 +44,29 @@ test("guided creation preserves inputs, gates consent and works on phones", asyn
   ).toBeFocused();
   await page
     .getByLabel("Upload a portrait photo")
-    .setInputFiles(path.resolve("e2e/fixtures/example-portrait.png"));
-  await next.click();
+    .setInputFiles({
+      name: "not-a-photo.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from("not a photo"),
+    });
+  await expect(page.getByRole("alert")).toContainText("JPG, PNG or WebP");
   await expect(
-    page.getByRole("heading", { name: "Tell your story." }),
+    page.getByRole("heading", { name: "Add your photo." }),
+  ).toBeVisible();
+  await page
+    .getByLabel("Upload a portrait photo")
+    .setInputFiles(path.resolve("e2e/fixtures/example-portrait.png"));
+  await expect(
+    page.getByRole("heading", { name: "Add your story." }),
   ).toBeFocused();
   await expect(next).toBeDisabled();
-  await page.getByRole("tab", { name: "Note photo" }).click();
+  if (info.project.name === "mobile") await expect(next).toBeInViewport();
+  await page.getByRole("tab", { name: "Photo of text" }).click();
   await expect(page.getByLabel("Upload your handwritten note")).toBeAttached();
   await expect(
     page.getByRole("button", { name: "Read note", exact: true }),
   ).toBeDisabled();
-  await page.getByRole("tab", { name: "Audio", exact: true }).click();
+  await page.getByRole("tab", { name: "Upload audio", exact: true }).click();
   await expect(
     page.getByText("Your original voice will be used in the video."),
   ).toBeVisible();
@@ -77,48 +91,82 @@ test("guided creation preserves inputs, gates consent and works on phones", asyn
   await expect(
     page.getByRole("button", { name: "Female", exact: true }),
   ).toHaveCount(0);
-  const ambience = page.getByRole("switch", { name: "Outdoor ambience" });
+  const ambience = page.getByRole("switch", { name: "Background sound" });
   await expect(ambience).not.toBeChecked();
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await page.getByRole("tab", { name: "Text", exact: true }).click();
+  await page.getByRole("tab", { name: "Write text", exact: true }).click();
   await page
     .getByLabel("Your testimonial")
     .fill("मेरी कहानी मेरी अपनी आवाज़ में।");
+  await page.getByRole("tab", { name: "Photo of text" }).click();
+  await expect(page.getByLabel("Your testimonial")).toHaveCount(0);
+  await page
+    .getByLabel("Upload your handwritten note")
+    .setInputFiles(path.resolve("e2e/fixtures/hindi-note.png"));
+  await page.getByRole("tab", { name: "Write text", exact: true }).click();
+  await expect(page.getByLabel("Your testimonial")).toHaveValue(
+    "मेरी कहानी मेरी अपनी आवाज़ में।",
+  );
+  await page.getByLabel("Your testimonial").fill("Namaste mera naam");
+  await expect(page.getByRole("alert")).toContainText("देवनागरी");
+  await expect(next).toBeDisabled();
+  await expect(page.getByLabel("Your testimonial")).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  await page
+    .getByLabel("Your testimonial")
+    .fill("मेरी कहानी मेरी अपनी आवाज़ में।");
+  await expect(next).toBeEnabled();
   await page.getByLabel("Language", { exact: true }).selectOption("te");
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(
     page.getByRole("img", { name: "Your uploaded portrait" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Remove portrait" }).click();
-  await expect(next).toBeDisabled();
-  await expect(steps.getByRole("button", { name: "3 Finish" })).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Choose photo", exact: true }),
+  ).toBeVisible();
+  await expect(steps.getByRole("button", { name: "3 Review" })).toBeDisabled();
   await page
     .getByLabel("Upload a portrait photo")
     .setInputFiles(path.resolve("e2e/fixtures/example-portrait.png"));
-  await next.click();
   await expect(page.getByLabel("Your testimonial")).toHaveValue(
     "मेरी कहानी मेरी अपनी आवाज़ में।",
   );
   await expect(page.getByLabel("Language", { exact: true })).toHaveValue("te");
   await next.click();
   await expect(
-    page.getByRole("heading", { name: "Give it your voice." }),
+    page.getByRole("heading", { name: "Review your video." }),
   ).toBeFocused();
   await expect(ambience).toBeChecked();
   await ambience.click();
   await expect(ambience).not.toBeChecked();
   await ambience.press("Space");
   await expect(ambience).toBeChecked();
-  await page.getByRole("button", { name: "Preview outdoor ambience" }).click();
+  await page.getByRole("button", { name: "Preview background sound" }).click();
   await expect(
-    page.getByRole("button", { name: "Stop ambience preview" }),
+    page.getByRole("button", { name: "Stop sound preview" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Stop ambience preview" }).click();
+  await page.getByRole("button", { name: "Stop sound preview" }).click();
   const create = page.getByRole("button", { name: "Create my video" });
   const consent = page.getByRole("checkbox", {
     name: "Consent to create and publicly share this AI video",
   });
   await expect(create).toBeDisabled();
+  await expect(
+    page.getByText("Confirm permission above to create your video."),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Change photo", exact: true }).click();
+  await page
+    .getByLabel("Upload a portrait photo")
+    .setInputFiles(path.resolve("e2e/fixtures/example-portrait.png"));
+  await expect(
+    page.getByRole("heading", { name: "Review your video." }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("मेरी कहानी मेरी अपनी आवाज़ में।", { exact: true }),
+  ).toBeVisible();
   await consent.check();
   await expect(create).toBeEnabled();
   await page.getByRole("button", { name: "Male", exact: true }).click();

@@ -34,13 +34,14 @@ test("live HeyGen Hindi render completes, resumes, plays, and downloads", async 
     await page
       .getByLabel("Upload a portrait photo")
       .setInputFiles(path.resolve("e2e/fixtures/example-portrait.png"));
-    await page.getByRole("button", { name: "Continue", exact: true }).click();
     await page
       .getByLabel("Your testimonial")
       .fill(
         "नमस्ते। यह हमारी नई वीडियो सेवा का एक छोटा-सा परीक्षण है। आज मौसम बहुत अच्छा है।",
       );
-    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Review video", exact: true })
+      .click();
     await page
       .getByRole("checkbox", {
         name: "Consent to create and publicly share this AI video",

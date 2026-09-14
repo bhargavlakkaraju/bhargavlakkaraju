@@ -63,6 +63,6 @@ test("completed live job resumes, plays and downloads without another charge", a
   expect(after.usage.length).toBe(before.usage.length);
   await page.getByRole("button", { name: "Create another" }).click();
   await expect(
-    page.getByRole("heading", { name: "Make it personal." }),
+    page.getByRole("heading", { name: "Create a testimonial." }),
   ).toBeVisible();
 });

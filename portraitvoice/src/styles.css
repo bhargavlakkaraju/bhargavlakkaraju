@@ -624,7 +624,7 @@ textarea.ui-field {
   font-size: 16px;
   line-height: 1.8;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 5;
   -webkit-box-orient: vertical;
   overflow: hidden;
   overflow-wrap: anywhere;
@@ -1439,6 +1439,109 @@ textarea.ui-field {
 .usage-total span {
   font-size: 12px;
 }
+
+.studio-description {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-top: 12px;
+}
+.upload-choose {
+  display: flex;
+  width: calc(100% - 48px);
+  margin: 0 24px 24px;
+  justify-content: center;
+  gap: 12px;
+}
+.photo-step .upload-label {
+  min-height: 190px;
+  padding-bottom: 20px;
+}
+.change-photo {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  background: white;
+  color: #235d30;
+  border: 1px solid #d9e1d3;
+  border-radius: 9px;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 550;
+  flex-shrink: 0;
+}
+.change-photo:hover {
+  background: #f2f6ed;
+}
+.preview-caption .example-play {
+  width: auto;
+  border-radius: 9px;
+  padding: 0 14px;
+  gap: 9px;
+  font-size: 12px;
+}
+.preview-caption .example-play > span {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
+}
+.editor-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 550;
+  margin-bottom: 9px;
+}
+.input-explanation {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.field-error {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #a12739;
+  margin-top: 8px;
+}
+.ui-field[aria-invalid="true"] {
+  border-color: #b54955;
+}
+.next-step-hint {
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 10px;
+}
+.step-controls {
+  background: white;
+  padding-top: 4px;
+}
+.story-review p {
+  max-height: 200px;
+  overflow: auto;
+  display: block;
+  -webkit-line-clamp: unset;
+}
+.story-review .original-voice-note {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin-top: 10px;
+}
+.result-actions .ui-button {
+  min-height: 50px;
+}
+.upload-error {
+  border-color: #b54955;
+}
+.upload-error-message {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #a12739;
+  margin: 0 16px 16px;
+}
 @media (min-width: 1500px) {
   .studio-shell {
     padding-top: 52px;
@@ -1857,6 +1960,80 @@ textarea.ui-field {
   }
   .internal-note svg {
     flex-shrink: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .studio-description {
+    font-size: 13px;
+    margin-top: 9px;
+  }
+  .studio-heading h1 {
+    font-size: 30px;
+  }
+  .photo-step .upload-label {
+    min-height: 160px;
+    padding: 20px 16px 16px;
+  }
+  .upload-choose {
+    width: calc(100% - 32px);
+    margin: 0 16px 18px;
+    min-height: 48px;
+  }
+  .preview-caption .example-play {
+    padding: 0;
+    border: 0;
+    min-height: 40px;
+  }
+  .change-photo {
+    padding: 0 10px;
+    min-height: 36px;
+    font-size: 11px;
+    margin-top: 7px;
+  }
+  .has-portrait .preview-caption {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex: 1;
+  }
+  .has-portrait .preview-caption strong {
+    font-size: 13px;
+    max-width: none;
+  }
+  .has-portrait .change-photo {
+    margin-top: 0;
+  }
+  .step-controls {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    padding: 14px 0 12px;
+    border-top: 1px solid var(--line);
+  }
+  .next-step-hint {
+    font-size: 11px;
+    margin-top: 8px;
+  }
+  .ui-tab {
+    gap: 5px;
+    font-size: 11px;
+  }
+  .ui-tab svg {
+    width: 14px;
+  }
+}
+@media (max-width: 760px) {
+  .studio-step-0 .preview-stage {
+    width: 72px;
+  }
+  .studio-step-0 .portrait-frame {
+    width: 72px;
+    height: 108px;
+  }
+  .studio-step-0 .preview-caption strong {
+    font-size: 15px;
   }
 }
 @media (max-width: 360px) {

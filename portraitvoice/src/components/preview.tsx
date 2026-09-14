@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Play, X, Check } from "lucide-react";
 
-export function PortraitPreview({ image }: { image: string | null }) {
+export function PortraitPreview({
+  image,
+  onChangePhoto,
+}: {
+  image: string | null;
+  onChangePhoto: () => void;
+}) {
   const [playing, setPlaying] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
@@ -23,7 +29,7 @@ export function PortraitPreview({ image }: { image: string | null }) {
               <Check size={13} /> Photo added
             </>
           ) : (
-            "Made with PortraitVoice"
+            "AI-generated example"
           )}
         </span>
         <div className="portrait-frame">
@@ -42,16 +48,26 @@ export function PortraitPreview({ image }: { image: string | null }) {
       </div>
       <div className="preview-caption">
         <div>
-          <span>{image ? "Your portrait" : "See what’s possible"}</span>
+          <span>{image ? "Your photo" : "Example video"}</span>
           <strong>
-            {image ? "A face to your story." : "One photo. A familiar voice."}
+            {image ? "Ready to use" : "See a finished testimonial"}
           </strong>
         </div>
+        {image && (
+          <button
+            type="button"
+            className="change-photo"
+            onClick={onChangePhoto}
+          >
+            Change photo
+          </button>
+        )}
         {!image && (
           <button
             type="button"
             className="example-play"
             aria-label="Watch example"
+            disabled={!hydrated}
             onClick={() => setPlaying(true)}
           >
             <Play size={17} fill="currentColor" />

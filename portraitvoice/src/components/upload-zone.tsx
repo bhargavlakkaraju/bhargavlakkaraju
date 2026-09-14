@@ -8,37 +8,54 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 interface Props {
   kind: "portrait" | "note" | "audio";
   file: File | null;
   onChange: (file: File | null) => void;
   preview?: string | null;
   disabled?: boolean;
+  actionLabel?: string;
 }
-export function UploadZone({ kind, file, onChange, preview, disabled }: Props) {
+export function UploadZone({
+  kind,
+  file,
+  onChange,
+  preview,
+  disabled,
+  actionLabel,
+}: Props) {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
   const unavailable = disabled || !hydrated;
   const id = useId(),
     input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [error, setError] = useState("");
   const accept =
     kind === "audio"
       ? "audio/*,.mp3,.wav,.m4a,.ogg,.webm,.aac,.flac"
       : "image/jpeg,image/png,image/webp";
   function choose(file?: File) {
     if (!file) return;
+    setError("");
     const max = kind === "audio" ? 30 : 15;
     if (file.size > max * 1024 * 1024) {
-      toast.error(`Please choose a file under ${max} MB.`);
+      setError(`Please choose a file under ${max} MB.`);
       return;
     }
     if (
       kind !== "audio" &&
       !["image/jpeg", "image/png", "image/webp"].includes(file.type)
     ) {
-      toast.error("Please choose a JPG, PNG or WebP photo.");
+      setError("Please choose a JPG, PNG or WebP photo.");
+      return;
+    }
+    if (
+      kind === "audio" &&
+      !file.type.startsWith("audio/") &&
+      !/\.(mp3|wav|m4a|ogg|webm|aac|flac)$/i.test(file.name)
+    ) {
+      setError("Please choose an audio recording, such as MP3, WAV or M4A.");
       return;
     }
     onChange(file);
@@ -54,6 +71,7 @@ export function UploadZone({ kind, file, onChange, preview, disabled }: Props) {
       className={cn(
         "upload-zone",
         dragging && "dragging",
+        error && "upload-error",
         file && "has-file",
         kind === "portrait" && "portrait-upload",
       )}
@@ -72,6 +90,8 @@ export function UploadZone({ kind, file, onChange, preview, disabled }: Props) {
         ref={input}
         id={id}
         aria-label={title}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? `${id}-error` : undefined}
         type="file"
         accept={accept}
         disabled={unavailable}
@@ -122,6 +142,22 @@ export function UploadZone({ kind, file, onChange, preview, disabled }: Props) {
         </span>
         {!file && <Upload size={17} className="upload-arrow" />}
       </label>
+      {actionLabel && (
+        <button
+          type="button"
+          className="upload-choose ui-button ui-button-primary"
+          disabled={unavailable}
+          onClick={() => input.current?.click()}
+        >
+          {actionLabel}
+          <Upload size={16} />
+        </button>
+      )}
+      {error && (
+        <p id={`${id}-error`} role="alert" className="upload-error-message">
+          {error}
+        </p>
+      )}
       {file && (
         <button
           type="button"
@@ -129,6 +165,7 @@ export function UploadZone({ kind, file, onChange, preview, disabled }: Props) {
           disabled={unavailable}
           aria-label={`Remove ${kind}`}
           onClick={() => {
+            setError("");
             onChange(null);
             if (input.current) input.current.value = "";
           }}

@@ -25,6 +25,7 @@ import {
   useTestimonialPipeline,
   extractTextFromNote,
 } from "@/lib/client/pipeline";
+import { validateScript } from "@/lib/script";
 import { LANGUAGES } from "@/lib/languages";
 import type { InputMode, VoiceGender } from "@/lib/types";
 import { toast } from "sonner";
@@ -43,6 +44,9 @@ export const Route = createFileRoute("/")({
 });
 function Home() {
   const [step, setStep] = useState(0);
+  const photoReturnStep = useRef(1);
+  const [typedScript, setTypedScript] = useState("");
+  const [noteScript, setNoteScript] = useState("");
   const stepHeading = useRef<HTMLHeadingElement>(null);
   const previousStep = useRef(step);
   useEffect(() => {
@@ -52,7 +56,6 @@ function Home() {
   const [portrait, setPortrait] = useState<File | null>(null),
     [preview, setPreview] = useState<string | null>(null),
     [mode, setMode] = useState<InputMode>("text"),
-    [script, setScript] = useState(""),
     [language, setLanguage] = useState("hi"),
     [gender, setGender] = useState<VoiceGender>("female"),
     [consent, setConsent] = useState(false),
@@ -75,19 +78,60 @@ function Home() {
     setPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [portrait]);
+  const script = mode === "note" ? noteScript : typedScript;
+  let scriptError = "";
+  if (mode !== "audio" && script.trim()) {
+    try {
+      validateScript(script, language);
+    } catch (error) {
+      scriptError =
+        error instanceof Error ? error.message : "Please check your text.";
+    }
+  }
   const storyReady = Boolean(
     mode === "audio"
       ? audio
       : script.trim() &&
-          script.length <= 700 &&
+          !scriptError &&
           (mode === "text" || (confirmed && extraction)),
   );
   const ready = Boolean(portrait && consent && storyReady);
+  const nextHint = reading
+    ? "Reading your note…"
+    : step === 2
+      ? consent
+        ? "Ready to create. This usually takes a few minutes."
+        : "Confirm permission above to create your video."
+      : mode === "audio"
+        ? audio
+          ? "Your original recording is ready."
+          : "Add a recording to continue."
+        : scriptError
+          ? "Check the highlighted text before continuing."
+          : mode === "note" && !extraction
+            ? "Upload a note, then select Read note."
+            : mode === "note" && !confirmed
+              ? "Check the extracted text and confirm it above."
+              : !script.trim()
+                ? "Add your words to continue."
+                : "Next, choose a voice and review your video.";
+  function changePhoto() {
+    photoReturnStep.current = step || 1;
+    setStep(0);
+  }
+  function choosePortrait(file: File | null) {
+    setPortrait(file);
+    if (file) {
+      setConsent(false);
+      setStep(photoReturnStep.current === 2 && storyReady ? 2 : 1);
+    }
+  }
   function startAgain() {
     reset();
     setStep(0);
     setPortrait(null);
-    setScript("");
+    setTypedScript("");
+    setNoteScript("");
     setNote(null);
     setAudio(null);
     setExtraction(null);
@@ -99,7 +143,7 @@ function Home() {
     setReading(true);
     try {
       const result = await extractTextFromNote(note, language);
-      setScript(result.text);
+      setNoteScript(result.text);
       setExtraction(result);
       setConfirmed(false);
       toast.success(
@@ -123,21 +167,23 @@ function Home() {
     <main className="studio-shell">
       <div className="studio-heading">
         <div>
-          <p className="studio-eyebrow">Your video studio</p>
-          <h1>Make it personal.</h1>
+          <h1>Create a testimonial.</h1>
+          <p className="studio-description">
+            Turn a photo and your words into a video.
+          </p>
         </div>
         <span className="studio-format">
           Portrait video <span>9:16</span>
         </span>
       </div>
       <div className={`studio-workspace studio-step-${step}`}>
-        <PortraitPreview image={preview} />
+        <PortraitPreview image={preview} onChangePhoto={changePhoto} />
         <section
           className="generator-main"
           aria-label="Create a testimonial video"
         >
           <nav className="creation-steps" aria-label="Creation steps">
-            {["Photo", "Story", "Finish"].map((label, i) => (
+            {["Photo", "Story", "Review"].map((label, i) => (
               <button
                 key={label}
                 type="button"
@@ -146,7 +192,10 @@ function Home() {
                   reading || (i > 0 && !portrait) || (i === 2 && !storyReady)
                 }
                 className={i < step ? "step-complete" : ""}
-                onClick={() => setStep(i)}
+                onClick={() => {
+                  if (i === 0) photoReturnStep.current = step || 1;
+                  setStep(i);
+                }}
               >
                 <span>{i < step ? <Check size={14} /> : i + 1}</span>
                 {label}
@@ -159,7 +208,8 @@ function Home() {
               e.preventDefault();
               if (reading) return;
               if (step === 0) {
-                if (portrait) setStep(1);
+                if (portrait)
+                  setStep(photoReturnStep.current === 2 && storyReady ? 2 : 1);
                 return;
               }
               if (step === 1) {
@@ -183,19 +233,17 @@ function Home() {
             <div className="step-intro">
               <h2 ref={stepHeading} tabIndex={-1}>
                 {
-                  [
-                    "Start with a photo.",
-                    "Tell your story.",
-                    "Give it your voice.",
-                  ][step]
+                  ["Add your photo.", "Add your story.", "Review your video."][
+                    step
+                  ]
                 }
               </h2>
               <p>
                 {
                   [
-                    "A clear portrait is all you need.",
-                    "Your words, in your own language.",
-                    "A few final touches. Then, it’s yours.",
+                    "Choose a clear photo of one person.",
+                    "How would you like to add your words?",
+                    "Check your story, voice and background sound.",
                   ][step]
                 }
               </p>
@@ -205,7 +253,10 @@ function Home() {
                 <UploadZone
                   kind="portrait"
                   file={portrait}
-                  onChange={setPortrait}
+                  onChange={choosePortrait}
+                  actionLabel={
+                    portrait ? "Choose a different photo" : "Choose photo"
+                  }
                   preview={preview}
                 />
                 <div className="photo-guidance">
@@ -217,6 +268,22 @@ function Home() {
             )}
             {step === 1 && (
               <div className="story-step">
+                <div className="language-field">
+                  <label htmlFor="language">Language</label>
+                  <Select
+                    id="language"
+                    disabled={reading}
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                  >
+                    {LANGUAGES.map((l) => (
+                      <option key={l.code} value={l.code}>
+                        {l.native}
+                        {l.code === "en" ? "" : ` · ${l.label}`}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
                 <Tabs
                   value={mode}
                   onValueChange={(v) => {
@@ -226,18 +293,22 @@ function Home() {
                 >
                   <TabsList aria-label="Testimonial input">
                     <TabsTrigger value="text" disabled={reading}>
-                      <Type size={16} /> Text
+                      <Type size={16} /> Write text
                     </TabsTrigger>
                     <TabsTrigger value="note" disabled={reading}>
-                      <FileImage size={16} /> Note photo
+                      <FileImage size={16} /> Photo of text
                     </TabsTrigger>
                     <TabsTrigger value="audio" disabled={reading}>
-                      <AudioLines size={16} /> Audio
+                      <AudioLines size={16} /> Upload audio
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
                 {mode === "note" && (
                   <div className="note-input">
+                    <p className="input-explanation">
+                      Upload a handwritten or printed note. You can edit the
+                      text after we read it.
+                    </p>
                     <UploadZone
                       kind="note"
                       disabled={reading}
@@ -246,7 +317,7 @@ function Home() {
                         setNote(f);
                         setConfirmed(false);
                         setExtraction(null);
-                        setScript("");
+                        setNoteScript("");
                       }}
                     />
                     <Button
@@ -271,30 +342,40 @@ function Home() {
                       Your original voice will be used in the video.
                     </p>
                   </div>
-                ) : (
+                ) : mode === "text" || extraction ? (
                   <div className="script-wrap">
-                    <label htmlFor="testimonial" className="sr-only">
+                    <label htmlFor="testimonial" className="editor-label">
                       Your testimonial
                     </label>
                     <Textarea
                       id="testimonial"
                       disabled={reading}
+                      aria-invalid={Boolean(scriptError)}
+                      aria-describedby={
+                        scriptError ? "script-error" : "script-help"
+                      }
                       rows={4}
                       maxLength={700}
                       placeholder={
                         mode === "note"
                           ? "Read your note, then review the words here."
                           : language === "hi"
-                            ? "अपनी कहानी यहाँ लिखें…"
-                            : "Share your experience in your own words…"
+                            ? "अपना नाम, गाँव और अनुभव लिखें…"
+                            : "Introduce yourself and share your experience…"
                       }
                       value={script}
                       onChange={(e) => {
-                        setScript(e.target.value);
+                        if (mode === "note") setNoteScript(e.target.value);
+                        else setTypedScript(e.target.value);
                         if (mode === "note") setConfirmed(false);
                       }}
                     />
-                    <div className="textarea-footer">
+                    {scriptError && (
+                      <p className="field-error" id="script-error" role="alert">
+                        {scriptError}
+                      </p>
+                    )}
+                    <div className="textarea-footer" id="script-help">
                       <span>
                         {mode === "note"
                           ? "Check the words before continuing."
@@ -312,7 +393,7 @@ function Home() {
                       </span>
                     </div>
                   </div>
-                )}
+                ) : null}
                 {mode === "note" && script && (
                   <label className="check-line note-confirm">
                     <Checkbox
@@ -322,22 +403,6 @@ function Home() {
                     <span>I have checked the extracted text.</span>
                   </label>
                 )}
-                <div className="language-field">
-                  <label htmlFor="language">Language</label>
-                  <Select
-                    id="language"
-                    disabled={reading}
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
-                  >
-                    {LANGUAGES.map((l) => (
-                      <option key={l.code} value={l.code}>
-                        {l.native}
-                        {l.code === "en" ? "" : ` · ${l.label}`}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
               </div>
             )}
             {step === 2 && (
@@ -345,18 +410,26 @@ function Home() {
                 <div className="story-review">
                   <div>
                     <span>
-                      Your story ·{" "}
+                      {mode === "audio" ? "Your recording" : "Your story"} ·{" "}
                       {LANGUAGES.find((l) => l.code === language)?.native}
                     </span>
                     <button type="button" onClick={() => setStep(1)}>
-                      Edit
+                      Edit story
                     </button>
                   </div>
                   <p>{mode === "audio" ? audio?.name : script}</p>
+                  {mode === "audio" && audio && (
+                    <>
+                      <AudioPreview file={audio} />
+                      <p className="original-voice-note">
+                        Your recording will be used as-is. No AI voice.
+                      </p>
+                    </>
+                  )}
                 </div>
                 {mode !== "audio" && (
                   <fieldset className="gender-field">
-                    <legend>Voice</legend>
+                    <legend>Speaking voice</legend>
                     <div className="gender-toggle">
                       {(["female", "male"] as const).map((g) => (
                         <button
@@ -409,43 +482,62 @@ function Home() {
               </div>
             )}
 
-            <div className="form-actions">
-              {step > 0 && (
-                <Button
-                  variant="ghost"
-                  disabled={reading}
-                  onClick={() => setStep(step - 1)}
-                  className="back-button"
-                >
-                  <ArrowLeft size={18} /> Back
-                </Button>
-              )}
-              <Button
-                type="submit"
-                size="lg"
-                className="generate-button"
-                disabled={
-                  reading ||
-                  (step === 0 ? !portrait : step === 1 ? !storyReady : !ready)
-                }
-              >
-                {step === 2 ? "Create my video" : "Continue"}
-                <ArrowRight size={18} />
-              </Button>
-            </div>
-            <p className="privacy-note">
-              <ShieldCheck size={14} />
-              {step === 2
-                ? "AI-generated · Shared to the public gallery"
-                : "No sign-in. Just your story."}
-            </p>
+            {(step > 0 || portrait) && (
+              <div className="step-controls">
+                <div className="form-actions">
+                  {step > 0 && (
+                    <Button
+                      variant="ghost"
+                      disabled={reading}
+                      onClick={() => {
+                        if (step === 1) photoReturnStep.current = 1;
+                        setStep(step - 1);
+                      }}
+                      className="back-button"
+                    >
+                      <ArrowLeft size={18} /> Back
+                    </Button>
+                  )}
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="generate-button"
+                    aria-describedby="next-step-hint"
+                    disabled={
+                      reading ||
+                      (step === 0
+                        ? !portrait
+                        : step === 1
+                          ? !storyReady
+                          : !ready)
+                    }
+                  >
+                    {step === 2
+                      ? "Create my video"
+                      : step === 1
+                        ? "Review video"
+                        : "Use this photo"}
+                    <ArrowRight size={18} />
+                  </Button>
+                </div>
+                <p className="next-step-hint" id="next-step-hint">
+                  {step === 0
+                    ? photoReturnStep.current === 2 && storyReady
+                      ? "Return to your video review."
+                      : "Next, add your story."
+                    : nextHint}
+                </p>
+              </div>
+            )}
+            {step === 0 && !portrait && (
+              <p className="privacy-note">
+                <ShieldCheck size={14} />
+                Choose a photo to go to the next step.
+              </p>
+            )}
           </form>
         </section>
       </div>
-      <footer className="studio-footer">
-        <span>Stories worth sharing.</span>
-        <span>Made with PortraitVoice</span>
-      </footer>
     </main>
   );
 }
