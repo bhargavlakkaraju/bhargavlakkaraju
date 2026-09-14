@@ -27,12 +27,18 @@ export function GenerationScreen({
   }, []);
   const stages = [
     { key: "portrait", name: "Prepare portrait", icon: ScanFace },
-    { key: "voice", name: "Create voice", icon: AudioLines },
-    { key: "avatar", name: "Bring it to life", icon: Video },
+    {
+      key: "avatar",
+      name: state.skipVoice ? "Animate your recording" : "Create voice & video",
+      icon: AudioLines,
+    },
+    { key: "finish", name: "Finishing touches", icon: Video },
   ];
   const index = Math.max(
       0,
-      stages.findIndex((s) => s.key === state.stage),
+      state.statusNote === "Finishing your video"
+        ? 2
+        : stages.findIndex((s) => s.key === state.stage),
     ),
     elapsed = (now - (state.startedAt ?? now)) / 1000,
     stageElapsed = (now - (state.stageStartedAt ?? now)) / 1000;
@@ -92,13 +98,12 @@ export function GenerationScreen({
         <div className="scan-line" />
       </div>
       <div className="waiting-heading">
-
         <h1>
           {state.phase === "uploading"
             ? "Uploading your files"
             : (state.statusNote ?? stages[index]?.name)}
         </h1>
-        <p role="status">Your video is on its way.</p>
+        <p role="status">Natural voice. Unhurried movement.</p>
       </div>
       <div className="progress-block">
         <div
@@ -125,7 +130,7 @@ export function GenerationScreen({
       </div>
       <ol className="stage-list">
         {stages.map((s, i) => {
-          const done = i < index || (state.skipVoice && i === 1),
+          const done = i < index,
             active = i === index;
           return (
             <li
@@ -146,7 +151,7 @@ export function GenerationScreen({
                 <small>
                   {done
                     ? state.skipVoice && i === 1
-                      ? "Using your recording"
+                      ? "Original recording"
                       : "Complete"
                     : active
                       ? "In progress"

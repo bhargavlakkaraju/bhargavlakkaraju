@@ -224,7 +224,9 @@ function Home() {
                   <span>
                     {mode === "note"
                       ? "Check the words before continuing."
-                      : "Write in your selected language"}
+                      : language === "hi"
+                        ? "हिन्दी देवनागरी में लिखें"
+                        : "Write in your selected language"}
                   </span>
                   <span
                     className={script.length === 700 ? "text-brand-leaf" : ""}

@@ -114,7 +114,7 @@ test("internal routes and robots", async ({ page, request }) => {
   ).toBeVisible();
   await page.goto("/admin/usage");
   await expect(
-    page.getByRole("heading", { name: "AI credit usage" }),
+    page.getByRole("heading", { name: "AI usage" }),
   ).toBeVisible();
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
     "content",

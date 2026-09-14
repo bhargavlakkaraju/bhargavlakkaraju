@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 /**
  * Audio helpers backed by ffmpeg (system binary or `ffmpeg-static`).
- * Higgsfield only accepts MP3 audio inputs, so browser recordings
+ * Normalize browser recordings to MP3 for consistent duration probing and uploads; recordings
  * (m4a / webm / ogg / wav) are transcoded here before upload.
  */
 

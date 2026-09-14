@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 test.use({ trace: "off" });
-test("production photo upload reaches provider without submitting a paid job", async ({
+test("production photo upload is saved without submitting a paid job", async ({
   page,
 }) => {
   test.skip(

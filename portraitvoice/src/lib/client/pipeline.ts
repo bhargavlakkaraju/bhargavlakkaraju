@@ -184,26 +184,25 @@ export function useTestimonialPipeline() {
     }
     if (signal.aborted) return;
     let duration = snapshot.audioDuration ?? 0;
-    if (!e.audio_url) {
-      const job = await submitTestimonialJob({
-        data: { stage: "voice", entryId: e.id, token: saved.token },
-      });
-      const out = await runStage("voice", job.jobId, 30, null);
-      e = out.entry;
-      duration = out.durationSec ?? 0;
-      setState((s) => ({ ...s, audioUrl: out.url, entry: e }));
+    if (e.input_mode === "audio") {
+      if (!e.audio_url) throw new Error("Please upload your recording again.");
+      try {
+        duration = await measureAudioDuration(e.audio_url);
+      } catch {
+        if (!duration)
+          throw new Error(
+            "The recording duration could not be measured. Please resume.",
+          );
+      }
     }
     if (signal.aborted) return;
-    if (!e.audio_url) throw new Error("No speech was produced.");
-    try {
-      duration = await measureAudioDuration(e.audio_url);
-    } catch {
-      if (!duration)
-        throw new Error(
-          "The speech duration could not be measured. Use Resume to try again.",
-        );
-    }
-    if (signal.aborted) return;
+    setState((s) => ({
+      ...s,
+      stage: "avatar",
+      stageStartedAt: Date.now(),
+      stageEstimateSeconds: 240,
+      statusNote: "Creating your voice and video",
+    }));
     const avatar = await submitTestimonialJob({
       data: {
         stage: "avatar",

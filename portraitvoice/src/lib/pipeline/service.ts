@@ -1,31 +1,21 @@
+import { randomUUID } from "node:crypto";
 import { getRepository } from "../db";
-import { env } from "../env";
-import { fallbackCredits, STAGE_BILLING } from "../credits";
 import {
-  createJob,
-  estimateCost,
-  getJob,
-  HiggsfieldError,
-  jobFailureMessage,
+  createVideo,
+  getVideo,
+  HeyGenError,
   mapJobStatus,
-  uploadFromUrl,
-  uploadMedia,
-  assertMediaUrl,
-} from "../higgsfield";
+  providerMessage,
+  uploadAsset,
+} from "../heygen";
+import { storeMedia, readStoredUrl, downloadMedia } from "../media-store";
 import { LANGUAGE_CODES } from "../languages";
 import { addOutdoorAmbience } from "../ambience";
 import { probeDuration, transcodeToMp3 } from "../media";
-import type {
-  InputMode,
-  Stage,
-  TestimonialEntry,
-  UsageStage,
-  VoiceGender,
-} from "../types";
-import { buildAvatarJob, clipSecondsFor, LIPSYNC_MODEL } from "./avatar";
-import { buildOcrJob, OCR_LLM } from "./ocr";
-import { buildPortraitJob, type JobSpec } from "./portrait";
-import { buildVoiceJob, MAX_SCRIPT_CHARS } from "./voice";
+import type { InputMode, Stage, TestimonialEntry, VoiceGender } from "../types";
+import { buildAvatarJob } from "./avatar";
+import { readNote, OCR_MODEL } from "./ocr";
+import { buildVoiceJob, validateScript } from "./voice";
 import {
   assertOwner,
   findRequest,
@@ -51,16 +41,16 @@ export class PipelineError extends Error {
 }
 export function toFriendlyError(error: unknown): PipelineError {
   if (error instanceof PipelineError) return error;
-  if (error instanceof HiggsfieldError)
+  if (error instanceof HeyGenError)
     return new PipelineError(error.message, error.friendly);
   return new PipelineError(
     "Generation service error",
     error instanceof Error &&
-      /reconnect|resumed|upload|recording|duration|seconds|consent|recovery|in progress|before|complete|could not|Could not|time|speech/i.test(
+      /reconnect|resumed|upload|recording|duration|seconds|consent|recovery|in progress|before|complete|could not|Could not|time|speech|Please|Hindi|note/i.test(
         error.message,
       )
       ? error.message
-      : "Something interrupted generation. Please try again in a moment.",
+      : "Something interrupted generation. Resume to check the same request.",
   );
 }
 export interface UploadResult {
@@ -68,23 +58,23 @@ export interface UploadResult {
   url: string;
   durationSec: number | null;
 }
+function imageType(bytes: Uint8Array) {
+  if (bytes[0] === 137 && bytes[1] === 80 && bytes[2] === 78 && bytes[3] === 71)
+    return "image/png";
+  if (bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255)
+    return "image/jpeg";
+  if (
+    new TextDecoder().decode(bytes.slice(0, 4)) === "RIFF" &&
+    new TextDecoder().decode(bytes.slice(8, 12)) === "WEBP"
+  )
+    return "image/webp";
+  throw new PipelineError("Please upload a valid JPG, PNG or WebP photo.");
+}
 export async function uploadImageFile(file: File): Promise<UploadResult> {
   if (!file.size || file.size > 15 * 1024 * 1024)
     throw new PipelineError("Please upload a photo under 15 MB.");
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const png =
-    bytes[0] === 137 && bytes[1] === 80 && bytes[2] === 78 && bytes[3] === 71;
-  const jpg = bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
-  const webp =
-    new TextDecoder().decode(bytes.slice(0, 4)) === "RIFF" &&
-    new TextDecoder().decode(bytes.slice(8, 12)) === "WEBP";
-  if (!png && !jpg && !webp)
-    throw new PipelineError("Please upload a valid JPG, PNG or WebP photo.");
-  const up = await uploadMedia(
-    "image",
-    bytes,
-    png ? "png" : jpg ? "jpg" : "webp",
-  );
+  const up = await storeMedia(bytes, imageType(bytes));
   await registerUpload(up.id, up.url, "image", null);
   return { ...up, durationSec: null };
 }
@@ -113,16 +103,15 @@ export async function uploadAudioFile(file: File): Promise<UploadResult> {
     );
   const input = new Uint8Array(await file.arrayBuffer());
   const duration = await probeDuration(input, ext);
-  if (!duration || duration > 180)
+  if (duration < 1 || duration > 180)
     throw new PipelineError(
       "Please choose a playable recording between 1 second and 3 minutes.",
     );
-  // No trimming, noise removal or synthesis: preserve the original performance.
   const out =
     ext === "mp3"
       ? { bytes: input, durationSec: duration }
       : await transcodeToMp3(input, ext);
-  const up = await uploadMedia("audio", out.bytes, "mp3");
+  const up = await storeMedia(out.bytes, "audio/mpeg");
   await registerUpload(up.id, up.url, "audio", out.durationSec);
   return { ...up, durationSec: out.durationSec };
 }
@@ -139,63 +128,12 @@ async function fail(id: string, error: unknown) {
   });
   return msg;
 }
-async function tracked(
-  w: Workflow,
-  spec: JobSpec,
-  stage: UsageStage,
-  units: number,
-): Promise<StageJob> {
-  if (w.submitting)
-    throw new PipelineError(
-      "This request needs recovery by the administrator before another generation can start. This avoids charging for the same step twice.",
-    );
-  const credits =
-    (await estimateCost(spec.jobSetType, spec.costParams ?? spec.params)) ??
-    fallbackCredits(stage, units);
-  w.submitting = stage;
-  await saveWorkflow(w);
-  let id: string;
-  try {
-    id = await createJob(spec.jobSetType, spec.params);
-  } catch (error) {
-    // A definite 4xx means no job was accepted. A lost response is ambiguous: keep the guard.
-    if (
-      error instanceof HiggsfieldError &&
-      error.status >= 400 &&
-      error.status < 500
-    ) {
-      delete w.submitting;
-      await saveWorkflow(w);
-    }
-    throw error;
-  }
-  const job: StageJob = { id, model: spec.jobSetType, stage, credits, units };
-  w.jobs.push(job);
-  delete w.submitting;
-  await saveWorkflow(w);
-  const billing = STAGE_BILLING[stage];
-  await getRepository().insertUsage({
-    entry_id: w.id,
-    provider: "Higgsfield",
-    model:
-      spec.jobSetType === "llm_text"
-        ? `llm_text / ${OCR_LLM}`
-        : spec.jobSetType === "text2speech_v2"
-          ? "text2speech_v2 / ElevenLabs"
-          : spec.jobSetType,
-    stage,
-    units,
-    unit_type: billing.unitType,
-    credits,
-  });
-  return job;
-}
 function submission(w: Workflow, stage: Stage, j: StageJob) {
   return {
     entryId: w.id,
     jobId: j.id,
     stage,
-    estimatedSeconds: stage === "portrait" ? 50 : stage === "voice" ? 30 : 180,
+    estimatedSeconds: stage === "portrait" ? 3 : 240,
   };
 }
 function emptyEntry(inputMode: InputMode, language: string) {
@@ -226,40 +164,45 @@ export async function extractNoteText(
   file: File,
   language: string,
 ): Promise<ExtractionResult> {
-  const uploaded = await uploadImageFile(file);
+  if (!file.size || file.size > 15 * 1024 * 1024)
+    throw new PipelineError("Please upload a note under 15 MB.");
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const checked = new File([Buffer.from(bytes)], file.name, {
+    type: imageType(bytes),
+  });
   const e = await getRepository().createEntry(emptyEntry("note", language));
-  const token = newToken(),
-    w: Workflow = { id: e.id, tokenHash: hashToken(token), jobs: [] };
+  const token = newToken();
+  const w: Workflow = {
+    id: e.id,
+    tokenHash: hashToken(token),
+    jobs: [],
+    provider: "heygen",
+  };
   await saveWorkflow(w);
   try {
-    const j = await tracked(w, buildOcrJob(uploaded.id), "extraction", 1);
-    const started = Date.now();
-    while (Date.now() - started < 120000) {
-      const job = await getJob(j.id),
-        status = mapJobStatus(job.status);
-      if (status === "failed") throw new PipelineError(jobFailureMessage(job));
-      if (status === "completed") {
-        const text = (job.text ?? "").trim();
-        if (!text)
-          throw new PipelineError(
-            "We could not read this note. Please retake it in good light or type your testimonial.",
-          );
-        w.extractionText = text;
-        await saveWorkflow(w);
-        await getRepository().updateEntry(e.id, {
-          script_text: text.slice(0, 700),
-          error_message: "Awaiting author review and consent",
-        });
-        return { text, entryId: e.id, token };
-      }
-      await new Promise((r) => setTimeout(r, 2500));
-    }
-    throw new PipelineError(
-      "Reading the note took too long. Please type the text or try a clearer photo.",
-    );
+    const { text, tokens } = await readNote(checked, language);
+    w.extractionText = text;
+    await saveWorkflow(w);
+    await getRepository().updateEntry(e.id, {
+      script_text: text.slice(0, 700),
+      error_message: "Awaiting author review and consent",
+    });
+    await getRepository().insertUsage({
+      entry_id: e.id,
+      provider: "Vercel AI Gateway",
+      model: OCR_MODEL,
+      stage: "extraction",
+      units: tokens,
+      unit_type: "tokens",
+      credits: 0,
+    });
+    return { text, entryId: e.id, token };
   } catch (error) {
-    await fail(e.id, error);
-    throw error;
+    const friendly = new PipelineError(
+      "Note reading is temporarily unavailable. Please try again or type your words.",
+    );
+    await fail(e.id, friendly);
+    throw friendly;
   }
 }
 export interface CreateEntryInput {
@@ -284,19 +227,22 @@ export async function submitPortraitStage(input: CreateEntryInput) {
       );
     if (!LANGUAGE_CODES.includes(input.language))
       throw new PipelineError("Please choose a supported language.");
-    await requireUpload(input.sourcePortraitId, input.sourcePortraitUrl);
+    const upload = await requireUpload(
+      input.sourcePortraitId,
+      input.sourcePortraitUrl,
+    );
+    if (upload.kind !== "image")
+      throw new PipelineError("Please upload a portrait photo.");
+    let duration: number | undefined;
     if (input.inputMode === "audio") {
       if (!input.audioUrl)
         throw new PipelineError("Please upload a recording.");
-      await requireAudio(input.audioUrl);
-    } else if (
-      !input.scriptText?.trim() ||
-      input.scriptText.length > MAX_SCRIPT_CHARS ||
-      !input.gender
-    )
-      throw new PipelineError(
-        "Please add up to 700 characters and choose a voice gender.",
-      );
+      duration = (await requireAudio(input.audioUrl)).durationSec ?? undefined;
+    } else {
+      if (!input.gender)
+        throw new PipelineError("Please choose a voice gender.");
+      validateScript(input.scriptText ?? "", input.language);
+    }
     const existing = await findRequest(input.requestId);
     if (existing) {
       const w = await assertOwner(existing.id, input.token),
@@ -313,11 +259,9 @@ export async function submitPortraitStage(input: CreateEntryInput) {
           "Please read and confirm your note before continuing.",
         );
       w = await assertOwner(input.extraction.entryId, input.extraction.token);
-      if (!w.extractionText)
-        throw new PipelineError("Please confirm the extracted text first.");
-      if (w.requestId)
+      if (!w.extractionText || w.requestId)
         throw new PipelineError(
-          "This note already belongs to a video in progress.",
+          "Please confirm an unused note before continuing.",
         );
       e = await entry(w.id);
       w.tokenHash = hashToken(input.token);
@@ -330,73 +274,59 @@ export async function submitPortraitStage(input: CreateEntryInput) {
     w.requestId = input.requestId;
     w.consentAt = new Date().toISOString();
     w.ambience = input.ambience ?? false;
-    await saveWorkflow(w);
+    w.provider = "heygen";
+    w.audioDuration = duration;
     const voice =
       input.inputMode === "audio" || !input.gender
         ? null
         : buildVoiceJob(input.scriptText ?? "", input.language, input.gender)
             .voice;
+    // Preserve the supplied identity and background. No image-generation charge.
+    const portraitJob: StageJob = {
+      id: randomUUID(),
+      model: "original portrait",
+      provider: "local",
+      stage: "portrait",
+      credits: 0,
+      units: 1,
+      resolved: true,
+    };
+    w.jobs.push(portraitJob);
+    await saveWorkflow(w);
     await getRepository().updateEntry(e.id, {
       status: "processing",
-      current_stage: "portrait",
+      current_stage: "avatar",
       language: input.language,
       source_portrait_url: input.sourcePortraitUrl,
+      portrait_url: input.sourcePortraitUrl,
       script_text:
-        input.inputMode === "audio" ? null : input.scriptText?.trim(),
+        input.inputMode === "audio"
+          ? null
+          : validateScript(input.scriptText ?? "", input.language),
       audio_url: input.inputMode === "audio" ? input.audioUrl : null,
       voice_id: voice?.id ?? null,
       voice_name: voice?.name ?? null,
       voice_gender: input.inputMode === "audio" ? null : input.gender,
       error_message: null,
     });
-    try {
-      return submission(
-        w,
-        "portrait",
-        await tracked(
-          w,
-          buildPortraitJob(input.sourcePortraitId),
-          "portrait",
-          1,
-        ),
-      );
-    } catch (error) {
-      await fail(w.id, error);
-      throw error;
-    }
+    return submission(w, "portrait", portraitJob);
   });
 }
-export async function submitVoiceStage(id: string, token: string) {
-  return withWorkflowLock(id, async () => {
-    const w = await assertOwner(id, token),
-      e = await entry(id),
-      existing = w.jobs.find((j) => j.stage === "voice");
-    if (existing) return submission(w, "voice", existing);
-    if (
-      !e.portrait_url ||
-      !e.script_text ||
-      !e.voice_gender ||
-      e.input_mode === "audio"
-    )
-      throw new PipelineError(
-        "The portrait must complete before creating speech.",
-      );
-    try {
-      const spec = buildVoiceJob(e.script_text, e.language, e.voice_gender);
-      await getRepository().updateEntry(id, {
-        current_stage: "voice",
-        status: "processing",
-      });
-      return submission(
-        w,
-        "voice",
-        await tracked(w, spec, "voice", e.script_text.length),
-      );
-    } catch (error) {
-      await fail(id, error);
-      throw error;
-    }
-  });
+function assertCurrent(w: Workflow) {
+  if (w.provider !== "heygen")
+    throw new PipelineError(
+      "This unfinished request used the previous generator. Please create a new video with HeyGen. Your completed videos are still available.",
+    );
+}
+// Kept only for old clients; new clients submit speech and animation together.
+export async function submitVoiceStage(
+  id: string,
+  token: string,
+): Promise<never> {
+  await assertOwner(id, token);
+  throw new PipelineError(
+    "Please refresh PortraitVoice. Speech is now created together with your HeyGen video.",
+  );
 }
 export async function submitAvatarStage(
   id: string,
@@ -405,55 +335,110 @@ export async function submitAvatarStage(
 ) {
   return withWorkflowLock(id, async () => {
     const w = await assertOwner(id, token),
-      e = await entry(id),
-      existing = w.jobs.find((j) => j.stage === "avatar");
+      e = await entry(id);
+    assertCurrent(w);
+    const existing = w.jobs.find((j) => j.stage === "avatar");
     if (existing) return submission(w, "avatar", existing);
-    if (!e.portrait_url || !e.audio_url)
+    if (!w.consentAt || !e.portrait_url)
       throw new PipelineError(
-        "The portrait and voice must complete before video generation.",
+        "Your portrait and consent must be ready before video generation.",
       );
-    try {
-      assertMediaUrl(e.audio_url);
-      const response = await fetch(e.audio_url, {
-        signal: AbortSignal.timeout(60000),
-        redirect: "error",
-      });
-      if (!response.ok)
-        throw new PipelineError("The speech could not be downloaded.");
-      const bytes = new Uint8Array(await response.arrayBuffer()),
-        duration = await probeDuration(bytes, "mp3");
-      if (duration <= 0 || duration > 180)
-        throw new PipelineError(
-          "The recording must be between 1 second and 3 minutes.",
-        );
+    if (w.submitting)
+      throw new PipelineError(
+        "This submission needs administrator recovery before another render can start. This prevents a duplicate charge.",
+      );
+    if (!w.imageAssetId) {
+      const source = await readStoredUrl(e.portrait_url);
+      w.imageAssetId = await uploadAsset(
+        source.bytes,
+        source.record.type,
+        `${id}:image`,
+      );
+      await saveWorkflow(w);
+    }
+    if (e.input_mode === "audio" && !w.audioAssetId) {
+      if (!e.audio_url)
+        throw new PipelineError("Please upload your recording.");
+      const audio = await readStoredUrl(e.audio_url);
+      const duration = await probeDuration(audio.bytes, "mp3");
       if (
+        duration < 1 ||
+        duration > 180 ||
         !Number.isFinite(clientDuration) ||
         Math.abs(clientDuration - duration) > 3
       )
         throw new PipelineError(
-          "The recording duration could not be verified. Please try again.",
+          "The recording duration could not be verified. Please upload it again.",
         );
       w.audioDuration = duration;
+      w.audioAssetId = await uploadAsset(
+        audio.bytes,
+        "audio/mpeg",
+        `${id}:audio`,
+      );
       await saveWorkflow(w);
-      const clip = clipSecondsFor(env.AVATAR_ENGINE, Math.min(duration, 8));
-      const portrait = await uploadFromUrl("image", e.portrait_url);
-      const spec = buildAvatarJob({
-        engine: env.AVATAR_ENGINE,
-        resolution: env.AVATAR_RESOLUTION,
-        portraitMediaId: portrait.id,
-        audioMediaId: null,
-        durationSec: clip,
-        language: e.language,
-      });
-      await getRepository().updateEntry(id, {
-        current_stage: "avatar",
-        status: "processing",
-      });
-      return submission(w, "avatar", await tracked(w, spec, "avatar", clip));
+    }
+    const body = buildAvatarJob({
+      entryId: id,
+      imageAssetId: w.imageAssetId,
+      ...(w.audioAssetId
+        ? { audioAssetId: w.audioAssetId }
+        : { script: e.script_text ?? "" }),
+      language: e.language,
+      gender: e.voice_gender,
+    });
+    w.submitting = "avatar";
+    await saveWorkflow(w);
+    let video;
+    try {
+      video = await createVideo(body, `${id}:avatar`);
     } catch (error) {
-      await fail(id, error);
+      // Definite rejections are safe to retry. Ambiguous timeouts/409 retain the guard.
+      if (
+        error instanceof HeyGenError &&
+        error.status >= 400 &&
+        error.status < 500 &&
+        error.status !== 409
+      ) {
+        delete w.submitting;
+        await saveWorkflow(w);
+      }
       throw error;
     }
+    const jobId = video.video_id ?? video.id;
+    if (!jobId)
+      throw new PipelineError(
+        "HeyGen submission needs administrator recovery. Please do not create a duplicate video.",
+      );
+    const job: StageJob = {
+      id: jobId,
+      provider: "heygen",
+      model: "Avatar IV",
+      stage: "avatar",
+      credits: 0,
+      units: 1,
+    };
+    w.jobs.push(job);
+    delete w.submitting;
+    await saveWorkflow(w);
+    await getRepository().insertUsage({
+      entry_id: id,
+      provider: "HeyGen",
+      model:
+        e.input_mode === "audio"
+          ? "Avatar IV · original audio"
+          : "Avatar IV + ElevenLabs v3",
+      stage: "avatar",
+      units: 1,
+      unit_type: "videos",
+      credits: 0,
+    });
+    await getRepository().updateEntry(id, {
+      status: "processing",
+      current_stage: "avatar",
+      error_message: null,
+    });
+    return submission(w, "avatar", job);
   });
 }
 export async function checkStageJob(
@@ -465,69 +450,33 @@ export async function checkStageJob(
 ) {
   return withWorkflowLock(id, async () => {
     const w = await assertOwner(id, token);
-    const registered = w.jobs.find(
-      (j) =>
-        j.id === jobId &&
-        (j.stage === stage || (stage === "avatar" && j.stage === "lipsync")),
-    );
+    assertCurrent(w);
+    const registered = w.jobs.find((j) => j.id === jobId && j.stage === stage);
     if (!registered)
       throw new PipelineError(
         "This generation does not belong to the requested step.",
       );
-    const sync = w.jobs.find((j) => j.stage === "lipsync");
-    if (stage === "avatar" && sync && sync.id !== jobId)
+    if (registered.resolved || stage === "portrait")
       return {
-        status: "in_progress" as const,
-        jobId: sync.id,
-        chained: true,
+        status: "completed" as const,
+        jobId,
+        chained: false,
         error: null,
       };
-    const job = await getJob(jobId),
+    const job = await getVideo(jobId),
       status = mapJobStatus(job.status);
-    if (status === "failed") {
-      const error = await fail(id, new PipelineError(jobFailureMessage(job)));
-      return { status, jobId, chained: false, error };
-    }
-    if (
-      status === "completed" &&
-      stage === "avatar" &&
-      registered.stage !== "lipsync"
-    ) {
-      try {
-        const e = await entry(id);
-        if (!job.result_url || !e.audio_url)
-          throw new PipelineError("The generated clip could not be found.");
-        await getRepository().updateEntry(id, { motion_url: job.result_url });
-        const video = await uploadFromUrl("video", job.result_url),
-          audio = await uploadFromUrl("audio", e.audio_url);
-        const next = await tracked(
-          w,
-          {
-            jobSetType: LIPSYNC_MODEL,
-            params: {
-              input_video: { id: video.id, type: "video_input" },
-              input_audio: { id: audio.id, type: "audio_input" },
-              sync_mode: "loop",
-            },
-          },
-          "lipsync",
-          Math.ceil(w.audioDuration ?? 0),
-        );
-        return {
-          status: "in_progress" as const,
-          jobId: next.id,
-          chained: true,
-          error: null,
-        };
-      } catch (error) {
-        return {
-          status: "failed" as const,
-          jobId,
-          chained: false,
-          error: await fail(id, error),
-        };
-      }
-    }
+    if (status === "failed")
+      return {
+        status,
+        jobId,
+        chained: false,
+        error: await fail(
+          id,
+          new PipelineError(
+            providerMessage(400, job.failure_code ?? "render_failed"),
+          ),
+        ),
+      };
     return { status, jobId, chained: false, error: null };
   });
 }
@@ -538,15 +487,15 @@ export async function resolveStageJob(
   token: string,
 ) {
   return withWorkflowLock(id, async () => {
-    const w = await assertOwner(id, token),
-      registered = w.jobs.find(
-        (j) =>
-          j.id === jobId &&
-          j.stage === (stage === "avatar" ? "lipsync" : stage),
-      );
+    const w = await assertOwner(id, token);
+    const current = await entry(id);
+    const registered = w.jobs.find(
+      (j) =>
+        j.id === jobId &&
+        (j.stage === stage || (stage === "avatar" && j.stage === "lipsync")),
+    );
     if (!registered)
       throw new PipelineError("This job cannot complete the requested step.");
-    const current = await entry(id);
     const existingUrl =
       stage === "portrait"
         ? current.portrait_url
@@ -560,68 +509,48 @@ export async function resolveStageJob(
         url: existingUrl,
         durationSec: w.audioDuration ?? null,
       };
-    const job = await getJob(jobId);
-    if (mapJobStatus(job.status) !== "completed" || !job.result_url)
+    assertCurrent(w);
+    if (stage !== "avatar")
+      throw new PipelineError("Please refresh to use the new generator.");
+    const job = await getVideo(jobId);
+    if (mapJobStatus(job.status) !== "completed" || !job.video_url)
       throw new PipelineError(
         "This step is still in progress. Please wait a moment.",
       );
-    const e = await entry(id);
-    let url = job.result_url;
-    if (stage === "avatar" && w.ambience) {
-      if (!w.ambienceVideoUrl) {
-        assertMediaUrl(url);
-        const response = await fetch(url, {
-          signal: AbortSignal.timeout(120_000),
-          redirect: "error",
-        });
-        if (!response.ok)
-          throw new PipelineError(
-            "Could not prepare the final video. Please resume to retry.",
-          );
-        const bytes = new Uint8Array(await response.arrayBuffer());
-        const mixed = await addOutdoorAmbience(bytes);
-        w.ambienceVideoUrl = (await uploadMedia("video", mixed, "mp4")).url;
+    // Cache the durable output before updating the entry; retrying finalization never rerenders.
+    if (!w.finalVideoUrl) {
+      const bytes = await downloadMedia(job.video_url);
+      if (current.input_mode !== "audio" && !w.finalAudioUrl) {
+        const speech = await transcodeToMp3(bytes, "mp4");
+        w.finalAudioUrl = (await storeMedia(speech.bytes, "audio/mpeg")).url;
         await saveWorkflow(w);
       }
-      url = w.ambienceVideoUrl;
+      const mixed = w.ambience ? await addOutdoorAmbience(bytes) : bytes;
+      w.finalVideoUrl = (await storeMedia(mixed, "video/mp4")).url;
+      w.audioDuration = job.duration ?? w.audioDuration;
+      await saveWorkflow(w);
     }
-    let updated: TestimonialEntry;
-    if (stage === "portrait")
-      updated = await getRepository().updateEntry(id, {
-        portrait_url: url,
-        current_stage: e.input_mode === "audio" ? "avatar" : "voice",
-      });
-    else if (stage === "voice")
-      updated = await getRepository().updateEntry(id, {
-        audio_url: url,
-        current_stage: "avatar",
-      });
-    else
-      updated = await getRepository().updateEntry(id, {
-        video_url: url,
-        status: "completed",
-        current_stage: null,
-        error_message: null,
-        completed_at: e.completed_at ?? new Date().toISOString(),
-      });
+    const updated = await getRepository().updateEntry(id, {
+      video_url: w.finalVideoUrl,
+      audio_url: current.audio_url ?? w.finalAudioUrl ?? null,
+      status: "completed",
+      current_stage: null,
+      error_message: null,
+      completed_at: current.completed_at ?? new Date().toISOString(),
+    });
     registered.resolved = true;
     await saveWorkflow(w);
     return {
       stage,
       entry: updated,
-      url,
-      durationSec:
-        stage === "voice"
-          ? (job.meta?.duration ?? null)
-          : (w.audioDuration ?? null),
+      url: w.finalVideoUrl,
+      durationSec: w.audioDuration ?? null,
     };
   });
 }
 export async function resumeGeneration(id: string, token: string) {
   const w = await assertOwner(id, token);
-  return {
-    entry: await entry(id),
-    jobs: w.jobs,
-    audioDuration: w.audioDuration ?? null,
-  };
+  const e = await entry(id);
+  if (e.status !== "completed") assertCurrent(w);
+  return { entry: e, jobs: w.jobs, audioDuration: w.audioDuration ?? null };
 }

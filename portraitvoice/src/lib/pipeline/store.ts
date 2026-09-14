@@ -12,12 +12,18 @@ import { env } from "../env";
 export interface StageJob {
   id: string;
   model: string;
+  provider?: "heygen" | "local";
   stage: Stage | "extraction" | "lipsync";
   credits: number;
   units: number;
   resolved?: boolean;
 }
 export interface Workflow {
+  provider?: "heygen";
+  imageAssetId?: string;
+  audioAssetId?: string;
+  finalVideoUrl?: string;
+  finalAudioUrl?: string;
   id: string;
   tokenHash: string;
   requestId?: string;

@@ -4,7 +4,7 @@ import { listUsage } from "@/server/fns";
 export const Route = createFileRoute("/admin/usage")({
   head: () => ({
     meta: [
-      { title: "AI credit usage — PortraitVoice internal" },
+      { title: "AI usage — PortraitVoice internal" },
       { name: "robots", content: "noindex, nofollow" },
       {
         name: "description",
@@ -20,14 +20,14 @@ function Usage() {
   const data = Route.useLoaderData();
   return (
     <AdminShell
-      title="AI credit usage"
+      title="AI usage"
       description="Generation usage across every stage of a story."
     >
       <div className="usage-total">
         <div>
-          <span>Recorded credit estimates</span>
+          <span>Current generator</span>
           <strong>
-            {data.totalCredits.toFixed(2)} <small>credits</small>
+            HeyGen <small>Avatar IV</small>
           </strong>
         </div>
         <div>
@@ -39,16 +39,11 @@ function Usage() {
         <table className="data-table">
           <thead>
             <tr>
-              {[
-                "Provider",
-                "Model",
-                "Stage",
-                "Events",
-                "Units",
-                "Credits (estimated)",
-              ].map((h) => (
-                <th key={h}>{h}</th>
-              ))}
+              {["Provider", "Model", "Stage", "Events", "Units", "Billing"].map(
+                (h) => (
+                  <th key={h}>{h}</th>
+                ),
+              )}
             </tr>
           </thead>
           <tbody>
@@ -62,7 +57,11 @@ function Usage() {
                   <td>
                     {r.units.toFixed(2)} {r.unit_type}
                   </td>
-                  <td>{r.credits.toFixed(3)}</td>
+                  <td>
+                    {r.provider === "Higgsfield"
+                      ? `${r.credits.toFixed(3)} legacy credits`
+                      : "See provider billing"}
+                  </td>
                 </tr>
               ))
             ) : (
@@ -76,9 +75,9 @@ function Usage() {
         </table>
       </div>
       <p className="usage-footnote">
-        Credits use Higgsfield’s quote at submission where available. Fallback
-        rates are estimates, not an account statement. Failed submitted jobs may
-        still be billable. Totals include all recorded events.
+        HeyGen handles Avatar IV and ElevenLabs v3 in one render. Counts show
+        submitted usage, not an invoice. Note reading uses Vercel AI Gateway.
+        Historical provider records remain here; new videos use HeyGen only.
       </p>
     </AdminShell>
   );

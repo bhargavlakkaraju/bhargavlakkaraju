@@ -1,38 +1,38 @@
+import { pickStandardVoice } from "../voices";
 import type { VoiceGender } from "../types";
-import { pickStandardVoice, type StandardVoice } from "../voices";
-import type { JobSpec } from "./portrait";
-
-export const VOICE_MODEL = "text2speech_v2";
-export const VOICE_ENGINE = "elevenlabs";
+export const VOICE_MODEL = "eleven_v3";
 export const MAX_SCRIPT_CHARS = 700;
-
-export interface VoiceJob extends JobSpec {
-  voice: StandardVoice;
+export function validateScript(text: string, language: string) {
+  const script = text.trim().normalize("NFC");
+  if (!script || script.length > MAX_SCRIPT_CHARS)
+    throw new Error("Please add up to 700 characters.");
+  if (language === "hi") {
+    const native = (script.match(/[\u0900-\u097f]/g) ?? []).length;
+    const latin = (script.match(/[a-z]/gi) ?? []).length;
+    if (!native || latin > native)
+      throw new Error(
+        "Please write Hindi in देवनागरी, for example नमस्ते. This helps the voice pronounce Hindi naturally.",
+      );
+  }
+  return script;
 }
-
-/**
- * Higgsfield Text-to-Speech V2 with the ElevenLabs engine and an automatically
- * chosen standard voice. (ElevenLabs on Higgsfield does not accept speed or
- * language hints; the multilingual model detects the script's language.)
- */
 export function buildVoiceJob(
   text: string,
   language: string,
   gender: VoiceGender,
-): VoiceJob {
-  const voice = pickStandardVoice(language, gender);
-  const base = {
-    prompt: text.trim().slice(0, MAX_SCRIPT_CHARS),
-    voice_type: voice.type,
-    voice_id: voice.id,
-  };
+) {
   return {
-    jobSetType: VOICE_MODEL,
-    params: { ...base, model: VOICE_ENGINE },
-    // The cost endpoint uses `variant` where the create endpoint uses `model`.
-    costParams: { ...base, variant: VOICE_ENGINE },
-    voice,
+    script: validateScript(text, language),
+    voice: pickStandardVoice(language, gender),
+    voice_settings: {
+      speed: 1,
+      pitch: 0,
+      volume: 1,
+      engine_settings: {
+        engine_type: "elevenlabs",
+        model: VOICE_MODEL,
+        stability: 0.5,
+      },
+    },
   };
 }
-
-export const VOICE_ESTIMATE_SECONDS = 20;

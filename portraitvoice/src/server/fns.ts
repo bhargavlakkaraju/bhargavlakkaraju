@@ -136,7 +136,7 @@ const submitSchema = z.discriminatedUnion("stage", [
     stage: z.literal("avatar"),
     entryId: z.uuid(),
     token: z.string().length(64),
-    audioDurationSec: z.number().positive().max(600),
+    audioDurationSec: z.number().nonnegative().max(180),
   }),
 ]);
 
@@ -161,8 +161,8 @@ const checkSchema = z.object({
   entryId: z.uuid(),
   token: z.string().length(64),
   stage: z.enum(["portrait", "voice", "avatar"]),
-  jobId: z.uuid(),
-  audioDurationSec: z.number().positive().max(600).nullable(),
+  jobId: z.string().regex(/^[A-Za-z0-9_-]{1,100}$/),
+  audioDurationSec: z.number().nonnegative().max(180).nullable(),
 });
 
 export const checkTestimonialJob = createServerFn({ method: "POST" })
@@ -185,7 +185,7 @@ const resultSchema = z.object({
   entryId: z.uuid(),
   token: z.string().length(64),
   stage: z.enum(["portrait", "voice", "avatar"]),
-  jobId: z.uuid(),
+  jobId: z.string().regex(/^[A-Za-z0-9_-]{1,100}$/),
 });
 
 export const getTestimonialJobResult = createServerFn({ method: "POST" })
@@ -233,11 +233,10 @@ export const listUsage = createServerFn({ method: "GET" }).handler(async () => {
     if (page.length < 1000) break;
   }
   const summary = summarizeUsage(events);
-  const totalCredits = summary.reduce((sum, r) => sum + r.credits, 0);
+
   return {
     events: events.slice(0, 200),
     summary,
-    totalCredits,
     totalEvents: events.length,
     engine: env.AVATAR_ENGINE,
     resolution: env.AVATAR_RESOLUTION,
