@@ -62,7 +62,7 @@ game-over panel → `restart()` (new run, back to `ready`) or `revive()` (same r
 | `best` | best score for this game+mode (null if none) |
 | `time` | seconds elapsed in the current run |
 | `state` | `'ready' | 'playing' | 'over'` |
-| `gameOver({ win?, delay?, stats? })` | end the run. `delay` ms (default 750) before the panel shows, so death effects can play. `win: true/false` for puzzles |
+| `gameOver({ win?, delay?, stats? })` | end the run. `stats.shareText` is appended to share messages; `stats.rankable: false` keeps the run off leaderboards (e.g. an easy mode). `delay` ms (default 750) before the panel shows, so death effects can play. `win: true/false` for puzzles |
 | `sfx.play(name)` | `tap click jump flap score coin pop place hit whoosh die error perfect win levelup merge swipe` |
 | `sfx.combo(n)` | rising-pitch blip for streaks |
 | `sfx.tone({freq,to,type,dur,vol,delay})`, `sfx.noise({...})` | custom synth sounds |

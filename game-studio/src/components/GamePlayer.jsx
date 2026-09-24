@@ -94,7 +94,7 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
       setOffer(null);
       // Leaderboard: auto-post personal bests once the player has a name.
       const p = getPlayer();
-      const counts = !(m.lowerIsBetter && d.win === false) && d.score > 0;
+      const counts = !(m.lowerIsBetter && d.win === false) && d.score > 0 && d.stats?.rankable !== false;
       if (p.name && counts && !embed) {
         submitScore({ meta: m, score: d.score, mode: d.mode, name: p.name })
           .then((r) => r && r.you && setRank(r.you))
@@ -396,7 +396,7 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
                 )}
               </div>
 
-              {!embed && !(meta.lowerIsBetter && over.win === false) && over.score > 0 && (
+              {!embed && !(meta.lowerIsBetter && over.win === false) && over.score > 0 && over.stats?.rankable !== false && (
                 <div className="mt-3 rounded-2xl bg-white/5 p-2.5 text-sm">
                   {rank ? (
                     <div className="font-bold text-aqua">

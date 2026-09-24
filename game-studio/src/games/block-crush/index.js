@@ -132,6 +132,18 @@ function crown(g, x, y, s, color) {
   g.fill();
 }
 
+const fmtCache = new Map();
+function fmt(v) {
+  const n = Math.round(v);
+  let s = fmtCache.get(n);
+  if (s === undefined) {
+    if (fmtCache.size > 400) fmtCache.clear();
+    s = n.toLocaleString('en-US');
+    fmtCache.set(n, s);
+  }
+  return s;
+}
+
 export default function createGame(api) {
   const W = api.width;
   const H = api.height;
@@ -574,7 +586,7 @@ export default function createGame(api) {
     // best (top-left)
     if (best > 0) {
       crown(g, 30, 34, 11, '#ffd23f');
-      drawText(g, best.toLocaleString('en-US'), 48, 35, { size: 22, weight: 800, color: '#ffe89a', align: 'left', shadow: false });
+      drawText(g, fmt(best), 48, 35, { size: 22, weight: 800, color: '#ffe89a', align: 'left', shadow: false });
     }
     if (api.daily) {
       roundRect(g, 18, 56, 70, 22, 11, 'rgba(34,211,238,0.18)');
@@ -585,7 +597,7 @@ export default function createGame(api) {
     g.save();
     g.translate(W / 2, 62);
     g.scale(s, s);
-    drawText(g, Math.round(shown).toLocaleString('en-US'), 0, 0, { size: 52, weight: 800, color: '#ffffff', shadow: 'rgba(0,0,0,0.4)' });
+    drawText(g, fmt(shown), 0, 0, { size: 52, weight: 800, color: '#ffffff', shadow: 'rgba(0,0,0,0.4)' });
     g.restore();
     // challenge target
     if (api.target != null) {
@@ -764,6 +776,22 @@ export default function createGame(api) {
     drawPiece(g, s, pal, drag.dx, drag.dy, cs, 1);
   }
 
+  function renderStuck(g) {
+    if (!stuck || stuckT < 0.35) return;
+    const k = Math.min(1, (stuckT - 0.35) / 0.3);
+    const s = ease.outBack(k);
+    const cy = BY + BW / 2;
+    g.save();
+    g.globalAlpha = k;
+    roundRect(g, BX - 12, BY - 12, BW + 24, BW + 24, 20, 'rgba(11,7,33,0.55)');
+    g.translate(W / 2, cy);
+    g.scale(s, s);
+    roundRect(g, -170, -52, 340, 104, 24, 'rgba(20,12,52,0.95)', 'rgba(255,80,110,0.8)', 3);
+    drawText(g, 'NO SPACE LEFT', 0, -12, { size: 36, weight: 800, color: '#ffffff', shadow: 'rgba(0,0,0,0.5)' });
+    drawText(g, 'None of your pieces fit', 0, 26, { size: 17, weight: 700, color: '#ff8fa3', shadow: false });
+    g.restore();
+  }
+
   function renderKb(g) {
     if (!kb || !tray[kb.slot]) return;
     const piece = tray[kb.slot].piece;
@@ -829,6 +857,7 @@ export default function createGame(api) {
       const rows = counts.slice(0, 3).map((o) => o.r);
       const cleared = clearLines(board, rows, []);
       for (const o of cleared) {
+        if (!o.v) continue; // rows being emptied still contain some empty cells
         const r = (o.i / N) | 0;
         const c = o.i % N;
         clearing.push({ x: cellX(c), y: cellY(r), pal: PALS[o.v - 1], delay: 0.15 + c * 0.04, t: 0, burst: false });
@@ -858,6 +887,7 @@ export default function createGame(api) {
       renderKb(g);
       renderTray(g);
       renderDrag(g);
+      renderStuck(g);
     },
     /** Test hook: read-only snapshot of the run (not used by the engine). */
     debug() {

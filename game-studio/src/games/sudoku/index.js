@@ -41,12 +41,13 @@ const C = {
   dim: 'rgba(223,229,255,0.55)',
 };
 
-export function formatTime(sec) {
+export function formatTime(sec, padMinutes = true) {
   const s = Math.max(0, Math.floor(sec));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   const ss = String(s % 60).padStart(2, '0');
-  return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${String(m).padStart(2, '0')}:${ss}`;
+  if (h) return `${h}:${String(m).padStart(2, '0')}:${ss}`;
+  return `${padMinutes ? String(m).padStart(2, '0') : m}:${ss}`;
 }
 
 // ---------- small vector icons ----------
@@ -234,14 +235,15 @@ export default function createGame(api) {
     }
   }
 
-  function cleanNotes() {
+  /** After an undo, drop notes made stale by digits placed since that snapshot. */
+  function cleanNotes(snapVals) {
     for (let i = 0; i < 81; i++) {
       if (vals[i]) {
         notes[i] = 0;
         continue;
       }
       if (!notes[i]) continue;
-      for (const p of PEERS[i]) if (isCorrect(p)) notes[i] &= ~BIT(vals[p]);
+      for (const p of PEERS[i]) if (isCorrect(p) && snapVals[p] !== vals[p]) notes[i] &= ~BIT(vals[p]);
     }
   }
 
@@ -372,7 +374,7 @@ export default function createGame(api) {
       if (!isCorrect(i)) vals[i] = snap.vals[i];
       notes[i] = snap.notes[i];
     }
-    cleanNotes();
+    cleanNotes(snap.vals);
     recomputeConflicts();
     sfx.play('whoosh');
   }
@@ -440,9 +442,9 @@ export default function createGame(api) {
     confettiT = 0.35;
     const label = api.daily ? 'Daily Sudoku' : `Sudoku ${DIFFICULTY[diff].label}`;
     const squares = '🟩'.repeat(MAX_MISTAKES - mistakes) + '🟥'.repeat(mistakes);
-    const share = `${squares} ${label} ${formatTime(secs)}${hintsUsed ? ` · 💡${hintsUsed}` : ''}`;
+    const share = `${squares} ${label} ${formatTime(secs, false)}${hintsUsed ? ` · 💡${hintsUsed}` : ''}`;
     api.emit('milestone', { solved: diff, seconds: secs });
-    api.gameOver({ win: true, delay: 2300, stats: { difficulty: diff, mistakes, hints: hintsUsed, shareText: share } });
+    api.gameOver({ win: true, delay: 2300, stats: { difficulty: diff, rankable: diff === 'medium', mistakes, hints: hintsUsed, shareText: share } });
   }
 
   function lose() {
@@ -587,7 +589,7 @@ export default function createGame(api) {
     // mistakes
     drawText(g, 'MISTAKES', 20, y, { size: 13, weight: 800, color: C.dim, align: 'left', shadow: false });
     for (let k = 0; k < MAX_MISTAKES; k++) {
-      const x = 104 + k * 22;
+      const x = 116 + k * 21;
       const used = k < mistakes;
       const s = used && k === mistakes - 1 ? 1 + mistakePulse * 0.6 : 1;
       g.save();

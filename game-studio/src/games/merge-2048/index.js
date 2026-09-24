@@ -37,6 +37,7 @@ const BIG_STYLE = { bg: '#26204d', fg: '#ffd84a', glow: 0.6, side: '#15112e', gl
 function styleFor(v) {
   return STYLE[v] || BIG_STYLE;
 }
+const FONTS = {};
 function fontSizeFor(v, size) {
   const d = String(v).length;
   const k = d <= 2 ? 0.52 : d === 3 ? 0.44 : d === 4 ? 0.36 : d === 5 ? 0.29 : 0.24;
@@ -62,7 +63,7 @@ function drawTile(g, x, y, size, v, scale = 1, alpha = 1) {
   roundRect(g, x0, y0, s, s - lip, r, st.bg);
   roundRect(g, x0 + 5 * scale, y0 + 4 * scale, s - 10 * scale, (s - lip) * 0.4, r * 0.8, 'rgba(255,255,255,0.16)');
   const fs = fontSizeFor(v, s);
-  g.font = `800 ${fs}px ${FONT}`;
+  g.font = FONTS[fs] || (FONTS[fs] = `800 ${fs}px ${FONT}`);
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   const cx = x0 + s / 2;
@@ -72,6 +73,18 @@ function drawTile(g, x, y, size, v, scale = 1, alpha = 1) {
   g.fillStyle = st.fg;
   g.fillText(String(v), cx, cy);
   g.globalAlpha = 1;
+}
+
+const fmtCache = new Map();
+function fmt(v) {
+  const n = Math.round(v);
+  let s = fmtCache.get(n);
+  if (s === undefined) {
+    if (fmtCache.size > 400) fmtCache.clear();
+    s = n.toLocaleString('en-US');
+    fmtCache.set(n, s);
+  }
+  return s;
 }
 
 export default function createGame(api) {
@@ -184,10 +197,11 @@ export default function createGame(api) {
         if (m.v > top) top = m.v;
       }
       const lvl = Math.log2(top);
-      sfx.tone({ freq: 240 + lvl * 38, to: 420 + lvl * 60, type: 'sine', dur: 0.12, vol: 0.2 });
-      sfx.tone({ freq: 480 + lvl * 60, to: 700 + lvl * 70, type: 'triangle', dur: 0.1, vol: 0.08, delay: 0.04 });
+      sfx.play('merge');
+      // a pitch that climbs with the tile value makes big merges feel bigger
+      sfx.tone({ freq: 420 + lvl * 55, to: 620 + lvl * 70, type: 'triangle', dur: 0.1, vol: 0.07, delay: 0.05 });
       if (res.merges.length >= 2) sfx.combo(res.merges.length + 2);
-      fx.text(262, 30, `+${res.gained}`, { size: 22 + Math.min(14, lvl), color: '#ffe27a', life: 0.8, rise: 30 });
+      fx.text(262, 66, `+${res.gained}`, { size: 22 + Math.min(14, lvl), color: '#ffe27a', life: 0.8, rise: 36 });
       api.haptic(res.merges.length > 1 ? 18 : 10);
       const nm = maxTile(vals);
       if (nm > maxT) {
@@ -275,7 +289,7 @@ export default function createGame(api) {
     roundRect(g, x, y, w, 62, 14, 'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.1)', 1.5);
     drawText(g, label, x + w / 2, y + 17, { size: 12, weight: 800, color: 'rgba(255,255,255,0.6)', shadow: false });
     const s = hi ? 1 + ease.outQuad(pop) * 0.15 : 1;
-    const str = Math.round(value).toLocaleString('en-US');
+    const str = fmt(value);
     g.save();
     g.translate(x + w / 2, y + 42);
     g.scale(s, s);
@@ -384,10 +398,16 @@ export default function createGame(api) {
       drawText(g, `Top tile ${maxT}`, 0, 34, { size: 20, weight: 700, color: '#ffe27a', shadow: false });
       g.restore();
     }
-    if (rewindT < 1.2) {
-      const k = rewindT / 1.2;
-      g.globalAlpha = 1 - k;
-      drawText(g, 'REWOUND 3 MOVES', W / 2, BY + BOARD / 2, { size: 34, weight: 800, color: '#7ff0ff', shadow: 'rgba(0,0,0,0.5)' });
+    if (rewindT < 1.6) {
+      const k = rewindT / 1.6;
+      g.globalAlpha = k < 0.75 ? 1 : 1 - (k - 0.75) / 0.25;
+      const s = ease.outBack(Math.min(1, rewindT / 0.3));
+      g.save();
+      g.translate(W / 2, BY + BOARD / 2);
+      g.scale(s, s);
+      roundRect(g, -160, -34, 320, 68, 20, 'rgba(14,9,34,0.9)', 'rgba(127,240,255,0.7)', 2.5);
+      drawText(g, 'REWOUND 3 MOVES', 0, 1, { size: 30, weight: 800, color: '#7ff0ff', shadow: false });
+      g.restore();
       g.globalAlpha = 1;
     }
     g.restore();
