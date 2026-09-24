@@ -3,6 +3,8 @@
 import { getAnswers, getValid } from './words.js';
 import { scoreGuess, dailyAnswer, puzzleNumber, msUntilNextUtcDay, shareText, CORRECT, PRESENT, ABSENT } from './logic.js';
 
+const DEV_HOST = typeof location !== 'undefined' && /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+
 const C = {
   bg: '#15122a',
   bg2: '#1d1838',
@@ -664,7 +666,8 @@ export default function createGame(api) {
   reset();
 
   // Test/debug hook (reachable via the engine controller's api object).
-  api.__test = {
+  // Test hooks exist only on localhost (dev harness), never on the live site.
+  if (DEV_HOST) api.__test = {
     get answer() {
       return answer;
     },

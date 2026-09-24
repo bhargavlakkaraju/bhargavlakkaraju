@@ -3,6 +3,8 @@
 import { drawFace, drawBack, drawFelt, roundRectPath, isRed, RANKS } from './cards.js';
 import { isWinnable, dealFromOrder } from './solver.js';
 
+const DEV_HOST = typeof location !== 'undefined' && /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+
 const CW = 62;
 const CH = 88;
 const GAP = 5;
@@ -1167,7 +1169,8 @@ export default function createGame(api) {
     const rank = RANKS.indexOf(m[1]);
     return 'SHCD'.indexOf(m[2]) * 13 + rank - 1;
   };
-  api.__test = {
+  // Test hooks exist only on localhost (dev harness), never on the live site.
+  if (DEV_HOST) api.__test = {
     state() {
       const o = { moves, elapsed, drawCount, won, autoAvail, busy: busy(), fanN };
       for (const id of PILE_IDS) o[id] = piles[id].map((c) => (c.up ? name(c) : name(c).toLowerCase()));

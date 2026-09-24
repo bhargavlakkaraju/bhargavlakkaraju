@@ -23,6 +23,7 @@ export default {
   },
   medals: [600, 300, 180],
   maxScore: 86400,
+  minScore: 45, // faster "wins" are rejected by the leaderboard
   scoreLabel: 'Time',
   controls: {
     touch: 'Tap a card to auto-move it, drag cards and stacks, tap the deck to draw',
