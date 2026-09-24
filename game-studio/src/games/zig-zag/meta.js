@@ -1,0 +1,56 @@
+export default {
+  slug: 'zig-zag',
+  title: 'Zig Zag',
+  tagline: 'Tap to turn. Don’t fall off.',
+  description: 'Roll a ball along a narrow zig zag path that crumbles behind you. Tap to turn, grab gems and chase your best. Free online game, no download.',
+  category: 'arcade',
+  tags: ['one-tap', 'reflex', 'endless', 'isometric', 'hyper-casual'],
+  emoji: '🔷',
+  colors: ['#4cc9f0', '#ff6b9d'],
+  bg: '#1b2f52',
+  width: 420,
+  height: 740,
+  startMode: 'tap',
+  readyY: 0.26,
+  revive: true,
+  daily: true,
+  lowerIsBetter: false,
+  medals: [50, 150, 300],
+  maxScore: 50000,
+  scoreLabel: 'Points',
+  hint: 'Tap to switch direction',
+  controls: {
+    touch: 'Tap anywhere to switch direction',
+    mouse: 'Click to switch direction',
+    keyboard: 'Space / Enter / ↑ to switch, or ← and → to steer',
+  },
+  howTo: [
+    'Tap to start. The ball rolls along the path on its own.',
+    'Tap again to switch between the up-left and up-right diagonals.',
+    'Turn on every corner. If the ball rolls off the edge, it falls.',
+    'Every tile you cross scores a point, and gems are worth 3 more.',
+    'The path crumbles behind you and the ball keeps getting faster.',
+  ],
+  tips: [
+    'Tap when the ball reaches the middle of the corner tile. Well-timed turns build a Perfect streak.',
+    'Keep your eyes a few tiles ahead of the ball so quick double turns never surprise you.',
+    'Long straights are a trap for itchy fingers. Wait for the corner before you tap.',
+  ],
+  faq: [
+    {
+      q: 'Is Zig Zag free to play?',
+      a: 'Yes. Zig Zag is a free online game that runs in any modern browser on phones, tablets and computers. There is nothing to download or install.',
+    },
+    {
+      q: 'How is the score calculated?',
+      a: 'You score 1 point for every tile the ball rolls onto and 3 bonus points for each gem. Chaining 8 perfect turns in a row adds a streak bonus of 5.',
+    },
+    {
+      q: 'What is the Zig Zag Daily Challenge?',
+      a: 'Every day there is one fixed path, the same for every player worldwide. Learn its corners, set your best score and compare it with your friends.',
+    },
+  ],
+  about:
+    'Zig Zag is a one-tap reflex game about rhythm and focus. A ball rolls along a narrow isometric path of floating tiles, and your only control is switching its direction between the two diagonals. The path twists without warning. There are long straights that tempt you to tap too early, quick double turns that need two fast taps, and tiles that crumble into the void the moment you pass them. The ball speeds up the further you go, so a calm run slowly becomes a frantic one. Collect pink gems for bonus points, string together perfect turns and keep rolling as long as you can. Rounds take seconds and restarts are instant, so there is always time for one more try.',
+  released: '2026-09-24',
+};

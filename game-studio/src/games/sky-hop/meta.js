@@ -1,0 +1,57 @@
+export default {
+  slug: 'sky-hop',
+  title: 'Sky Hop',
+  tagline: 'Bounce higher. Never look down.',
+  description: 'Bounce from island to island and climb into the sky. Steer left and right, ride springs and dodge crumbling ledges. Free online game, no download.',
+  category: 'arcade',
+  tags: ['jumping', 'endless', 'platformer', 'one-finger', 'hyper-casual'],
+  emoji: '🐤',
+  colors: ['#ff5d73', '#46c8ff'],
+  bg: '#1d2a5c',
+  width: 420,
+  height: 740,
+  startMode: 'tap',
+  readyY: 0.28,
+  revive: true,
+  daily: true,
+  lowerIsBetter: false,
+  formatScore: (v) => `${v}m`,
+  medals: [100, 300, 600],
+  maxScore: 1000000,
+  scoreLabel: 'Meters',
+  hint: 'Hold left or right to steer',
+  controls: {
+    touch: 'Hold the left or right half of the screen to steer',
+    mouse: 'Hold the mouse button on the left or right half to steer',
+    keyboard: '← / → or A / D to steer',
+  },
+  howTo: [
+    'Your hopper bounces on its own every time it lands on a platform.',
+    'Hold the left or right side of the screen to steer in the air.',
+    'Fly off one side of the screen and you come back on the other.',
+    'Hit springs for a huge boost and grab coins for 5 bonus meters each.',
+    'Fall below the bottom of the screen and the run is over.',
+  ],
+  tips: [
+    'Cracked brown ledges crumble the moment you touch them. Look for solid green or blue ones instead.',
+    'Blue platforms slide sideways, so aim for where they will be, not where they are.',
+    'Screen wrapping is often the shortest path. A platform on the far left may be just a nudge away through the right edge.',
+  ],
+  faq: [
+    {
+      q: 'Is Sky Hop free?',
+      a: 'Yes. Sky Hop is free to play online in your browser on mobile, tablet or desktop, with no download and no sign-up.',
+    },
+    {
+      q: 'How does scoring work in Sky Hop?',
+      a: 'Your score is the highest point you reach, measured in meters. Every coin you collect adds 5 bonus meters, and a dashed line marks your best height so you know when a record is close.',
+    },
+    {
+      q: 'What changes as I climb higher?',
+      a: 'Platforms spread further apart and get narrower. Moving platforms and crumbling decoys show up more often, and after 200 meters you will find clouds that vanish after a single bounce. The sky also shifts from day to sunset to a starry night.',
+    },
+  ],
+  about:
+    'Sky Hop is an endless vertical jumping game with a cheerful little hopper who never stops bouncing. You don’t press jump. Every landing launches you upward, and all you do is steer left or right to pick the next ledge. Grassy islands are safe, blue platforms glide back and forth, brown planks crumble under your feet, and fluffy clouds give you exactly one bounce before they vanish. Red springs fling you hundreds of meters toward the stars, and coins add bonus height to your score. The higher you climb, the wider the gaps get, so each run turns from relaxed to nerve-racking in under a minute. Play the endless mode or take on the Daily Challenge, where everyone climbs the same sky.',
+  released: '2026-09-24',
+};
