@@ -857,13 +857,7 @@ export default function createGame(api) {
 
   reset();
 
-  // test hook: drop an arbitrary fruit (used by automated physics stress tests only)
-  api.__spawn = (tier, x, y) => {
-    bodies.push(makeBody(tier, x, y));
-  };
-  api.__merge = (on) => {
-    mergeOn = !!on;
-  };
+  // read-only test hook (physics stress tests)
   api.__state = () => {
     let maxPen = 0;
     let moving = 0;

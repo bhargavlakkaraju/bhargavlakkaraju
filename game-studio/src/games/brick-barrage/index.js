@@ -138,7 +138,7 @@ export default function createGame(api) {
   function genRow(n) {
     const base = 1 * COLS;
     const pick = rng.int(0, COLS - 1);
-    const p = n <= 2 ? 0.3 : Math.min(0.74, 0.34 + n * 0.011);
+    const p = n <= 2 ? 0.3 : Math.min(0.72, 0.28 + n * 0.01);
     const dbl = n >= 8 ? Math.min(0.28, (n - 6) * 0.011) : 0;
     const tri = Math.min(0.26, 0.08 + n * 0.004);
     let count = 0;
@@ -921,15 +921,31 @@ export default function createGame(api) {
       const a = hintA * (0.75 + 0.25 * Math.sin(t * 4));
       draw.text(g, 'DRAG TO AIM', W / 2, FY + CS * 5.4, { size: 26, weight: 800, color: '#ffffff', alpha: a });
       draw.text(g, 'release to fire the volley', W / 2, FY + CS * 5.4 + 30, { size: 16, weight: 700, color: '#a5f3fc', alpha: a, shadow: false });
-      // finger swoosh icon
-      const k = (t * 0.8) % 1;
-      const fx0 = W / 2 - 60 + Math.sin(k * Math.PI * 2) * 60;
-      g.globalAlpha = a * 0.8;
-      g.fillStyle = '#ffffff';
-      g.beginPath();
-      g.arc(fx0, FY + CS * 7.3, 9, 0, Math.PI * 2);
-      g.fill();
-      g.globalAlpha = 1;
+      // ghost aim line sweeping from the launcher demonstrates the gesture
+      if (!aiming && !hoverAim && !kbAim) {
+        const a = -Math.PI / 2 + Math.sin(t * 1.3) * 0.75;
+        g.fillStyle = '#ffffff';
+        g.beginPath();
+        for (let d = 24; d < 168; d += 15) {
+          const rr = 3 - d * 0.008;
+          const px = launchVis + Math.cos(a) * d;
+          const py = LAUNCH_Y + Math.sin(a) * d;
+          g.moveTo(px + rr, py);
+          g.arc(px, py, rr, 0, Math.PI * 2);
+        }
+        g.globalAlpha = hintA * 0.45;
+        g.fill();
+        // fingertip at the end of the line
+        const fx0 = launchVis + Math.cos(a) * 184;
+        const fy0 = LAUNCH_Y + Math.sin(a) * 184;
+        g.globalAlpha = hintA * 0.8;
+        g.strokeStyle = '#a5f3fc';
+        g.lineWidth = 3;
+        g.beginPath();
+        g.arc(fx0, fy0, 13 + Math.sin(t * 6) * 2, 0, Math.PI * 2);
+        g.stroke();
+        g.globalAlpha = 1;
+      }
     }
   }
 
@@ -1101,10 +1117,14 @@ export function cover(g, w, h) {
     [0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1],
   ];
   const tones = [7, 5, 6, 4, 3, 2, 5, 6, 4, 7, 3, 5, 6, 2, 4, 5, 7, 3];
+  const bx = w * 0.62;
+  const by = 26 * s + 3.5 * cs;
   for (let r = 0; r < pattern.length; r++) {
     for (let c = 0; c < cols; c++) {
       const v = pattern[r][c % pattern[r].length];
       if (!v) continue;
+      // the brick being shattered is gone
+      if (Math.abs(ox + (c + 0.5) * cs - bx) < cs * 0.75 && Math.abs(26 * s + (r + 0.5) * cs - by) < cs * 0.75) continue;
       const bi = Math.min(NB - 1, Math.round(((tones[(c + r * 3) % tones.length] - r * 0.9) / 7) * (NB - 1)));
       const b = Math.max(0, bi);
       const x = ox + c * cs + 4 * s;
@@ -1135,8 +1155,6 @@ export function cover(g, w, h) {
     }
   }
   // shattering brick
-  const bx = w * 0.62;
-  const by = 26 * s + 3.5 * cs;
   const cols2 = [FILL[40], LIGHT[40], '#ffffff', FILL[30]];
   for (let i = 0; i < 26; i++) {
     const a = (i / 26) * Math.PI * 2 + i * 0.37;
@@ -1169,6 +1187,17 @@ export function cover(g, w, h) {
   g.moveTo(lx, ly);
   g.lineTo(tx, ty);
   g.stroke();
+  g.restore();
+  g.save();
+  g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < n; i++) {
+    const k = 0.18 + (i / n) * 0.72;
+    const gl = g.createRadialGradient(lx + (tx - lx) * k, ly + (ty - ly) * k, 0, lx + (tx - lx) * k, ly + (ty - ly) * k, 26 * s);
+    gl.addColorStop(0, 'rgba(165,243,252,0.35)');
+    gl.addColorStop(1, 'rgba(165,243,252,0)');
+    g.fillStyle = gl;
+    g.fillRect(lx + (tx - lx) * k - 26 * s, ly + (ty - ly) * k - 26 * s, 52 * s, 52 * s);
+  }
   g.restore();
   for (let i = 0; i < n; i++) {
     const k = 0.18 + (i / n) * 0.72;

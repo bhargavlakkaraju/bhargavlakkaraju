@@ -1319,7 +1319,13 @@ export default function createGame(api) {
         if (pending) {
           const p = pending;
           pending = null;
-          if (p.dragging) {
+          if (p.dragging && piles[p.id][p.index] !== p.cards[0]) {
+            // the piles changed under the drag (should not happen): just put the cards back
+            for (const c of p.cards) c.dragging = false;
+            dragPos = null;
+            dropHover = null;
+            layout();
+          } else if (p.dragging) {
             // final position straight from the pointer, then drop
             dragPos.rx = dragPos.x;
             dragPos.ry = dragPos.y;
@@ -1348,6 +1354,7 @@ export default function createGame(api) {
       }
       if (e.type === 'keydown') {
         const k = e.key;
+        if (pending && pending.dragging) return true; // finish the drag first
         if (k === 'z' || k === 'Z' || k === 'u' || k === 'U' || k === 'Backspace') {
           undo();
           return true;
@@ -1428,54 +1435,51 @@ function coverCard(g, rank, suit, x, y, cw, ch, shadow) {
 export function cover(g, w, h) {
   drawFelt(g, w, h);
   const u = Math.min(w / 800, h / 600);
-  // the classic win: a card bouncing across the table, leaving a trail
-  const ch2 = 190 * u;
+  // the classic win: a card bouncing across the table, leaving a trail of copies
+  const ch2 = 165 * u;
   const cw2 = ch2 / 1.42;
-  let x = w * 0.9 - cw2;
-  let y = -ch2 * 0.15;
-  let vy = 0;
-  const floor = h - ch2 - h * 0.03;
-  for (let i = 0; i < 46; i++) {
-    coverCard(g, 13, 1, x, y, cw2, ch2, false);
-    x -= w * 0.0095;
-    vy += 2.1 * u;
+  const floor = h - ch2 - h * 0.035;
+  const x0 = w * 0.5;
+  const x1 = w - cw2 - w * 0.03;
+  const steps = 44;
+  let y = h * 0.02;
+  let vy = -2 * u;
+  const grav = ((floor - y) * 2.2) / (steps * steps * 0.2);
+  for (let i = 0; i <= steps; i++) {
+    const x = x0 + ((x1 - x0) * i) / steps;
+    coverCard(g, 12, 3, x, y, cw2, ch2, i === steps);
+    vy += grav;
     y += vy;
     if (y > floor) {
       y = floor;
-      vy = -vy * 0.72;
+      vy = -vy * 0.68;
     }
   }
   // soft light behind the hand
-  const cx = w * 0.36;
+  const cx = w * 0.31;
   const glowG = g.createRadialGradient(cx, h * 0.5, 0, cx, h * 0.5, h * 0.6);
-  glowG.addColorStop(0, 'rgba(255,255,255,0.16)');
+  glowG.addColorStop(0, 'rgba(255,255,255,0.18)');
   glowG.addColorStop(1, 'rgba(255,255,255,0)');
   g.fillStyle = glowG;
   g.fillRect(0, 0, w, h);
-  // fanned hand: ace, king, queen, jack
-  const ch = 300 * u;
+  // fanned hand: ace, queen, jack and the king in front
+  const ch = Math.min(285 * u, w * 0.325);
   const cw = ch / 1.42;
   const hand = [
     [1, 0],
-    [13, 3],
     [12, 2],
-    [11, 1],
+    [11, 3],
+    [13, 1],
   ];
-  const pivotY = h * 0.5 + ch * 1.05;
+  const pivotY = h * 0.5 + ch * 1.35;
   hand.forEach(([rank, suit], i) => {
-    const a = (i - 1.5) * 0.23;
+    const a = (i - 1.5) * 0.22;
     g.save();
     g.translate(cx, pivotY);
     g.rotate(a);
-    coverCard(g, rank, suit, -cw / 2, -ch * 1.55, cw, ch, true);
+    coverCard(g, rank, suit, -cw / 2, -ch * 1.85, cw, ch, true);
     g.restore();
   });
-  // a face-down card tucked behind the hand
-  g.save();
-  g.translate(cx - cw * 1.25, h * 0.36);
-  g.rotate(-0.45);
-  coverCard(g, 0, 0, -cw * 0.4, -ch * 0.4, cw * 0.8, ch * 0.8, true);
-  g.restore();
   // sparkles
   g.fillStyle = '#ffd23f';
   const spark = (px, py, s) => {
@@ -1487,8 +1491,8 @@ export function cover(g, w, h) {
     g.quadraticCurveTo(px, py, px, py - s * 3);
     g.fill();
   };
-  spark(cx + cw * 0.95, h * 0.16, 7 * u);
-  spark(cx - cw * 0.9, h * 0.1, 5 * u);
-  spark(cx + cw * 1.3, h * 0.34, 4 * u);
-  spark(cx - cw * 1.35, h * 0.62, 4 * u);
+  spark(cx + cw * 1.05, h * 0.12, 7 * u);
+  spark(cx - cw * 1.1, h * 0.14, 5 * u);
+  spark(cx + cw * 1.45, h * 0.42, 4 * u);
+  spark(w * 0.93, h * 0.12, 5 * u);
 }
