@@ -19,7 +19,7 @@ const redOf = (c) => suitOf(c) & 1;
  * @param {number} limit node budget
  * @returns {{ solved: boolean, nodes: number, exhausted: boolean }}
  */
-export function solve(tab, down, talon, draw = 1, limit = 25000) {
+export function solve(tab, down, talon, draw = 1, limit = 25000, trace = false) {
   const seen = new Set();
   let nodes = 0;
   let aborted = false;
@@ -54,6 +54,7 @@ export function solve(tab, down, talon, draw = 1, limit = 25000) {
   }
 
   function autoPlay(s) {
+    const done = trace ? [] : null;
     let moved = true;
     while (moved) {
       moved = false;
@@ -66,6 +67,7 @@ export function solve(tab, down, talon, draw = 1, limit = 25000) {
           s.found[suitOf(c)] += 1;
           flip(s, i);
           moved = true;
+          if (done) done.push(['tf', i]);
         }
       }
       if (s.wp > 0) {
@@ -75,8 +77,26 @@ export function solve(tab, down, talon, draw = 1, limit = 25000) {
           s.wp -= 1;
           s.found[suitOf(c)] += 1;
           moved = true;
+          if (done) done.push(['wf', c]);
         }
       }
+    }
+    return done;
+  }
+
+  // Describe a move in game terms (for replaying a solution).
+  function describe(s, m) {
+    switch (m[0]) {
+      case 0:
+        return ['tf', m[1]];
+      case 1:
+        return ['wf', s.T[m[1]]];
+      case 2:
+        return ['tt', m[1], m[2], m[3]];
+      case 3:
+        return ['wt', s.T[m[1]], m[2]];
+      default:
+        return ['ft', m[1], m[2]];
     }
   }
 
@@ -232,22 +252,24 @@ export function solve(tab, down, talon, draw = 1, limit = 25000) {
       aborted = true;
       return false;
     }
-    autoPlay(s);
-    if (won(s)) return true;
+    const auto = autoPlay(s);
+    if (won(s)) return trace ? auto : true;
     const k = key(s);
     if (seen.has(k)) return false;
     seen.add(k);
     const ms = moves(s);
     for (let i = 0; i < ms.length; i++) {
-      if (dfs(apply(s, ms[i]))) return true;
+      const sub = dfs(apply(s, ms[i]));
+      if (sub) return trace ? [...auto, describe(s, ms[i]), ...sub] : true;
       if (aborted) return false;
     }
     return false;
   }
 
   const start = { tab: tab.map((t) => t.slice()), down: down.slice(), found: [0, 0, 0, 0], T: talon.slice(), wp: 0 };
-  const solved = dfs(start);
-  return { solved, nodes, exhausted: !solved && !aborted };
+  const res = dfs(start);
+  const solved = !!res;
+  return { solved, nodes, exhausted: !solved && !aborted, path: trace && solved ? res : null };
 }
 
 /** Standard Klondike deal from a 52-card order: tableau row by row, the rest is the stock. */
@@ -260,8 +282,8 @@ export function dealFromOrder(order) {
 }
 
 /** Is this 52-card order winnable (proved within the node budget)? */
-export function isWinnable(order, draw = 1, limit = 25000) {
+export function isWinnable(order, draw = 1, limit = 25000, trace = false) {
   const d = dealFromOrder(order);
   const talon = d.stock.slice().reverse();
-  return solve(d.tab, d.down, talon, draw, limit);
+  return solve(d.tab, d.down, talon, draw, limit, trace);
 }

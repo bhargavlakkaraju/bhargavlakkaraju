@@ -27,6 +27,10 @@ const SLEEP_TIME = 0.4;
 const WAKE_STEP = 0.1;
 const WAKE_PEN = 1.5;
 const DANGER_TIME = 2;
+const SEP_MAX = 0.3; // max separating speed from overlap correction (px/step = 144 px/s)
+const VMAX_X = 800 * H_STEP;
+const VMAX_DOWN = 1500 * H_STEP;
+const VMAX_UP = 520 * H_STEP;
 const SS = 2.5; // sprite supersampling
 
 export const FRUITS = [
@@ -197,6 +201,13 @@ function texture(g, tier, r) {
       }
       g.stroke();
     }
+    // keep the face readable: soften the stripes behind it
+    const fg = g.createRadialGradient(0, r * 0.18, 0, 0, r * 0.18, r * 0.62);
+    fg.addColorStop(0, 'rgba(58,184,88,0.95)');
+    fg.addColorStop(0.6, 'rgba(52,176,82,0.75)');
+    fg.addColorStop(1, 'rgba(47,174,79,0)');
+    g.fillStyle = fg;
+    g.fillRect(-r, -r, r * 2, r * 2);
   }
 }
 
@@ -346,7 +357,7 @@ export function drawFruit(g, tier, r, face = 0) {
     }
   }
   // blush
-  g.fillStyle = 'rgba(255,90,130,0.45)';
+  g.fillStyle = tier >= 9 || tier === 6 ? 'rgba(255,110,150,0.75)' : 'rgba(255,90,130,0.45)';
   for (let s = -1; s <= 1; s += 2) {
     g.beginPath();
     g.ellipse(s * r * 0.52, ey + r * 0.2, r * 0.12, r * 0.07, 0, 0, TAU);
@@ -437,6 +448,9 @@ export default function createGame(api) {
   let nextPop;
   let bestPop;
   let dangerFlash;
+  let comboN = 0;
+  let comboT = 0;
+  let comboPop = 0;
   let bgGrad = null;
   let jarGrad = null;
   let mergeOn = true; // only switched off by automated physics stress tests
@@ -493,6 +507,9 @@ export default function createGame(api) {
     nextPop = 1;
     bestPop = 0;
     dangerFlash = 0;
+    comboN = 0;
+    comboT = 0;
+    comboPop = 0;
   }
 
   function wake(b) {
@@ -529,8 +546,13 @@ export default function createGame(api) {
         b.inv = 1 / (b.r * b.r);
       }
       if (b.asleep) continue;
-      const vx = (b.x - b.px) * DAMP;
-      const vy = (b.y - b.py) * DAMP;
+      let vx = (b.x - b.px) * DAMP;
+      let vy = (b.y - b.py) * DAMP;
+      // safety net: speed limits (px per step)
+      if (vx > VMAX_X) vx = VMAX_X;
+      else if (vx < -VMAX_X) vx = -VMAX_X;
+      if (vy > VMAX_DOWN) vy = VMAX_DOWN;
+      else if (vy < -VMAX_UP) vy = -VMAX_UP;
       b.px = b.x;
       b.py = b.y;
       b.x += vx;
@@ -579,10 +601,25 @@ export default function createGame(api) {
           a.y -= ny * ka;
           b.x += nx * kb;
           b.y += ny * kb;
+          // Verlet turns position corrections into velocity. Cap the separating speed a
+          // correction may create so deep overlaps (fresh merges) resolve gently instead
+          // of launching small fruit out of the jar.
+          const rvx = b.x - b.px - (a.x - a.px);
+          const rvy = b.y - b.py - (a.y - a.py);
+          const vn = rvx * nx + rvy * ny;
+          if (vn > SEP_MAX) {
+            const ex = vn - SEP_MAX;
+            if (wa > 0) {
+              a.px -= nx * ex * (wa / ws);
+              a.py -= ny * ex * (wa / ws);
+            }
+            if (wb > 0) {
+              b.px += nx * ex * (wb / ws);
+              b.py += ny * ex * (wb / ws);
+            }
+          }
           // contact friction: damp relative tangential motion a little
           if (it === 0) {
-            const rvx = b.x - b.px - (a.x - a.px);
-            const rvy = b.y - b.py - (a.y - a.py);
             const vt = rvx * -ny + rvy * nx;
             const f = vt * PAIR_F;
             if (wa > 0) {
@@ -668,7 +705,7 @@ export default function createGame(api) {
       if (nt >= 6) fx.shake(2 + nt * 0.9, 0.18 + nt * 0.02);
       if (nt > maxTier) {
         if (nt >= 4) {
-          fx.text(W / 2, 280, `NEW: ${N.name.toUpperCase()}!`, { color: '#fff4b0', size: 30, life: 1.3, stroke: 'rgba(120,40,20,0.55)' });
+          fx.text(W / 2, 300, `NEW: ${N.name.toUpperCase()}!`, { color: '#fff4b0', size: 30, life: 1.3, stroke: 'rgba(120,40,20,0.55)' });
           sfx.play('levelup');
           bestPop = 1;
         }
@@ -690,9 +727,11 @@ export default function createGame(api) {
     if (chain >= 2) {
       bonus = chain * 2;
       sfx.combo(Math.min(chain, 16), 523);
-      fx.text(x, y - FRUITS[Math.min(MAX_TIER, tier + 1)].r - 34, `COMBO ×${chain}`, { color: '#fff4b0', size: 22 + Math.min(chain, 6) * 2, life: 0.9, stroke: 'rgba(120,40,20,0.55)' });
+      comboN = chain;
+      comboT = 1.2;
+      comboPop = 1;
     }
-    fx.text(x, y - 6, `+${pts + bonus}`, { color: '#ffffff', size: 24 + Math.min(tier, 8) * 2, life: 0.8, rise: 60, stroke: 'rgba(90,30,20,0.55)' });
+    fx.text(x, y - 6, `+${pts + bonus}`, { color: '#ffffff', size: 24 + Math.min(tier, 8) * 2, life: 0.8, rise: 60, stroke: 'rgba(110,30,15,0.85)' });
     api.addScore(pts + bonus);
   }
 
@@ -744,7 +783,7 @@ export default function createGame(api) {
       // squash spring
       b.sqv += (-420 * b.sq - 16 * b.sqv) * dt;
       b.sq += b.sqv * dt;
-      if (b.sq > 0.22) b.sq = 0.22;
+      if (b.sq > 0.16) b.sq = 0.16;
       else if (b.sq < -0.18) b.sq = -0.18;
       if (b.pop > 0) b.pop = Math.max(0, b.pop - dt * 3.2);
       if (b.happy > 0) b.happy -= dt;
@@ -811,6 +850,8 @@ export default function createGame(api) {
     if (heldPop < 1) heldPop = Math.min(1, heldPop + dt * 4);
     if (nextPop < 1) nextPop = Math.min(1, nextPop + dt * 4);
     if (bestPop > 0) bestPop = Math.max(0, bestPop - dt * 1.5);
+    if (comboT > 0) comboT -= dt;
+    if (comboPop > 0) comboPop = Math.max(0, comboPop - dt * 4);
     dangerFlash = dangerT > 0 ? dangerFlash + dt * (4 + dangerT * 6) : 0;
   }
 
@@ -1132,103 +1173,167 @@ export default function createGame(api) {
         const r = FRUITS[held.tier].r;
         const bob = Math.sin(t * 3) * 2;
         drawSprite(g, held.tier, heldX, HOLD_Y + bob, ease.outBack(heldPop), Math.sin(t * 2) * 0.08, 0, 0);
-        g.fillStyle = 'rgba(255,255,255,0.8)';
-        g.fillRect(heldX - 1, HOLD_Y - r - 22 + bob, 2, 14);
       }
       drawHud(g);
+      if (comboT > 0 && comboN >= 2) {
+        const a = Math.min(1, comboT * 3);
+        const sc = 1 + ease.outBack(comboPop) * 0.25;
+        g.save();
+        g.translate(W / 2, 250);
+        g.scale(sc, sc);
+        draw.text(g, `COMBO ×${comboN}`, 0, 0, { size: 28 + Math.min(comboN, 8) * 2, weight: 800, color: '#fff4b0', stroke: 'rgba(130,40,20,0.9)', strokeWidth: 7, alpha: a, shadow: false });
+        g.restore();
+      }
     },
   };
 }
 
-/** Cover art: a jar brimming with smiling fruit and a juicy splash (text-free). */
+/** Settle a list of circles into a pile (deterministic relaxation), used by the cover art. */
+function settle(list, left, right, floor) {
+  for (let it = 0; it < 900; it++) {
+    for (const a of list) a.y += 3;
+    for (let k = 0; k < 3; k++) {
+      for (let i = 0; i < list.length; i++) {
+        const a = list[i];
+        for (let j = i + 1; j < list.length; j++) {
+          const b = list[j];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const rs = a.r + b.r;
+          const d2 = dx * dx + dy * dy;
+          if (d2 >= rs * rs) continue;
+          const d = Math.sqrt(d2) || 0.01;
+          const p = (rs - d) / 2;
+          a.x -= (dx / d) * p;
+          a.y -= (dy / d) * p;
+          b.x += (dx / d) * p;
+          b.y += (dy / d) * p;
+        }
+      }
+      for (const a of list) {
+        if (a.x < left + a.r) a.x = left + a.r;
+        if (a.x > right - a.r) a.x = right - a.r;
+        if (a.y > floor - a.r) a.y = floor - a.r;
+      }
+    }
+  }
+}
+
+/** Cover art: a glass jar brimming with smiling fruit and a juicy splash (text-free). */
 export function cover(g, w, h) {
   const grad = g.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, '#ffd89b');
-  grad.addColorStop(0.6, '#ffae84');
-  grad.addColorStop(1, '#ff8a72');
+  grad.addColorStop(0, '#ffe0a3');
+  grad.addColorStop(0.55, '#ffb088');
+  grad.addColorStop(1, '#ff8672');
   g.fillStyle = grad;
   g.fillRect(0, 0, w, h);
   const s = h / 600;
   const cx = w / 2;
   // sun rays
   g.save();
-  g.translate(cx, h * 0.42);
-  g.fillStyle = 'rgba(255,255,255,0.14)';
+  g.translate(cx, h * 0.3);
+  g.fillStyle = 'rgba(255,255,255,0.15)';
   g.beginPath();
-  for (let i = 0; i < 14; i++) {
-    const a = (i / 14) * TAU;
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * TAU;
     g.moveTo(0, 0);
-    g.arc(0, 0, Math.max(w, h), a, a + 0.14);
+    g.arc(0, 0, Math.max(w, h) * 1.2, a, a + 0.13);
     g.closePath();
   }
   g.fill();
   g.restore();
+  // polka dots
+  g.fillStyle = 'rgba(255,255,255,0.18)';
+  for (let i = 0; i < 40; i++) {
+    g.beginPath();
+    g.arc((i * 137.3) % w, (i * 71.9 + 13) % h, 6 * s, 0, TAU);
+    g.fill();
+  }
   // jar
-  const jw = 460 * s;
+  const k = s * 1.0;
+  const jw = 420 * s;
   const jl = cx - jw / 2;
   const jr = cx + jw / 2;
-  const jb = h - 26 * s;
-  const jt = 150 * s;
-  g.fillStyle = 'rgba(255,255,255,0.22)';
+  const jb = h - 22 * s;
+  const jt = 205 * s;
+  g.fillStyle = 'rgba(122,52,38,0.14)';
   g.fillRect(jl, jt, jw, jb - jt);
-  // pile of fruit (hand placed)
-  const pile = [
-    [10, -0.03, 0],
-    [7, -0.34, -0.01],
-    [8, 0.33, 0],
-    [5, -0.13, -0.31],
-    [6, 0.2, -0.33],
-    [3, -0.4, -0.3],
-    [4, 0.43, -0.32],
-    [2, 0.02, -0.52],
-    [1, -0.26, -0.52],
-    [0, 0.26, -0.55],
-  ];
-  for (let i = 0; i < pile.length; i++) {
-    const [tier, fxp, fyp] = pile[i];
-    const r = FRUITS[tier].r * s * 1.35;
-    const x = cx + fxp * jw;
-    const y = jb - r + fyp * (jb - jt) * 1.2;
+  g.fillStyle = 'rgba(255,255,255,0.2)';
+  g.fillRect(jl, jt, jw, jb - jt);
+  const tiers = [10, 8, 7, 5, 6, 3, 2, 3, 1, 2, 0, 1, 4];
+  const xs = [0.28, 0.78, 0.2, 0.55, 0.85, 0.45, 0.66, 0.92, 0.3, 0.12, 0.6, 0.8, 0.5];
+  const list = tiers.map((t, i) => ({ t, r: FRUITS[t].r * k, x: jl + xs[i] * jw, y: jt - 300 * s - i * 90 * s }));
+  settle(list, jl, jr, jb);
+  const faces = [1, 0, 0, 2, 0, 1, 0, 0, 0, 1, 0, 0, 0];
+  for (let i = 0; i < list.length; i++) {
+    const b = list[i];
     g.save();
-    g.translate(x, y);
-    g.scale(s * 1.35, s * 1.35);
-    g.rotate((i % 3) * 0.12 - 0.12);
-    drawFruit(g, tier, FRUITS[tier].r, i === 0 ? 1 : i === 3 ? 2 : 0);
+    g.translate(b.x, b.y);
+    g.scale(k, k);
+    g.rotate(((i * 7) % 5) * 0.08 - 0.16);
+    drawFruit(g, b.t, FRUITS[b.t].r, faces[i]);
     g.restore();
   }
-  // glass
+  // glass walls
   g.strokeStyle = 'rgba(255,255,255,0.95)';
   g.lineWidth = 10 * s;
   g.lineJoin = 'round';
   g.beginPath();
-  g.moveTo(jl, jt);
-  g.lineTo(jl, jb);
-  g.lineTo(jr, jb);
-  g.lineTo(jr, jt);
+  g.moveTo(jl - 5 * s, jt - 8 * s);
+  g.lineTo(jl - 5 * s, jb + 5 * s);
+  g.lineTo(jr + 5 * s, jb + 5 * s);
+  g.lineTo(jr + 5 * s, jt - 8 * s);
   g.stroke();
-  g.fillStyle = 'rgba(255,255,255,0.25)';
-  g.fillRect(jl + 14 * s, jt + 20 * s, 14 * s, jb - jt - 60 * s);
-  // falling cherry + splash above
-  const sx = cx + 150 * s;
-  const sy = 96 * s;
-  const cols = ['#ff5470', '#ffffff', '#ffe066', '#ffb347'];
-  for (let i = 0; i < 22; i++) {
-    const a = -Math.PI * 0.95 + (i / 21) * Math.PI * 0.9;
-    const d = (40 + ((i * 37) % 50)) * s;
+  g.fillStyle = 'rgba(255,255,255,0.22)';
+  g.fillRect(jl + 12 * s, jt + 24 * s, 12 * s, jb - jt - 70 * s);
+  // dashed danger line
+  g.strokeStyle = 'rgba(255,255,255,0.7)';
+  g.lineWidth = 4 * s;
+  g.setLineDash([14 * s, 12 * s]);
+  g.beginPath();
+  g.moveTo(jl, jt + 18 * s);
+  g.lineTo(jr, jt + 18 * s);
+  g.stroke();
+  g.setLineDash([]);
+  // falling apple with juice splash and a guide line
+  const ax = cx + 70 * s;
+  const ay = 110 * s;
+  g.strokeStyle = 'rgba(255,255,255,0.8)';
+  g.lineWidth = 4 * s;
+  g.setLineDash([3 * s, 12 * s]);
+  g.lineCap = 'round';
+  g.beginPath();
+  g.moveTo(ax, ay + 70 * s);
+  g.lineTo(ax, jt + 60 * s);
+  g.stroke();
+  g.setLineDash([]);
+  g.lineCap = 'butt';
+  const cols = ['#ff5470', '#ffffff', '#ffe066', '#ffb347', '#b184ff'];
+  for (let i = 0; i < 26; i++) {
+    const a = (i / 26) * TAU + 0.3;
+    const d = (62 + ((i * 37) % 44)) * s;
     g.fillStyle = cols[i % cols.length];
     g.beginPath();
-    g.arc(sx + Math.cos(a) * d, sy + Math.sin(a) * d * 0.8 + 30 * s, (4 + (i % 3) * 2.5) * s, 0, TAU);
+    g.arc(ax + Math.cos(a) * d, ay + Math.sin(a) * d * 0.85, (3.5 + (i % 3) * 2.5) * s, 0, TAU);
     g.fill();
   }
   g.save();
-  g.translate(sx, sy + 30 * s);
-  g.scale(s * 1.6, s * 1.6);
+  g.translate(ax, ay);
+  g.scale(s * 1.25, s * 1.25);
+  g.rotate(0.12);
   drawFruit(g, 5, FRUITS[5].r, 1);
   g.restore();
-  g.save();
-  g.translate(cx - 170 * s, 70 * s);
-  g.scale(s * 1.5, s * 1.5);
-  g.rotate(-0.25);
-  drawFruit(g, 0, FRUITS[0].r * 1.4, 0);
-  g.restore();
+  // floating side fruit (wide formats)
+  const side = [
+    [0, cx - 250 * s, 120 * s, 2.2, -0.3],
+    [2, cx + 250 * s, 210 * s, 1.5, 0.25],
+  ];
+  for (const [t, x, y, sc, rot] of side) {
+    g.save();
+    g.translate(x, y);
+    g.scale(s * sc, s * sc);
+    g.rotate(rot);
+    drawFruit(g, t, FRUITS[t].r, 0);
+    g.restore();
+  }
 }

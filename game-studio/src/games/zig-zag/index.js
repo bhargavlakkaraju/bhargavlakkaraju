@@ -246,7 +246,7 @@ export default function createGame(api) {
       combo++;
       api.sfx.combo(Math.min(combo - 1, 14), 560);
       api.fx.ring(x, y, { color: 'rgba(255,255,255,0.9)', radius: 26 + Math.min(combo, 8) * 3, life: 0.35, width: 3 });
-      if (combo >= 3) api.fx.text(x, y - 34, `PERFECT ×${combo}`, { color: '#fff7b0', size: 20 + Math.min(combo, 10), life: 0.7, rise: 40 });
+      if (combo === 3 || (combo >= 5 && combo % 5 === 0)) api.fx.text(x, y - 34, `PERFECT ×${combo}`, { color: '#fff7b0', size: 20 + Math.min(combo, 10), life: 0.7, rise: 40 });
       if (combo > 0 && combo % 8 === 0) {
         api.addScore(5);
         api.fx.text(x, y - 64, 'STREAK +5', { color: '#ffd23f', size: 26, life: 1 });
@@ -570,13 +570,13 @@ export default function createGame(api) {
     const bhue = hue + 172;
     if (ball.alive) {
       // trail
+      g.fillStyle = hsl(bhue, 90, 70);
       for (let n = 0; n < trailN; n++) {
         const idx = (trailHead - 1 - n + TRAIL) % TRAIL;
         const tu = trail[idx * 2];
         const tv = trail[idx * 2 + 1];
         const k = 1 - n / TRAIL;
         g.globalAlpha = 0.28 * k;
-        g.fillStyle = hsl(bhue, 90, 70);
         g.beginPath();
         g.arc(sx(tu, tv), sy(tu, tv) - BALL_R + 2, BALL_R * (0.35 + 0.6 * k), 0, Math.PI * 2);
         g.fill();
@@ -601,8 +601,8 @@ export default function createGame(api) {
   function render(g) {
     drawBg(g);
     colTop = hsl(hue, 40, 97);
-    colLeft = hsl(hue + 8, 58, 76);
-    colRight = hsl(hue + 8, 52, 58);
+    colLeft = hsl(hue + 8, 56, 75);
+    colRight = hsl(hue + 12, 50, 52);
     const ballS = Math.floor(ball.u) + Math.floor(ball.v);
     let ballDrawn = ball.alive; // alive ball draws on top of everything
     // path, far to near

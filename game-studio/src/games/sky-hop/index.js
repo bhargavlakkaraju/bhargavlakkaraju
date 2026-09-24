@@ -9,6 +9,8 @@ const R = 17; // hero body radius
 const PLAT_H = 16;
 const METER = 16; // px per meter
 const COIN_BONUS = 5;
+const DASH = [10, 8];
+const NO_DASH = [];
 
 // sky palette keyframes by altitude (meters): [m, topRGB, bottomRGB]
 const SKY = [
@@ -344,14 +346,14 @@ export default function createGame(api) {
 
   function diffAt(y) {
     const m = -y / METER;
-    return Math.max(0, Math.min(1, m / 700));
+    return Math.max(0, Math.min(1, m / 600));
   }
 
   function genUntil(yTop) {
     while (genY > yTop) {
       const m = -genY / METER;
       const d = diffAt(genY);
-      const gap = api.rng.range(58 + 46 * d, 86 + 78 * d);
+      const gap = api.rng.range(60 + 46 * d, 90 + 74 * d);
       const prevY = genY;
       genY -= gap;
       const w = Math.round(api.rng.range(70, 86) - 20 * d);
@@ -376,7 +378,7 @@ export default function createGame(api) {
         if (api.rng.chance(0.14)) newCoin(x + w / 2, genY - 38);
       }
       // decoy crumbling platform between two real ones
-      if (m > 45 && gap > 70 && api.rng.chance(0.14 + 0.24 * d)) {
+      if (m > 40 && gap > 70 && api.rng.chance(0.15 + 0.25 * d)) {
         const dw = Math.round(api.rng.range(64, 80) - 10 * d);
         let dx = api.rng.range(6, W - dw - 6);
         // keep decoys from sitting right on top of the real platform's column
@@ -415,7 +417,7 @@ export default function createGame(api) {
       p.broken = true;
       api.sfx.noise({ dur: 0.18, vol: 0.22, freq: 700, to: 200 });
       api.sfx.tone({ freq: 190, to: 90, type: 'square', dur: 0.12, vol: 0.08 });
-      api.fx.burst(p.x + p.w / 2, p.y + 6, { count: 14, colors: ['#d69a5c', '#9a6232', '#f0c48f'], speed: 160, size: 4, life: 0.6, gravity: 700, shape: 'square', angle: Math.PI / 2, spread: Math.PI });
+      api.fx.burst(p.x + p.w / 2, p.y - camY + 6, { count: 14, colors: ['#d69a5c', '#9a6232', '#f0c48f'], speed: 160, size: 4, life: 0.6, gravity: 700, shape: 'square', angle: Math.PI / 2, spread: Math.PI });
       return false;
     }
     let v = JUMP_V;
@@ -431,13 +433,13 @@ export default function createGame(api) {
       hero.spin = 1;
       api.sfx.tone({ freq: 220, to: 880, type: 'square', dur: 0.28, vol: 0.09 });
       api.sfx.play('whoosh');
-      api.fx.burst(hx, p.y, { count: 20, colors: ['#ffffff', '#ffd23f', '#ff4d6d'], speed: 260, size: 3.5, life: 0.5, gravity: 400, angle: Math.PI / 2 * -1, spread: Math.PI * 0.9 });
-      api.fx.ring(hx, p.y - 6, { color: '#ffffff', radius: 46, life: 0.4 });
+      api.fx.burst(hx, p.y - camY, { count: 20, colors: ['#ffffff', '#ffd23f', '#ff4d6d'], speed: 260, size: 3.5, life: 0.5, gravity: 400, angle: Math.PI / 2 * -1, spread: Math.PI * 0.9 });
+      api.fx.ring(hx, p.y - camY - 6, { color: '#ffffff', radius: 46, life: 0.4 });
       api.fx.shake(4, 0.15);
       api.haptic(25);
     } else {
       api.sfx.tone({ freq: 330 + Math.min(260, climbed / 80), to: 660 + Math.min(300, climbed / 60), type: 'square', dur: 0.1, vol: 0.06 });
-      api.fx.burst(hx, p.y + 2, { count: 6, color: p.type === 'cloud' ? '#ffffff' : 'rgba(255,255,255,0.85)', speed: 90, size: 3, life: 0.35, gravity: 150, angle: -Math.PI / 2, spread: Math.PI * 1.2 });
+      api.fx.burst(hx, p.y - camY + 2, { count: 6, color: p.type === 'cloud' ? '#ffffff' : 'rgba(255,255,255,0.85)', speed: 90, size: 3, life: 0.35, gravity: 150, angle: -Math.PI / 2, spread: Math.PI * 1.2 });
       api.haptic(6);
     }
     hero.vy = -v;
@@ -446,12 +448,12 @@ export default function createGame(api) {
     p.bounceT = 1;
     // near miss: saved right at the bottom of the screen
     if (p.y - camY > H * 0.86 && p.type !== 'ground') {
-      api.fx.text(hx, p.y - 40, 'CLOSE ONE!', { color: '#fff7b0', size: 22, life: 0.8 });
+      api.fx.text(hx, p.y - camY - 40, 'CLOSE ONE!', { color: '#fff7b0', size: 22, life: 0.8 });
       api.sfx.play('pop');
     }
     if (p.type === 'cloud') {
       p.vanishT = 0.001;
-      api.fx.burst(p.x + p.w / 2, p.y + 6, { count: 16, color: '#ffffff', speed: 120, size: 7, life: 0.6, gravity: -30, spread: Math.PI * 2 });
+      api.fx.burst(p.x + p.w / 2, p.y - camY + 6, { count: 16, color: '#ffffff', speed: 120, size: 7, life: 0.6, gravity: -30, spread: Math.PI * 2 });
       api.sfx.noise({ dur: 0.25, vol: 0.12, freq: 1600, to: 500, type: 'bandpass', q: 0.7 });
     }
     return true;
@@ -464,8 +466,8 @@ export default function createGame(api) {
     coinChainT = 1.1;
     hudPop = 1;
     api.sfx.combo(Math.min(coinChain, 14), 700);
-    api.fx.burst(c.x, c.y, { count: 10, colors: ['#ffd23f', '#fff3b0', '#ffffff'], speed: 150, size: 3, life: 0.45, gravity: 200 });
-    api.fx.text(c.x, c.y - 12, coinChain >= 2 ? `+${COIN_BONUS}m ×${coinChain + 1}` : `+${COIN_BONUS}m`, { color: '#fff3b0', size: 18 + Math.min(coinChain, 6), life: 0.6, rise: 40 });
+    api.fx.burst(c.x, c.y - camY, { count: 10, colors: ['#ffd23f', '#fff3b0', '#ffffff'], speed: 150, size: 3, life: 0.45, gravity: 200 });
+    api.fx.text(c.x, c.y - camY - 12, coinChain >= 2 ? `+${COIN_BONUS}m ×${coinChain + 1}` : `+${COIN_BONUS}m`, { color: '#fff3b0', size: 18 + Math.min(coinChain, 6), life: 0.6, rise: 40 });
     api.haptic(8);
   }
 
@@ -679,12 +681,12 @@ export default function createGame(api) {
       if (by > -20 && by < H + 20) {
         g.strokeStyle = 'rgba(255,255,255,0.7)';
         g.lineWidth = 2;
-        g.setLineDash([10, 8]);
+        g.setLineDash(DASH);
         g.beginPath();
         g.moveTo(0, by);
         g.lineTo(W, by);
         g.stroke();
-        g.setLineDash([]);
+        g.setLineDash(NO_DASH);
         api.draw.roundRect(g, 8, by - 22, 56, 20, 8, 'rgba(255,255,255,0.85)');
         api.draw.text(g, 'BEST', 36, by - 12, { size: 13, color: '#ff5d73', shadow: false });
       }

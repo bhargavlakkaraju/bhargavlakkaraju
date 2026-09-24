@@ -194,22 +194,23 @@ export default function createGame(api) {
     const dir = rng.sign();
     const spd = (1.15 + 1.45 * lvl) * rng.range(0.9, 1.1);
     const order = rng.shuffle([0, 1, 2, 3]);
-    const ob = { type, n, y: 0, hh: 0, rot: rng.range(0, TAU), w: dir * spd, r1: 0, r2: 0, off: 0, off2: 0, v: 0, cxo: 0, order, order2: null, passed: false, near: false, removed: false, fade: 1 };
+    const ob = { type, n, y: 0, hh: 0, rot: rng.range(0, TAU), w: dir * spd, r1: 0, r2: 0, off: 0, v: 0, cxo: 0, order, order2: null, passed: false, near: false, removed: false, fade: 1 };
     let starDy = 0;
     let orbFrac = 0.5;
     if (type === 'ring') {
       ob.r1 = rng.range(94, 108);
       ob.hh = ob.r1 + TH / 2;
     } else if (type === 'double') {
+      // inner ring is the mirror image of the outer one: they counter-rotate but always
+      // show the same colour straight above/below the centre, so the pair reads as one thick gate
       ob.r1 = 118;
-      ob.r2 = 84;
+      ob.r2 = 86;
       ob.w *= 0.85;
-      ob.order2 = rng.shuffle([0, 1, 2, 3]);
+      ob.order2 = [order[3], order[2], order[1], order[0]];
       ob.hh = ob.r1 + TH / 2;
     } else if (type === 'bars') {
       ob.v = dir * (70 + 110 * lvl) * rng.range(0.9, 1.1);
       ob.off = rng.range(0, BAR_SEG * 4);
-      ob.off2 = rng.range(0, BAR_SEG * 4);
       ob.hh = 48;
     } else if (type === 'square') {
       ob.r1 = 88;
@@ -277,13 +278,14 @@ export default function createGame(api) {
     const reach = TH / 2 + rad;
     if (ob.type === 'ring' || ob.type === 'double') {
       m |= ringMask(CX, ob.y, ob.r1, ob.rot, ob.order, bx, by, rad, reach);
-      if (ob.type === 'double') m |= ringMask(CX, ob.y, ob.r2, -ob.rot * 1.15, ob.order2, bx, by, rad, reach);
+      if (ob.type === 'double') m |= ringMask(CX, ob.y, ob.r2, Math.PI - ob.rot, ob.order2, bx, by, rad, reach);
     } else if (ob.type === 'twin') {
       m |= ringMask(CX - ob.r1, ob.y, ob.r1, ob.rot, ob.order, bx, by, rad, reach);
       m |= ringMask(CX + ob.r1, ob.y, ob.r1, Math.PI - ob.rot, ob.order2, bx, by, rad, reach);
     } else if (ob.type === 'bars') {
-      m |= barMask(ob.y - 40, ob.off, ob.order, bx, by, rad, reach);
-      m |= barMask(ob.y + 40, ob.off2, ob.order, bx, by, rad, reach);
+      // the upper bar is the mirror image of the lower one, so both always show the same colour in the middle
+      m |= barMask(ob.y - 40, ob.off, ob.order, bx, by, rad, reach, true);
+      m |= barMask(ob.y + 40, ob.off, ob.order, bx, by, rad, reach, false);
     } else if (ob.type === 'square') {
       const d = ob.r1 * Math.SQRT2;
       for (let i = 0; i < 4; i++) {
@@ -311,11 +313,12 @@ export default function createGame(api) {
     return (1 << order[segIdx(a - span)]) | (1 << order[segIdx(a)]) | (1 << order[segIdx(a + span)]);
   }
 
-  function barMask(y0, off, order, bx, by, rad, reach) {
+  function barMask(y0, off, order, bx, by, rad, reach, mirror) {
     if (Math.abs(by - y0) > reach) return 0;
     let m = 0;
     for (let k = -1; k <= 1; k++) {
-      let u = (bx + k * rad * 0.8 - off) % (BAR_SEG * 4);
+      const x = bx + k * rad * 0.8;
+      let u = ((mirror ? W - x : x) - off) % (BAR_SEG * 4);
       if (u < 0) u += BAR_SEG * 4;
       m |= 1 << order[((u / BAR_SEG) | 0) & 3];
     }
@@ -390,10 +393,7 @@ export default function createGame(api) {
     for (let i = 0; i < obstacles.length; i++) {
       const ob = obstacles[i];
       ob.rot += ob.w * dt;
-      if (ob.type === 'bars') {
-        ob.off += ob.v * dt;
-        ob.off2 -= ob.v * dt;
-      }
+      if (ob.type === 'bars') ob.off += ob.v * dt;
       if (ob.removed && ob.fade > 0) ob.fade = Math.max(0, ob.fade - dt * 3);
     }
     ball.sv += (-(ball.s - 1) * 480 - ball.sv * 15) * dt;
@@ -452,7 +452,7 @@ export default function createGame(api) {
   }
 
   reset();
-  if (typeof window !== 'undefined' && window.__raDebug) window.__raDebug[api.meta.slug] = { ball, get obstacles() { return obstacles; }, get stars() { return stars; }, get orbs() { return orbs; }, get camY() { return camY; }, pad, probe };
+  if (typeof window !== 'undefined' && window.__raDebug) window.__raDebug[api.meta.slug] = { ball, get obstacles() { return obstacles; }, get stars() { return stars; }, get orbs() { return orbs; }, get camY() { return camY; }, get killer() { return killer; }, pad, probe };
 
   return {
     reset,
@@ -488,13 +488,14 @@ export default function createGame(api) {
       killer = null;
       ball.dead = false;
       ball.y = y;
+      for (let i = 0; i < orbs.length; i++) if (orbs[i].y > y - 20) orbs[i].taken = true;
       ball.vy = 0;
       ball.s = 1;
       ball.sv = 0;
       pad.y = y + BR;
       pad.on = true;
       pad.glow = 1;
-      camY = y - H * 0.68;
+      camY = y - H * 0.8;
       resetTrail();
       ensureGen();
       api.fx.ring(CX, y - camY, { color: COLORS[ball.color], radius: 60, life: 0.5, width: 5 });
@@ -522,13 +523,17 @@ export default function createGame(api) {
         if (ob.type === 'ring') strokeRing(g, CX, sy, ob.r1, ob.rot, ob.order);
         else if (ob.type === 'double') {
           strokeRing(g, CX, sy, ob.r1, ob.rot, ob.order);
-          strokeRing(g, CX, sy, ob.r2, -ob.rot * 1.15, ob.order2);
+          strokeRing(g, CX, sy, ob.r2, Math.PI - ob.rot, ob.order2);
         } else if (ob.type === 'twin') {
           strokeRing(g, CX - ob.r1, sy, ob.r1, ob.rot, ob.order);
           strokeRing(g, CX + ob.r1, sy, ob.r1, Math.PI - ob.rot, ob.order2);
         } else if (ob.type === 'bars') {
+          fillBars(g, sy + 40, ob.off, ob.order, W);
+          g.save();
+          g.translate(W, 0);
+          g.scale(-1, 1);
           fillBars(g, sy - 40, ob.off, ob.order, W);
-          fillBars(g, sy + 40, ob.off2, ob.order, W);
+          g.restore();
         } else if (ob.type === 'square') strokeSquare(g, CX, sy, ob.r1, ob.rot, ob.order);
         else if (ob.type === 'cross') strokeCross(g, CX + ob.cxo, sy, ob.r1, ob.rot, ob.order);
         g.globalAlpha = 1;
@@ -641,8 +646,8 @@ export function cover(g, w, h) {
   // big double ring, top segment matching the ball
   g.save();
   g.lineWidth = 1;
-  strokeRing(g, 0, -40, 158, -Math.PI / 4 - Q, [1, 2, 0, 3]);
-  strokeRing(g, 0, -40, 120, -Math.PI / 4 + 0.35, [3, 0, 1, 2]);
+  strokeRing(g, 0, -40, 158, -Math.PI / 4 - Q + 0.25, [1, 2, 0, 3]);
+  strokeRing(g, 0, -40, 124, Math.PI + Math.PI / 4 + Q - 0.25, [3, 0, 2, 1]);
   g.restore();
   // star in the centre
   g.globalAlpha = 0.3;

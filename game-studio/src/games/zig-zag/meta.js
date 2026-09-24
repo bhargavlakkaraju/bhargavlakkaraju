@@ -15,6 +15,7 @@ export default {
   revive: true,
   daily: true,
   lowerIsBetter: false,
+  formatScore: undefined,
   medals: [50, 150, 300],
   maxScore: 50000,
   scoreLabel: 'Points',

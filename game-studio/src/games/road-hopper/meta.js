@@ -1,0 +1,57 @@
+export default {
+  slug: 'road-hopper',
+  title: 'Road Hopper',
+  tagline: 'Hop across. Don’t get squashed.',
+  description: 'Hop a chunky chick across busy roads, rushing rivers and railway tracks. Tap to hop, swipe to dodge, go as far as you can. Free online game.',
+  category: 'arcade',
+  tags: ['endless', 'arcade', 'swipe', 'timing', 'hyper-casual'],
+  emoji: '🐥',
+  colors: ['#8bd457', '#ff4d6d'],
+  bg: '#2b3a2a',
+  width: 420,
+  height: 740,
+  startMode: 'tap',
+  readyY: 0.3,
+  revive: true,
+  daily: true,
+  lowerIsBetter: false,
+  formatScore: undefined,
+  medals: [25, 60, 120],
+  maxScore: 100000,
+  scoreLabel: 'Rows',
+  hint: 'Tap to hop, swipe to dodge',
+  controls: {
+    touch: 'Tap to hop forward, swipe left, right or down to change direction (or tap the screen edges to side-step)',
+    mouse: 'Click to hop forward, drag left, right or down to change direction',
+    keyboard: '↑ / W / Space to hop forward, ← → or A D to side-step, ↓ / S to hop back',
+  },
+  howTo: [
+    'Tap to hop one row forward. Your score is the furthest row you reach.',
+    'Swipe left or right, or tap near the screen edges, to side-step. Swipe down to hop back.',
+    'Cars and trucks flatten you. Wait for a gap, then go.',
+    'Water is deadly, so ride logs and lily pads across rivers. When a railway light flashes, a train is coming.',
+    'Keep moving forward. If you fall behind the bottom of the screen, a hawk swoops down.',
+  ],
+  tips: [
+    'Watch a lane for a second before you hop in. Every lane has its own speed and rhythm.',
+    'On a log, hop forward early. Getting carried off the edge of the screen is a splash too.',
+    'Trees block your path, so plan a route through the grass before the camera catches up.',
+  ],
+  faq: [
+    {
+      q: 'Is Road Hopper free to play?',
+      a: 'Yes. Road Hopper is a free online game that runs in your browser on phones, tablets and computers, with no download or account needed.',
+    },
+    {
+      q: 'What do coins do in Road Hopper?',
+      a: 'Coins are saved across all your runs. At 20, 60 and 150 coins your chick unlocks a new hat: a cap, a party hat and a crown.',
+    },
+    {
+      q: 'Why did a hawk grab my chick?',
+      a: 'The camera keeps scrolling forward slowly. If you wait too long or hop backwards until you drop off the bottom of the screen, a hawk swoops in and ends the run. A red glow warns you first.',
+    },
+  ],
+  about:
+    'Road Hopper is an endless arcade hopper about one brave little chick and a world that will not stop moving. Each tap hops you one row forward across grassy fields, busy highways, fast rivers and railway crossings. Cars and trucks race along every lane at their own speed, logs and lily pads drift across rivers, and trains thunder through right after the warning light flashes. The further you go, the faster the traffic and the tighter the gaps. Hesitate too long and the scrolling camera leaves you behind for a hungry hawk. Collect coins to unlock hats, chase your best distance and try the Daily Challenge, where every player crosses the same world.',
+  released: '2026-09-24',
+};
