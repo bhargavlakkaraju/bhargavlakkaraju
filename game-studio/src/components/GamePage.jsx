@@ -6,6 +6,7 @@ import AdSlot from './AdSlot';
 import { EmbedCode, TrackPageView } from './Widgets';
 import { related, formatScore, MEDALS } from '@/lib/games';
 import { SITE, CATEGORIES } from '@/lib/site';
+import { guidesFor } from '@/lib/guides';
 
 function JsonLd({ meta }) {
   const url = `${SITE.url}/games/${meta.slug}`;
@@ -140,6 +141,14 @@ export default function GamePage({ meta, challenge = null }) {
             </ul>
             <h2>About {meta.title}</h2>
             <p className="mt-3">{meta.about}</p>
+            {guidesFor(meta.slug).map((gd) => (
+              <p key={gd.slug} className="mt-4">
+                📚 Strategy guide:{' '}
+                <Link href={`/guides/${gd.slug}`} className="font-bold text-aqua underline">
+                  {gd.title}
+                </Link>
+              </p>
+            ))}
             <h2>FAQ</h2>
             <div className="mt-3 space-y-3">
               {meta.faq.map((f, i) => (

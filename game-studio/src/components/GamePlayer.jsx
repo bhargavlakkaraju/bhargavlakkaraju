@@ -41,6 +41,7 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
   const ctrlRef = useRef(null);
   const metaRef = useRef(null);
   const overAtRef = useRef(0);
+  const runRef = useRef(0);
   const [status, setStatus] = useState('loading');
   const [meta, setMeta] = useState(null);
   const [mode, setMode] = useState(initialMode || 'classic');
@@ -63,9 +64,8 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
 
   // Read ?mode=daily on first load (kept out of render to allow static pages).
   useEffect(() => {
-    if (initialMode) return;
     const q = new URLSearchParams(window.location.search);
-    if (q.get('mode') === 'daily') setMode('daily');
+    if (!initialMode && q.get('mode') === 'daily') setMode('daily');
     setMuted(sfx.isMuted());
     window.__RA_TOTAL_GAMES = GAMES.length;
     if (challenge) track('challenge_open', { g: slug });
@@ -75,6 +75,7 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
   const onGameOver = useCallback(
     async (d) => {
       const m = metaRef.current;
+      const run = ++runRef.current;
       overAtRef.current = performance.now();
       track('game_over', { g: slug, d: d.duration });
       const prog = recordRun({ meta: m, score: d.score, isNewBest: d.isNewBest, mode: d.mode, win: d.win });
@@ -102,7 +103,8 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
       if (d.canRevive) {
         const pf = getPlatform({ embed });
         const o = await pf.prepareRewarded('revive').catch(() => null);
-        if (o) {
+        // Ignore a late offer if the player already moved on to another run.
+        if (o && run === runRef.current && ctrlRef.current && ctrlRef.current.state === 'over') {
           setOffer(o);
           track('revive_offer', { g: slug });
         }

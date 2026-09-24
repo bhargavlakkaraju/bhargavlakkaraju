@@ -43,6 +43,11 @@ export default function Footer() {
                 🏆 Leaderboards
               </Link>
             </li>
+            <li>
+              <Link href="/guides" className="hover:text-white">
+                📚 Guides & tips
+              </Link>
+            </li>
           </ul>
         </div>
         <div>
