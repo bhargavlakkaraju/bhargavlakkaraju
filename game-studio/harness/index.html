@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>Retry Arcade - game harness</title>
+    <style>
+      html,body{margin:0;height:100%;background:#0b0618;color:#fff;font-family:system-ui,sans-serif}
+      #bar{position:fixed;top:0;left:0;right:0;height:36px;display:flex;gap:10px;align-items:center;padding:0 10px;font-size:13px;background:#150d2b;z-index:10}
+      #bar a{color:#ff9dc0}
+      #game{position:fixed;top:36px;left:0;right:0;bottom:0}
+      #cover{display:none;position:fixed;inset:36px 0 0 0;align-items:center;justify-content:center}
+    </style>
+  </head>
+  <body>
+    <div id="bar"></div>
+    <div id="game"></div>
+    <div id="cover"><canvas id="coverCanvas"></canvas></div>
+    <script type="module">
+      // Dev harness: /harness/?game=<slug>[&mode=daily][&ads=dev][&cover=1][&target=20]
+      import { bootStandalone } from '../src/games/engine/shell.js';
+      import { createPlatform } from '../src/games/engine/platform.js';
+      import { renderCover } from '../src/games/engine/core.js';
+
+      const q = new URLSearchParams(location.search);
+      const slug = q.get('game') || 'stack-tower';
+      const mode = q.get('mode') || 'classic';
+      const bar = document.getElementById('bar');
+      bar.innerHTML = `<b>${slug}</b> · mode: ${mode} ·
+        <a href="?game=${slug}">classic</a> <a href="?game=${slug}&mode=daily">daily</a>
+        <a href="?game=${slug}&ads=dev">dev ads</a> <a href="?game=${slug}&cover=1">cover</a>`;
+
+      window.__raErrors = [];
+      window.addEventListener('error', (e) => window.__raErrors.push(String(e.message)));
+
+      const [{ default: createGame, cover }, { default: meta }] = await Promise.all([
+        import(`../src/games/${slug}/index.js`),
+        import(`../src/games/${slug}/meta.js`),
+      ]);
+
+      if (q.get('cover')) {
+        document.getElementById('game').style.display = 'none';
+        document.getElementById('cover').style.display = 'flex';
+        const w = Number(q.get('w') || 800);
+        const h = Number(q.get('h') || 600);
+        renderCover(document.getElementById('coverCanvas'), cover, meta, w, h);
+        window.__raCoverDone = true;
+      } else {
+        const platform = createPlatform(q.get('ads') || 'none');
+        await bootStandalone({
+          container: document.getElementById('game'),
+          createGame,
+          meta,
+          platform,
+          mode,
+          target: q.get('target') ? Number(q.get('target')) : null,
+        });
+      }
+    </script>
+  </body>
+</html>

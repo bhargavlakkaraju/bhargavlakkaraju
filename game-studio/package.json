@@ -1,0 +1,33 @@
+{
+  "name": "retry-arcade",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Retry Arcade - a studio of instant, addictive browser games. Next.js site + zero-dependency HTML5 game engine.",
+  "scripts": {
+    "predev": "node scripts/gen-registry.mjs",
+    "dev": "next dev",
+    "prebuild": "node scripts/gen-registry.mjs",
+    "build": "next build",
+    "start": "next start",
+    "registry": "node scripts/gen-registry.mjs",
+    "harness": "node scripts/serve-static.mjs --port 5173",
+    "smoke": "node scripts/smoke.mjs",
+    "thumbs": "node scripts/thumbnails.mjs",
+    "export:portals": "node scripts/export-portal.mjs",
+    "insights": "node scripts/insights.mjs"
+  },
+  "dependencies": {
+    "next": "^14.2.33",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "playwright": "1.56.1",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14"
+  },
+  "engines": {
+    "node": ">=18.18"
+  }
+}

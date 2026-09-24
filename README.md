@@ -1,3 +1,7 @@
+> **Also in this repo:** [`game-studio/`](game-studio/README.md) - **Retry Arcade**, a studio of 15 instant,
+> addictive browser games with its own Next.js website, monetization and growth tooling. It is a separate app
+> (deploy it with Vercel Root Directory = `game-studio`).
+
 # Hoopla CRM
 
 The agency's **new-business outreach engine** — one source of truth for every prospective client,

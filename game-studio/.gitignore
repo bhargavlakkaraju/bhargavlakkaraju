@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+.smoke/
+.data/
+dist/
+.env
+.env*.local
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+src/lib/registry.generated.js

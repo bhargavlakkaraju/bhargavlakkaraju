@@ -1,0 +1,43 @@
+export default {
+  slug: 'stack-tower',
+  title: 'Stack Tower',
+  tagline: 'Tap. Stack. Don’t miss.',
+  description: 'Drop sliding blocks to build the tallest tower you can. Nail perfect stacks to grow your blocks back. Free, instant, no download.',
+  category: 'arcade',
+  tags: ['one-tap', 'timing', 'stacking', 'hyper-casual'],
+  emoji: '🧱',
+  colors: ['#ff3d7f', '#ffd23f'],
+  bg: '#1a1036',
+  width: 420,
+  height: 740,
+  startMode: 'tap',
+  revive: true,
+  daily: true,
+  medals: [15, 35, 60],
+  maxScore: 2000,
+  scoreLabel: 'Floors',
+  controls: {
+    touch: 'Tap anywhere to drop the block',
+    mouse: 'Click to drop the block',
+    keyboard: 'Space / Enter / ↑ to drop',
+  },
+  howTo: [
+    'A block slides back and forth above your tower.',
+    'Tap to drop it. Whatever hangs over the edge is sliced off.',
+    'Your blocks shrink with every miss, so timing is everything.',
+    'Land 3 perfect drops in a row and your block grows back.',
+  ],
+  tips: [
+    'Watch the edge of the block below, not the middle of the moving one.',
+    'Blocks speed up as you climb: find a rhythm and trust it.',
+    'Perfect streaks are worth more than safe drops. Go for them early while you have room.',
+  ],
+  faq: [
+    { q: 'Is Stack Tower free?', a: 'Yes. It runs in your browser on phone, tablet or computer with nothing to download.' },
+    { q: 'How do I get a higher score?', a: 'Chain perfect drops. Three in a row restores width, which keeps your tower alive much longer.' },
+    { q: 'What is the Daily Challenge?', a: 'Every day everyone gets the same block speeds and directions. Post your best and compare with friends.' },
+  ],
+  about:
+    'Stack Tower is a one-tap timing game inspired by classic block stacking toys. Every block you place becomes the platform for the next one, and every tiny mistake is permanent: the overhang is sliced away and your tower gets narrower. It is easy to learn in one second and brutally hard to master, which is exactly why one more try is always tempting. Play the endless classic mode or take on the Daily Challenge, where every player in the world gets the same run.',
+  released: '2026-09-24',
+};

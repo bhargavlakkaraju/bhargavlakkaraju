@@ -1,0 +1,143 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      @font-face{font-family:'Fredoka';font-weight:600 700;src:url('../public/fonts/Fredoka-Bold.ttf') format('truetype')}
+      body{margin:0;background:#000}
+    </style>
+  </head>
+  <body>
+    <canvas id="c"></canvas>
+    <script type="module">
+      // Asset renderer used by scripts/thumbnails.mjs:
+      //   ?kind=cover&game=<slug>&w=800&h=600   raw cover art
+      //   ?kind=og&game=<slug>                  1200x630 social card with title
+      //   ?kind=site&games=a,b,c,...            1200x630 site social card collage
+      //   ?kind=icon&size=512                   app icon
+      const q = new URLSearchParams(location.search);
+      const kind = q.get('kind');
+      const c = document.getElementById('c');
+      const g = c.getContext('2d');
+      const FONT = '"Fredoka", "Segoe UI", system-ui, sans-serif';
+      await document.fonts.load(`700 40px Fredoka`).catch(() => {});
+
+      async function load(slug) {
+        const [{ cover }, { default: meta }] = await Promise.all([import(`../src/games/${slug}/index.js`), import(`../src/games/${slug}/meta.js`)]);
+        return { cover, meta };
+      }
+      function drawCover(target, cover, meta, w, h) {
+        const off = document.createElement('canvas');
+        off.width = w;
+        off.height = h;
+        const og = off.getContext('2d');
+        og.fillStyle = meta.bg || '#120b24';
+        og.fillRect(0, 0, w, h);
+        cover(og, w, h);
+        return off;
+      }
+      function logo(x, y, s) {
+        g.save();
+        g.translate(x, y);
+        const grad = g.createLinearGradient(0, 0, s, s);
+        grad.addColorStop(0, '#ff3d7f');
+        grad.addColorStop(1, '#8b5cf6');
+        g.fillStyle = grad;
+        g.beginPath();
+        g.roundRect(0, 0, s, s, s * 0.26);
+        g.fill();
+        g.fillStyle = '#fff';
+        g.font = `900 ${s * 0.66}px ${FONT}`;
+        g.textAlign = 'center';
+        g.textBaseline = 'middle';
+        g.fillText('↻', s / 2, s / 2 + s * 0.04);
+        g.restore();
+      }
+
+      if (kind === 'cover') {
+        const w = +q.get('w') || 800, h = +q.get('h') || 600;
+        const { cover, meta } = await load(q.get('game'));
+        c.width = w; c.height = h;
+        g.drawImage(drawCover(c, cover, meta, w, h), 0, 0);
+      } else if (kind === 'og') {
+        const { cover, meta } = await load(q.get('game'));
+        c.width = 1200; c.height = 630;
+        g.drawImage(drawCover(c, cover, meta, 1200, 630), 0, 0);
+        const grad = g.createLinearGradient(0, 0, 0, 630);
+        grad.addColorStop(0.45, 'rgba(11,6,24,0)');
+        grad.addColorStop(1, 'rgba(11,6,24,0.92)');
+        g.fillStyle = grad;
+        g.fillRect(0, 0, 1200, 630);
+        g.shadowColor = 'rgba(0,0,0,0.5)';
+        g.shadowBlur = 16;
+        g.fillStyle = '#fff';
+        g.font = `700 96px ${FONT}`;
+        g.textBaseline = 'alphabetic';
+        g.fillText(meta.title, 56, 520);
+        g.font = `600 38px ${FONT}`;
+        g.fillStyle = 'rgba(255,255,255,0.85)';
+        g.fillText(`${meta.tagline}  ·  Play free, no download`, 58, 580);
+        g.shadowBlur = 0;
+        logo(1200 - 56 - 64, 40, 64);
+      } else if (kind === 'site') {
+        const slugs = q.get('games').split(',');
+        c.width = 1200; c.height = 630;
+        g.fillStyle = '#0b0618';
+        g.fillRect(0, 0, 1200, 630);
+        const cols = 4, tw = 330, th = 248, gap = 18;
+        g.save();
+        g.translate(560, -60);
+        g.rotate(-0.18);
+        for (let i = 0; i < slugs.length; i++) {
+          const { cover, meta } = await load(slugs[i]);
+          const x = (i % 2) * (tw + gap), y = Math.floor(i / 2) * (th + gap);
+          g.save();
+          g.beginPath();
+          g.roundRect(x, y, tw, th, 22);
+          g.clip();
+          g.drawImage(drawCover(c, cover, meta, tw * 2, th * 2), x, y, tw, th);
+          g.restore();
+        }
+        g.restore();
+        const fade = g.createLinearGradient(0, 0, 760, 0);
+        fade.addColorStop(0.55, 'rgba(11,6,24,1)');
+        fade.addColorStop(1, 'rgba(11,6,24,0)');
+        g.fillStyle = fade;
+        g.fillRect(0, 0, 760, 630);
+        logo(64, 70, 84);
+        g.fillStyle = '#fff';
+        g.font = `700 54px ${FONT}`;
+        g.textBaseline = 'middle';
+        g.fillText('Retry', 168, 114);
+        const w1 = g.measureText('Retry').width;
+        g.fillStyle = '#ff3d7f';
+        g.fillText('Arcade', 168 + w1, 114);
+        g.textBaseline = 'alphabetic';
+        g.fillStyle = '#fff';
+        g.font = `700 92px ${FONT}`;
+        g.fillText('Just one', 64, 320);
+        const tg = g.createLinearGradient(64, 0, 520, 0);
+        tg.addColorStop(0, '#ff3d7f'); tg.addColorStop(0.5, '#ffd23f'); tg.addColorStop(1, '#22d3ee');
+        g.fillStyle = tg;
+        g.fillText('more try.', 64, 420);
+        g.fillStyle = 'rgba(255,255,255,0.75)';
+        g.font = `600 34px ${FONT}`;
+        g.fillText(`${q.get('count') || slugs.length}+ free games · no download`, 66, 500);
+      } else if (kind === 'icon') {
+        const s = +q.get('size') || 512;
+        c.width = s; c.height = s;
+        const grad = g.createLinearGradient(0, 0, s, s);
+        grad.addColorStop(0, '#ff3d7f');
+        grad.addColorStop(1, '#8b5cf6');
+        g.fillStyle = grad;
+        g.fillRect(0, 0, s, s);
+        g.fillStyle = '#fff';
+        g.font = `900 ${s * 0.62}px ${FONT}`;
+        g.textAlign = 'center';
+        g.textBaseline = 'middle';
+        g.fillText('↻', s / 2, s / 2 + s * 0.03);
+      }
+      window.__done = true;
+    </script>
+  </body>
+</html>

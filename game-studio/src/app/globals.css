@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Self-hosted fonts (SIL Open Font License), latin subset */
+@font-face {
+  font-family: 'Fredoka';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/Fredoka-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fredoka';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/Fredoka-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fredoka';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/Fredoka-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/Nunito-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/Nunito-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/Nunito-800.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url('/fonts/Nunito-900.woff2') format('woff2');
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: #0b0618;
+  color: #f4f1ff;
+}
+
+body {
+  font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(60% 40% at 10% 0%, rgba(139, 92, 246, 0.18), transparent 70%),
+    radial-gradient(50% 35% at 95% 10%, rgba(255, 61, 127, 0.14), transparent 70%),
+    radial-gradient(60% 50% at 50% 110%, rgba(34, 211, 238, 0.08), transparent 70%);
+  pointer-events: none;
+}
+
+@layer components {
+  .btn-pink {
+    @apply inline-flex items-center justify-center rounded-2xl bg-pink px-5 py-3 font-display font-bold text-white shadow-[0_5px_0_#b3134d] transition active:translate-y-[3px] active:shadow-[0_2px_0_#b3134d] hover:brightness-110;
+  }
+  .btn-green {
+    @apply inline-flex items-center justify-center rounded-2xl bg-emerald-500 px-5 py-3 font-display font-bold text-white shadow-[0_5px_0_#047857] transition active:translate-y-[3px] active:shadow-[0_2px_0_#047857] hover:brightness-110;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-2xl bg-white/10 px-5 py-2.5 font-display font-bold text-white ring-1 ring-white/15 transition hover:bg-white/15;
+  }
+  .icon-btn {
+    @apply grid h-9 w-9 place-items-center rounded-xl bg-black/30 text-base text-white ring-1 ring-white/10 backdrop-blur transition hover:bg-black/50;
+  }
+  .toast {
+    @apply rounded-full px-4 py-1.5 text-sm font-extrabold shadow-lg;
+  }
+  .toast-pink {
+    @apply bg-pink text-white;
+  }
+  .toast-sun {
+    @apply bg-sun text-ink;
+  }
+  .toast-aqua {
+    @apply bg-aqua text-ink;
+  }
+  .game-frame {
+    height: calc(100svh - 150px);
+    min-height: 460px;
+    max-height: 820px;
+  }
+  @media (min-width: 1024px) {
+    .game-frame {
+      height: min(calc(100svh - 170px), 780px);
+    }
+  }
+  .card {
+    @apply rounded-3xl border border-line bg-panel/80 backdrop-blur;
+  }
+  .section-title {
+    @apply font-display text-2xl font-bold text-white sm:text-3xl;
+  }
+  .prose-game h2 {
+    @apply mt-8 font-display text-xl font-bold text-white;
+  }
+  .prose-game p,
+  .prose-game li {
+    @apply leading-relaxed text-white/75;
+  }
+  .prose-game ol {
+    @apply mt-3 list-decimal space-y-1.5 pl-5;
+  }
+  .prose-game ul {
+    @apply mt-3 list-disc space-y-1.5 pl-5;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-bold text-white/80;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
