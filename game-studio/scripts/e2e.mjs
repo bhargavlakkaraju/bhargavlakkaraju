@@ -110,6 +110,32 @@ async function newPage(opts = {}) {
   await ctx.close();
 }
 
+// 4b. Every game page mounts its game without errors (and tap/keys don't crash it)
+{
+  const { page, errors, ctx } = await newPage({ viewport: { width: 1280, height: 900 } });
+  const r = await fetch(BASE + '/sitemap.xml');
+  const slugs = [...(await r.text()).matchAll(/\/games\/([a-z0-9-]+)</g)].map((m) => m[1]);
+  check(slugs.length >= 15, `sitemap lists ${slugs.length} games`);
+  for (const slug of slugs) {
+    const before = errors.length;
+    await page.goto(`${BASE}/games/${slug}`);
+    const canvas = page.locator('canvas.ra-canvas');
+    const ok = await canvas.waitFor({ timeout: 10000 }).then(() => true, () => false);
+    if (ok) {
+      const box = await canvas.boundingBox();
+      for (let i = 0; i < 6; i++) {
+        await page.mouse.click(box.x + box.width * (0.3 + Math.random() * 0.4), box.y + box.height * (0.4 + Math.random() * 0.4));
+        await page.keyboard.press(['ArrowLeft', 'ArrowRight', ' ', 'a', 'Enter'][i % 5]);
+        await page.waitForTimeout(120);
+      }
+    }
+    check(ok && errors.length === before, `/games/${slug} plays ${errors.slice(before).join(' | ')}`);
+  }
+  await page.goto(`${BASE}/guides/how-to-win-2048`);
+  check(await page.locator('canvas.ra-canvas').waitFor({ timeout: 10000 }).then(() => true, () => false), 'guide page embeds its game');
+  await ctx.close();
+}
+
 // 5. APIs
 {
   const r = await fetch(BASE + '/api/leaderboard?slug=stack-tower&board=today');

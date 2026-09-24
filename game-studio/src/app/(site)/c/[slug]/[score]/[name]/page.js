@@ -26,7 +26,7 @@ export function generateMetadata({ params }) {
     description: `${meta.emoji} ${meta.tagline} Play ${meta.title} free on ${SITE.name} and beat ${challenge.name}'s ${s}.`,
     alternates: { canonical: `/games/${meta.slug}` },
     robots: { index: false, follow: true },
-    openGraph: { title, description: meta.tagline, images: [{ url: og, width: 1200, height: 630 }] },
+    openGraph: { title, description: meta.tagline, images: [{ url: og, width: 720, height: 378 }] },
     twitter: { card: 'summary_large_image', title, images: [og] },
   };
 }

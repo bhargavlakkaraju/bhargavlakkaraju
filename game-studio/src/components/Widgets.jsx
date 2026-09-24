@@ -89,7 +89,7 @@ export function RecentlyPlayed() {
         {recent.map((g) => (
           <Link key={g.slug} href={`/games/${g.slug}`} className="flex w-60 shrink-0 items-center gap-3 rounded-2xl bg-panel p-2 ring-1 ring-line hover:ring-pink">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/covers/${g.slug}.png`} alt="" className="h-14 w-16 rounded-xl object-cover" />
+            <img src={`/covers/${g.slug}.webp`} alt="" className="h-14 w-16 rounded-xl object-cover" />
             <div className="min-w-0">
               <div className="truncate font-display font-bold text-white">{g.title}</div>
               <div className="text-xs text-white/60">

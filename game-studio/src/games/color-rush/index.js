@@ -1,9 +1,11 @@
 // Color Rush - hop upward through spinning color gates. Only your own color lets you pass.
+import { mulberry32 } from '../engine/rng.js';
+
 const TAU = Math.PI * 2;
 const Q = Math.PI / 2;
 const COLORS = ['#35e0ff', '#ffd23f', '#ff3d8b', '#9b5cff'];
-const GRAV = 1500;
-const HOP_V = -540;
+const GRAV = 1550;
+const HOP_V = -510;
 const MAX_FALL = 900;
 const BR = 11; // ball radius
 const TH = 16; // obstacle thickness
@@ -168,7 +170,8 @@ export default function createGame(api) {
   let lastType = '';
   let clock = 0;
   let killer = null;
-  let bumpT = 0;
+  let glowCtx = null;
+  let starGlow = null;
 
   function resetTrail() {
     for (let i = 0; i < TRAIL; i++) {
@@ -203,8 +206,8 @@ export default function createGame(api) {
     } else if (type === 'double') {
       // inner ring is the mirror image of the outer one: they counter-rotate but always
       // show the same colour straight above/below the centre, so the pair reads as one thick gate
-      ob.r1 = 118;
-      ob.r2 = 86;
+      ob.r1 = 124;
+      ob.r2 = 92;
       ob.w *= 0.85;
       ob.order2 = [order[3], order[2], order[1], order[0]];
       ob.hh = ob.r1 + TH / 2;
@@ -400,18 +403,34 @@ export default function createGame(api) {
     ball.s += ball.sv * dt;
     pad.glow = Math.max(0, pad.glow - dt * 3);
     if (!playing) return;
-    // physics
-    ball.vy = Math.min(MAX_FALL, ball.vy + GRAV * dt);
-    ball.y += ball.vy * dt;
-    if (pad.on && ball.y + BR > pad.y && ball.y - pad.y < 30) {
-      if (ball.vy > 200) {
-        ball.s = 0.75;
-        ball.sv = 0;
-        pad.glow = 1;
-        api.sfx.tone({ freq: 220, to: 160, type: 'sine', dur: 0.06, vol: 0.08 });
+    // physics, sub-stepped so a fast ball can't tunnel through thin bands or the pad on slow frames
+    const n = Math.max(1, Math.ceil((Math.abs(ball.vy) + GRAV * dt) * dt / 9));
+    const sdt = dt / n;
+    for (let k = 0; k < n; k++) {
+      const prevY = ball.y;
+      ball.vy = Math.min(MAX_FALL, ball.vy + GRAV * sdt);
+      ball.y += ball.vy * sdt;
+      if (pad.on && ball.vy >= 0 && prevY + BR <= pad.y + 1 && ball.y + BR > pad.y) {
+        if (ball.vy > 200) {
+          ball.s = 0.75;
+          ball.sv = 0;
+          pad.glow = 1;
+          api.sfx.tone({ freq: 220, to: 160, type: 'sine', dur: 0.06, vol: 0.08 });
+        }
+        ball.y = pad.y - BR;
+        ball.vy = 0;
       }
-      ball.y = pad.y - BR;
-      ball.vy = 0;
+      for (let i = 0; i < obstacles.length; i++) {
+        const ob = obstacles[i];
+        if (ob.removed || Math.abs(ob.y - ball.y) > ob.hh + BR + 20) continue;
+        const m = probe(ob, ball.x, ball.y, BR * 0.82);
+        if (m & ~(1 << ball.color)) {
+          die(ob);
+          return;
+        }
+        if (!ob.near && probe(ob, ball.x, ball.y, BR * 1.9) & ~(1 << ball.color)) ob.near = true;
+      }
+      collect();
     }
     // camera only moves up
     const target = ball.y - H * 0.52;
@@ -421,22 +440,9 @@ export default function createGame(api) {
     trailHead = (trailHead + 1) % TRAIL;
     trail[trailHead * 2] = ball.x;
     trail[trailHead * 2 + 1] = ball.y;
-    collect();
-    // collisions
-    const myBit = 1 << ball.color;
     for (let i = 0; i < obstacles.length; i++) {
       const ob = obstacles[i];
-      if (ob.removed) continue;
-      if (Math.abs(ob.y - ball.y) > ob.hh + BR + 20) {
-        if (!ob.passed && ball.y < ob.y - ob.hh - BR) passObstacle(ob);
-        continue;
-      }
-      const m = probe(ob, ball.x, ball.y, BR * 0.82);
-      if (m & ~myBit) {
-        die(ob);
-        return;
-      }
-      if (!ob.near && probe(ob, ball.x, ball.y, BR * 1.9) & ~myBit) ob.near = true;
+      if (!ob.removed && !ob.passed && ball.y < ob.y - ob.hh - BR) passObstacle(ob);
     }
     if (ball.y - BR > camY + H + 6) die(null);
   }
@@ -452,7 +458,7 @@ export default function createGame(api) {
   }
 
   reset();
-  if (typeof window !== 'undefined' && window.__raDebug) window.__raDebug[api.meta.slug] = { ball, get obstacles() { return obstacles; }, get stars() { return stars; }, get orbs() { return orbs; }, get camY() { return camY; }, get killer() { return killer; }, pad, probe };
+  if (typeof window !== 'undefined' && window.__raDebug && /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__raDebug[api.meta.slug] = { ball, get obstacles() { return obstacles; }, get stars() { return stars; }, get orbs() { return orbs; }, get camY() { return camY; }, get killer() { return killer; }, pad, probe };
 
   return {
     reset,
@@ -546,10 +552,18 @@ export default function createGame(api) {
         const sy = s.y - camY;
         if (sy < -30 || sy > H + 30) continue;
         const sr = Math.sin(clock * 2) * 0.25;
-        g.globalAlpha = 0.28;
-        g.fillStyle = '#ffe98a';
-        drawStar(g, CX, sy, 21 * pulse, sr);
-        g.globalAlpha = 1;
+        if (glowCtx !== g) {
+          glowCtx = g;
+          starGlow = g.createRadialGradient(0, 0, 2, 0, 0, 30);
+          starGlow.addColorStop(0, 'rgba(255,236,140,0.55)');
+          starGlow.addColorStop(1, 'rgba(255,236,140,0)');
+        }
+        g.save();
+        g.translate(CX, sy);
+        g.scale(pulse, pulse);
+        g.fillStyle = starGlow;
+        g.fillRect(-30, -30, 60, 60);
+        g.restore();
         g.fillStyle = '#ffffff';
         drawStar(g, CX, sy, 13 * pulse, sr);
       }
@@ -615,12 +629,13 @@ export function cover(g, w, h) {
   g.fillRect(0, 0, w, h);
   const s = h / 600;
   // confetti dots
-  for (let i = 0; i < 70; i++) {
-    g.globalAlpha = 0.25 + ((i * 37) % 50) / 120;
+  const rnd = mulberry32(4242);
+  for (let i = 0; i < 90; i++) {
+    g.globalAlpha = 0.25 + rnd() * 0.45;
     g.fillStyle = COLORS[i & 3];
-    const r = (1 + ((i * 13) % 3)) * s;
+    const r = (1 + rnd() * 2) * s;
     g.beginPath();
-    g.arc((i * 131.7) % w, (i * 71.3) % h, r, 0, TAU);
+    g.arc(rnd() * w, rnd() * h, r, 0, TAU);
     g.fill();
   }
   g.globalAlpha = 1;
@@ -650,10 +665,11 @@ export function cover(g, w, h) {
   strokeRing(g, 0, -40, 124, Math.PI + Math.PI / 4 + Q - 0.25, [3, 0, 2, 1]);
   g.restore();
   // star in the centre
-  g.globalAlpha = 0.3;
-  g.fillStyle = '#ffe98a';
-  drawStar(g, 0, -40, 38, 0.15);
-  g.globalAlpha = 1;
+  const glow = g.createRadialGradient(0, -40, 4, 0, -40, 56);
+  glow.addColorStop(0, 'rgba(255,236,140,0.6)');
+  glow.addColorStop(1, 'rgba(255,236,140,0)');
+  g.fillStyle = glow;
+  g.fillRect(-60, -100, 120, 120);
   g.fillStyle = '#ffffff';
   drawStar(g, 0, -40, 24, 0.15);
   // colour orb above

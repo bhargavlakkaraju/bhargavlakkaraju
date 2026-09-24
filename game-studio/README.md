@@ -19,20 +19,20 @@ Docs: [Business plan](docs/BUSINESS_PLAN.md) · [Marketing playbook](docs/MARKET
 | | Game | Category | Hook |
 |---|---|---|---|
 | 🧱 | Stack Tower | Arcade | Tap to drop; perfect stacks grow your block back |
-| 🐤 | Sky Flap | Arcade | One-tap flyer through neon pillars |
-| 🔪 | Blade Spin | Arcade | Throw blades into a spinning target; boss stages |
-| 🌈 | Color Rush | Arcade | Pass only through your color |
+| 🐤 | Sky Flap | Arcade | One-tap flyer through neon pillars, near-miss combos |
+| 🗡️ | Blade Spin | Arcade | Throw blades into a spinning log; boss every 5th stage |
+| 🔵 | Color Rush | Arcade | Hop through spinning obstacles, only on your color |
 | 🔷 | Zig Zag | Arcade | Tap to turn on a crumbling path |
-| 🦘 | Sky Hop | Arcade | Endless vertical platform jumper |
-| 🐔 | Road Hopper | Arcade | Hop across roads, rivers and rails |
+| ☁️ | Sky Hop | Arcade | Endless vertical platform jumper |
+| 🐥 | Road Hopper | Arcade | Hop across roads, rivers and rails |
 | 🟪 | Brick Barrage | Arcade | Aim a volley of balls at numbered bricks |
-| 🐍 | Neon Snake | Classic | Modern neon snake with smooth movement |
-| 🍉 | Juicy Drop | Puzzle | Drop and merge fruit up to a watermelon |
+| 🍉 | Juicy Drop | Puzzle | Drop and merge fruit up to a watermelon (real physics) |
 | 💎 | Block Crush | Puzzle | 8×8 block puzzle with combo clears |
-| 🔢 | 2048 | Puzzle | The classic sliding merge |
-| 🔢 | Sudoku | Classic | Unique-solution puzzles, 3 difficulties, daily |
-| 🃏 | Solitaire | Classic | Klondike, draw 1 or 3, undo, auto-complete |
-| 🟩 | Wordy | Word | Daily 5-letter word + unlimited mode, emoji share |
+| 🔢 | 2048 | Puzzle | The classic sliding merge; revive rewinds 3 moves |
+| 🧩 | Sudoku | Puzzle | Unique-solution puzzles, 3 difficulties, daily |
+| 🐍 | Neon Snake | Classic | Smooth neon snake with golden orbs and combos |
+| 🃏 | Solitaire | Classic | Klondike, draw 1 or 3, every deal solver-verified winnable |
+| 🟩 | Wordy | Word | Daily 5-letter word + unlimited mode, emoji share grid |
 
 ## Quick start
 

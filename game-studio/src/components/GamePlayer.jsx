@@ -37,6 +37,7 @@ async function submitScore({ meta, score, mode, name }) {
 
 export default function GamePlayer({ slug, challenge = null, embed = false, initialMode = null }) {
   const frameRef = useRef(null);
+  const outerRef = useRef(null);
   const stageRef = useRef(null);
   const ctrlRef = useRef(null);
   const metaRef = useRef(null);
@@ -232,7 +233,7 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
 
   // Fullscreen (native where supported, CSS fallback for iOS).
   const toggleFull = useCallback(async () => {
-    const el = frameRef.current;
+    const el = outerRef.current;
     if (!full) {
       setFull(true);
       track('fullscreen', { g: slug });
@@ -274,10 +275,26 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
   const bg = meta?.bg || '#120b24';
 
   return (
-    <div className={full ? 'fixed inset-0 z-50 bg-ink' : embed ? 'h-full' : ''}>
+    <div ref={outerRef} className={full ? 'fixed inset-0 z-50 flex flex-col bg-ink' : embed ? 'h-full' : ''}>
+      {full && (
+        <div className="flex h-12 shrink-0 items-center gap-2 px-3">
+          <div className="truncate font-display text-lg font-bold">
+            {meta?.emoji} {meta?.title}
+          </div>
+          {mode === 'daily' && <span className="rounded-full bg-sun px-2.5 py-0.5 text-xs font-extrabold text-ink">📅 DAILY</span>}
+          <div className="ml-auto flex gap-2">
+            <button className="icon-btn" aria-label={muted ? 'Unmute' : 'Mute'} onClick={() => setMuted(sfx.toggleMuted())}>
+              {muted ? '🔇' : '🔊'}
+            </button>
+            <button className="icon-btn" aria-label="Exit fullscreen" onClick={toggleFull}>
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
       <div
         ref={frameRef}
-        className={`relative w-full overflow-hidden ${full || embed ? 'h-full' : 'game-frame rounded-3xl border border-line shadow-2xl'}`}
+        className={`relative w-full overflow-hidden ${full ? 'min-h-0 flex-1' : embed ? 'h-full' : 'game-frame rounded-3xl border border-line shadow-2xl'}`}
         style={{ background: `radial-gradient(120% 80% at 50% 0%, ${bg} 0%, #0b0618 100%)` }}
       >
         <div ref={stageRef} className="absolute inset-0" />
@@ -311,24 +328,12 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
           ))}
         </div>
 
-        {/* in-frame controls */}
-        <div className="absolute left-2 top-2 z-20 flex gap-2">
-          <button
-            className="icon-btn"
-            aria-label={muted ? 'Unmute' : 'Mute'}
-            onClick={() => {
-              setMuted(sfx.toggleMuted());
-            }}
-          >
+        {/* In-frame mute sits top-right: every game keeps that corner clear (same spot as the portal shell). */}
+        {!full && (
+          <button className="icon-btn absolute right-2 top-2 z-20" aria-label={muted ? 'Unmute' : 'Mute'} onClick={() => setMuted(sfx.toggleMuted())}>
             {muted ? '🔇' : '🔊'}
           </button>
-          {!embed && (
-            <button className="icon-btn" aria-label="Fullscreen" onClick={toggleFull}>
-              {full ? '✕' : '⛶'}
-            </button>
-          )}
-        </div>
-        {mode === 'daily' && <div className="absolute right-2 top-2 z-20 rounded-full bg-sun px-3 py-1 text-xs font-extrabold text-ink">📅 DAILY</div>}
+        )}
 
         {/* game over panel */}
         {over && meta && (
@@ -439,7 +444,7 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
                         className="group overflow-hidden rounded-xl bg-white/5 text-left ring-1 ring-white/10 hover:ring-pink"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={`/covers/${g.slug}.png`} alt="" className="aspect-[4/3] w-full object-cover" loading="lazy" />
+                        <img src={`/covers/${g.slug}.webp`} alt="" className="aspect-[4/3] w-full object-cover" loading="lazy" />
                         <div className="truncate px-2 py-1 text-xs font-bold text-white">
                           {g.emoji} {g.title}
                         </div>
@@ -490,6 +495,9 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
               ))}
             </div>
           )}
+          <button className="rounded-full bg-panel px-3.5 py-1.5 text-sm font-extrabold text-white/70 ring-1 ring-line hover:text-white" onClick={toggleFull}>
+            ⛶ Fullscreen
+          </button>
           <div className="ml-auto text-sm font-bold text-white/70">
             {best != null ? `Best ${formatScore(meta, best)} ${MEDALS[medalFor(meta, best)] || ''}` : 'No best yet'}
             {nm && best != null ? <span className="text-white/40"> · {nm.text}</span> : null}

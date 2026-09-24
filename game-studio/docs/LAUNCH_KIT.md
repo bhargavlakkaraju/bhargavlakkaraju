@@ -31,7 +31,7 @@ Replace `retryarcade.com` if you deploy elsewhere. Always add UTM tags so `/stud
 - **Tagline:** Instant, addictive browser games. Just one more try.
 - **Description:** 15 free games that load in a second on any device: one-tap arcade, puzzles and classics.
   Daily Challenges, streaks, medals, leaderboards and challenge links to beat your friends. No downloads, no sign-up.
-- **Gallery:** `public/og/site.png` + `public/og/<game>.png` for the top 5 games.
+- **Gallery:** `public/og/site.jpg` + `public/og/<game>.jpg` for the top 5 games.
 - **First comment:** why we built it, how the daily seed works, what's next (a new game every month).
 
 ## X / Twitter launch thread

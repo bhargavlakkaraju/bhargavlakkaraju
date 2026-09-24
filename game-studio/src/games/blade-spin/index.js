@@ -334,7 +334,7 @@ export default function createGame(api) {
       }
     }
     const pal = boss ? BOSS_PAL : PALS[(k - 1) % PALS.length];
-    return { k, boss, R, need, left: need, stuck, fruits, spin, pal, hits: 0 };
+    return { k, boss, R, need, left: need, stuck, fruits, spin, pal, hits: 0, label: boss ? 'BOSS STAGE' : `STAGE ${k}` };
   }
 
   function spinStep(dt) {
@@ -622,7 +622,7 @@ export default function createGame(api) {
   }
 
   reset();
-  if (typeof window !== 'undefined' && window.__raDebug) window.__raDebug[api.meta.slug] = { get stage() { return stage; }, get theta() { return theta; }, get flying() { return flying; }, get transition() { return transition; } };
+  if (typeof window !== 'undefined' && window.__raDebug && /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__raDebug[api.meta.slug] = { get stage() { return stage; }, get theta() { return theta; }, get flying() { return flying; }, get transition() { return transition; } };
 
   // ---------- rendering ----------
   function ensureGrads(g) {
@@ -663,7 +663,7 @@ export default function createGame(api) {
   function drawHud(g) {
     const k = stage.k;
     const first = Math.floor((k - 1) / 5) * 5 + 1;
-    draw.text(g, stage.boss ? 'BOSS STAGE' : `STAGE ${k}`, W / 2, 108, { size: 16, weight: 800, color: stage.boss ? '#ff5a6e' : 'rgba(255,255,255,0.8)', shadow: false });
+    draw.text(g, stage.label, W / 2, 108, { size: 16, weight: 800, color: stage.boss ? '#ff5a6e' : 'rgba(255,255,255,0.8)', shadow: false });
     for (let i = 0; i < 5; i++) {
       const sk = first + i;
       const x = W / 2 + (i - 2) * 26;

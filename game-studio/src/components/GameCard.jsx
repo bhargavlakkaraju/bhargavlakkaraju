@@ -13,7 +13,7 @@ export default function GameCard({ game, size = 'md', badge = null, href = null,
       <div className="relative aspect-[4/3] overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={`/covers/${game.slug}.png`}
+          src={`/covers/${game.slug}.webp`}
           alt={`${game.title} game`}
           className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
           loading={priority ? 'eager' : 'lazy'}

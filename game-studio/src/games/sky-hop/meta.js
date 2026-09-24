@@ -5,7 +5,7 @@ export default {
   description: 'Bounce from island to island and climb into the sky. Steer left and right, ride springs and dodge crumbling ledges. Free online game, no download.',
   category: 'arcade',
   tags: ['jumping', 'endless', 'platformer', 'one-finger', 'hyper-casual'],
-  emoji: '🐤',
+  emoji: '☁️',
   colors: ['#ff5d73', '#46c8ff'],
   bg: '#1d2a5c',
   width: 420,

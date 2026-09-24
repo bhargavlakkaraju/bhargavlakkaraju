@@ -17,7 +17,7 @@ function JsonLd({ meta }) {
       name: meta.title,
       url,
       description: meta.description,
-      image: `${SITE.url}/covers/${meta.slug}.png`,
+      image: `${SITE.url}/covers/${meta.slug}.jpg`,
       genre: CATEGORIES[meta.category]?.name,
       gamePlatform: ['Web browser', 'Mobile', 'Desktop'],
       applicationCategory: 'Game',

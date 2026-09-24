@@ -22,7 +22,7 @@ export default function GuidesPage() {
           return (
             <Link key={g.slug} href={`/guides/${g.slug}`} className="card group overflow-hidden hover:ring-2 hover:ring-pink">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`/covers/${g.game}.png`} alt="" className="aspect-[2/1] w-full object-cover" loading="lazy" />
+              <img src={`/covers/${g.game}.webp`} alt="" className="aspect-[2/1] w-full object-cover" loading="lazy" />
               <div className="p-5">
                 <div className="chip">
                   {game.emoji} {game.title}

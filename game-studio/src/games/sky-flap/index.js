@@ -641,7 +641,7 @@ export default function createGame(api) {
 
   reset();
   // Opt-in test hook (only when a test page defines window.__raDebug).
-  if (typeof window !== 'undefined' && window.__raDebug) window.__raDebug[api.meta.slug] = { bird, pillars, get speed() { return speed; } };
+  if (typeof window !== 'undefined' && window.__raDebug && /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__raDebug[api.meta.slug] = { bird, pillars, get speed() { return speed; } };
 
   return {
     reset,

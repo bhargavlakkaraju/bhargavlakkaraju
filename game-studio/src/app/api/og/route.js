@@ -5,6 +5,10 @@ import { getGame, formatScore } from '@/lib/games';
 
 export const runtime = 'edge';
 
+// Rendered at 60% of 1200x630 (720x378, above the 600x315 large-card minimum) so the PNG stays small enough for WhatsApp link previews.
+const K = 0.6;
+const px = (n) => Math.round(n * K);
+
 async function loadFont(text) {
   try {
     const css = await (await fetch(`https://fonts.googleapis.com/css2?family=Fredoka:wght@700&text=${encodeURIComponent(text)}`)).text();
@@ -30,25 +34,25 @@ export async function GET(req) {
   return new ImageResponse(
     (
       <div style={{ display: 'flex', width: '100%', height: '100%', background: `linear-gradient(135deg, #140a2e 0%, #2a1159 60%, ${c1} 140%)`, color: '#fff' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '56px 40px 56px 64px', width: 660 }}>
-          <div style={{ display: 'flex', fontSize: 30, color: c1, letterSpacing: 4 }}>RETRY ARCADE</div>
-          <div style={{ display: 'flex', fontSize: 50, marginTop: 26, color: 'rgba(255,255,255,0.85)' }}>{name} scored</div>
-          <div style={{ display: 'flex', fontSize: 150, color: '#ffd23f', lineHeight: 1.05 }}>{s}</div>
-          <div style={{ display: 'flex', fontSize: 50 }}>in {meta.title}</div>
-          <div style={{ display: 'flex', flexDirection: 'column', marginTop: 34, alignItems: 'flex-start' }}>
-            <div style={{ display: 'flex', fontSize: 40, background: '#ff3d7f', padding: '14px 34px', borderRadius: 22, whiteSpace: 'nowrap' }}>Can you beat it?</div>
-            <div style={{ display: 'flex', fontSize: 24, marginTop: 14, color: 'rgba(255,255,255,0.6)' }}>Play free, no download</div>
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: `${px(56)}px ${px(40)}px ${px(56)}px ${px(64)}px`, width: px(660) }}>
+          <div style={{ display: 'flex', fontSize: px(30), color: c1, letterSpacing: px(4) }}>RETRY ARCADE</div>
+          <div style={{ display: 'flex', fontSize: px(50), marginTop: px(26), color: 'rgba(255,255,255,0.85)' }}>{name} scored</div>
+          <div style={{ display: 'flex', fontSize: px(150), color: '#ffd23f', lineHeight: 1.05 }}>{s}</div>
+          <div style={{ display: 'flex', fontSize: px(50) }}>in {meta.title}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', marginTop: px(34), alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', fontSize: px(40), background: '#ff3d7f', padding: `${px(14)}px ${px(34)}px`, borderRadius: px(22), whiteSpace: 'nowrap' }}>Can you beat it?</div>
+            <div style={{ display: 'flex', fontSize: px(24), marginTop: px(14), color: 'rgba(255,255,255,0.6)' }}>Play free, no download</div>
           </div>
         </div>
-        <div style={{ display: 'flex', width: 540, height: 630, position: 'relative' }}>
+        <div style={{ display: 'flex', width: px(540), height: px(630), position: 'relative' }}>
           {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
-          <img src={`${u.origin}/covers/${meta.slug}.png`} width={540} height={630} style={{ objectFit: 'cover', borderLeft: `8px solid ${c2}` }} />
+          <img src={`${u.origin}/covers/${meta.slug}.jpg`} width={px(540)} height={px(630)} style={{ objectFit: 'cover', borderLeft: `${px(8)}px solid ${c2}` }} />
         </div>
       </div>
     ),
     {
-      width: 1200,
-      height: 630,
+      width: px(1200),
+      height: px(630),
       fonts: font ? [{ name: 'Fredoka', data: font, weight: 700, style: 'normal' }] : undefined,
       headers: { 'cache-control': 'public, max-age=86400, s-maxage=31536000, immutable' },
     },

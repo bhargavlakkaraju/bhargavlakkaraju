@@ -44,27 +44,27 @@ export default function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* HERO */}
-      <section className="mx-auto grid max-w-7xl items-center gap-8 px-4 pt-8 sm:pt-12 lg:grid-cols-[1.05fr_1fr]">
+      <section className="mx-auto grid max-w-7xl items-center gap-6 px-4 pt-5 sm:gap-8 sm:pt-12 lg:grid-cols-[1.05fr_1fr]">
         <div>
-          <div className="chip mb-4 bg-pink/15 text-pink">🔥 {GAMES.length} free games · new daily challenges</div>
-          <h1 className="font-display text-5xl font-bold leading-[1.02] tracking-tight text-white sm:text-6xl lg:text-7xl">
+          <div className="chip mb-3 bg-pink/15 text-pink sm:mb-4">🔥 {GAMES.length} free games · new daily challenges</div>
+          <h1 className="font-display text-[2.6rem] font-bold leading-[1.02] tracking-tight text-white sm:text-6xl lg:text-7xl">
             Just one
             <br />
             <span className="bg-gradient-to-r from-pink via-sun to-aqua bg-clip-text text-transparent">more try.</span>
           </h1>
-          <p className="mt-5 max-w-xl text-lg text-white/70">
+          <p className="mt-3 max-w-xl text-base text-white/70 sm:mt-5 sm:text-lg">
             Instant, addictive games that load in a second on any phone or computer. No downloads, no sign-ups. Beat your best, climb the leaderboards and
             challenge your friends.
           </p>
-          <div className="mt-7 flex flex-wrap gap-3">
-            <Link href={`/games/${gotd.slug}`} className="btn-pink px-7 py-4 text-lg">
+          <div className="mt-5 flex flex-wrap gap-2 sm:mt-7 sm:gap-3">
+            <Link href={`/games/${gotd.slug}`} className="btn-pink px-5 py-3 sm:px-7 sm:py-4 sm:text-lg">
               ▶ Play {gotd.title}
             </Link>
-            <Link href="/daily" className="btn-ghost px-6 py-4 text-lg">
+            <Link href="/daily" className="btn-ghost px-4 py-3 sm:px-6 sm:py-4 sm:text-lg">
               📅 Today’s challenges
             </Link>
           </div>
-          <div className="mt-6 flex flex-wrap gap-4 text-sm font-bold text-white/50">
+          <div className="mt-6 hidden flex-wrap gap-4 text-sm font-bold text-white/50 sm:flex">
             <span>⚡ Loads instantly</span>
             <span>📱 Phone & desktop</span>
             <span>🏆 Global leaderboards</span>

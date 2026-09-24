@@ -19,7 +19,7 @@ export function generateMetadata({ params }) {
     title: g.title,
     description: g.description,
     alternates: { canonical: `/guides/${g.slug}` },
-    openGraph: { type: 'article', title: g.title, description: g.description, images: [{ url: `/og/${g.game}.png`, width: 1200, height: 630 }] },
+    openGraph: { type: 'article', title: g.title, description: g.description, images: [{ url: `/og/${g.game}.jpg`, width: 1200, height: 630 }] },
   };
 }
 
@@ -33,7 +33,7 @@ export default function GuidePage({ params }) {
     headline: g.title,
     description: g.description,
     datePublished: g.published,
-    image: `${SITE.url}/og/${g.game}.png`,
+    image: `${SITE.url}/og/${g.game}.jpg`,
     author: { '@type': 'Organization', name: SITE.name },
     publisher: { '@type': 'Organization', name: SITE.name, logo: { '@type': 'ImageObject', url: `${SITE.url}/icons/icon-512.png` } },
     mainEntityOfPage: `${SITE.url}/guides/${g.slug}`,

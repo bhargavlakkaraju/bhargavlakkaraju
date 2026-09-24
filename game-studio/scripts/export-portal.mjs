@@ -92,8 +92,8 @@ for (const portal of PORTALS) {
     copyDir(path.join(gamesDir, slug), path.join(out, 'game'));
     fs.mkdirSync(path.join(out, 'fonts'), { recursive: true });
     fs.copyFileSync(path.join(root, 'public/fonts/Fredoka-Bold.ttf'), path.join(out, 'fonts/Fredoka-Bold.ttf'));
-    const cover = path.join(root, 'public/covers', `${slug}.png`);
-    if (fs.existsSync(cover)) fs.copyFileSync(cover, path.join(out, 'cover.png'));
+    const cover = path.join(root, 'public/covers', `${slug}.jpg`);
+    if (fs.existsSync(cover)) fs.copyFileSync(cover, path.join(out, 'cover.jpg'));
     fs.writeFileSync(path.join(out, 'index.html'), html({ meta, portal }));
     let size = 0;
     const walk = (d) => fs.readdirSync(d).forEach((f) => (fs.statSync(path.join(d, f)).isDirectory() ? walk(path.join(d, f)) : (size += fs.statSync(path.join(d, f)).size)));

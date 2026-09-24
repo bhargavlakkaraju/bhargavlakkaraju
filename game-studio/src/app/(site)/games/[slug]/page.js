@@ -22,9 +22,9 @@ export function generateMetadata({ params }) {
       title: `${meta.emoji} ${meta.title} | ${SITE.name}`,
       description: meta.description,
       url: `/games/${meta.slug}`,
-      images: [{ url: `/og/${meta.slug}.png`, width: 1200, height: 630, alt: meta.title }],
+      images: [{ url: `/og/${meta.slug}.jpg`, width: 1200, height: 630, alt: meta.title }],
     },
-    twitter: { card: 'summary_large_image', title: `${meta.emoji} ${meta.title}`, description: meta.tagline, images: [`/og/${meta.slug}.png`] },
+    twitter: { card: 'summary_large_image', title: `${meta.emoji} ${meta.title}`, description: meta.tagline, images: [`/og/${meta.slug}.jpg`] },
   };
 }
 
