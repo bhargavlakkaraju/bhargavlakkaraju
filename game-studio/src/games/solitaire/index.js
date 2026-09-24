@@ -1410,77 +1410,85 @@ export default function createGame(api) {
 }
 
 // ---------- cover art ----------
-export function cover(g, w, h) {
-  drawFelt(g, w, h);
-  const ch = h * 0.5;
-  const cw = ch / 1.42;
-  // bouncing-card trail sweeping across the left side
-  const trailCards = [
-    [13, 1],
-    [12, 3],
-  ];
-  trailCards.forEach(([rank, suit], ti) => {
-    let x = w * 0.04 + ti * w * 0.05;
-    let y = h * 0.08 + ti * h * 0.1;
-    let vy = 0;
-    for (let i = 0; i < 16; i++) {
-      g.save();
-      g.globalAlpha = 0.55 + (i / 16) * 0.45;
-      drawFace(g, rank, suit, x, y, cw * 0.62, ch * 0.62);
-      g.restore();
-      x += w * 0.018;
-      vy += h * 0.02;
-      y += vy;
-      if (y > h - ch * 0.62 - h * 0.03) {
-        y = h - ch * 0.62 - h * 0.03;
-        vy = -vy * 0.75;
-      }
-    }
-  });
-  // fanned hand of cards
-  const hand = [
-    [1, 0],
-    [13, 1],
-    [12, 2],
-    [11, 3],
-    [10, 1],
-  ];
-  const cx = w * 0.62;
-  const cy = h * 0.98;
-  hand.forEach(([rank, suit], i) => {
-    const a = (i - 2) * 0.2;
+function coverCard(g, rank, suit, x, y, cw, ch, shadow) {
+  if (shadow) {
     g.save();
-    g.translate(cx, cy);
-    g.rotate(a);
-    g.translate(-cw / 2, -ch * 1.45);
-    g.shadowColor = 'rgba(0,0,0,0.4)';
-    g.shadowBlur = h * 0.03;
-    g.shadowOffsetY = h * 0.01;
-    roundRectPath(g, 0, 0, cw, ch, cw * 0.1);
+    g.shadowColor = 'rgba(0,0,0,0.38)';
+    g.shadowBlur = ch * 0.08;
+    g.shadowOffsetY = ch * 0.03;
+    roundRectPath(g, x, y, cw, ch, cw * 0.1);
     g.fillStyle = '#fdfcf7';
     g.fill();
-    g.shadowColor = 'transparent';
-    drawFace(g, rank, suit, 0, 0, cw, ch);
+    g.restore();
+  }
+  if (rank) drawFace(g, rank, suit, x, y, cw, ch);
+  else drawBack(g, x, y, cw, ch);
+}
+
+export function cover(g, w, h) {
+  drawFelt(g, w, h);
+  const u = Math.min(w / 800, h / 600);
+  // the classic win: a card bouncing across the table, leaving a trail
+  const ch2 = 190 * u;
+  const cw2 = ch2 / 1.42;
+  let x = w * 0.9 - cw2;
+  let y = -ch2 * 0.15;
+  let vy = 0;
+  const floor = h - ch2 - h * 0.03;
+  for (let i = 0; i < 46; i++) {
+    coverCard(g, 13, 1, x, y, cw2, ch2, false);
+    x -= w * 0.0095;
+    vy += 2.1 * u;
+    y += vy;
+    if (y > floor) {
+      y = floor;
+      vy = -vy * 0.72;
+    }
+  }
+  // soft light behind the hand
+  const cx = w * 0.36;
+  const glowG = g.createRadialGradient(cx, h * 0.5, 0, cx, h * 0.5, h * 0.6);
+  glowG.addColorStop(0, 'rgba(255,255,255,0.16)');
+  glowG.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = glowG;
+  g.fillRect(0, 0, w, h);
+  // fanned hand: ace, king, queen, jack
+  const ch = 300 * u;
+  const cw = ch / 1.42;
+  const hand = [
+    [1, 0],
+    [13, 3],
+    [12, 2],
+    [11, 1],
+  ];
+  const pivotY = h * 0.5 + ch * 1.05;
+  hand.forEach(([rank, suit], i) => {
+    const a = (i - 1.5) * 0.23;
+    g.save();
+    g.translate(cx, pivotY);
+    g.rotate(a);
+    coverCard(g, rank, suit, -cw / 2, -ch * 1.55, cw, ch, true);
     g.restore();
   });
-  // a face-down card peeking behind
+  // a face-down card tucked behind the hand
   g.save();
-  g.translate(w * 0.9, h * 0.2);
-  g.rotate(0.35);
-  drawBack(g, -cw * 0.4, -ch * 0.4, cw * 0.8, ch * 0.8);
+  g.translate(cx - cw * 1.25, h * 0.36);
+  g.rotate(-0.45);
+  coverCard(g, 0, 0, -cw * 0.4, -ch * 0.4, cw * 0.8, ch * 0.8, true);
   g.restore();
-  // gold sparkles
+  // sparkles
   g.fillStyle = '#ffd23f';
-  for (let i = 0; i < 16; i++) {
-    const px = w * (0.35 + ((i * 0.618) % 1) * 0.6);
-    const py = h * (0.05 + ((i * 0.382) % 1) * 0.35);
-    const s = h * (0.006 + (i % 3) * 0.004);
+  const spark = (px, py, s) => {
     g.beginPath();
     g.moveTo(px, py - s * 3);
-    g.lineTo(px + s, py);
-    g.lineTo(px, py + s * 3);
-    g.lineTo(px - s, py);
-    g.closePath();
+    g.quadraticCurveTo(px, py, px + s * 3, py);
+    g.quadraticCurveTo(px, py, px, py + s * 3);
+    g.quadraticCurveTo(px, py, px - s * 3, py);
+    g.quadraticCurveTo(px, py, px, py - s * 3);
     g.fill();
-  }
+  };
+  spark(cx + cw * 0.95, h * 0.16, 7 * u);
+  spark(cx - cw * 0.9, h * 0.1, 5 * u);
+  spark(cx + cw * 1.3, h * 0.34, 4 * u);
+  spark(cx - cw * 1.35, h * 0.62, 4 * u);
 }

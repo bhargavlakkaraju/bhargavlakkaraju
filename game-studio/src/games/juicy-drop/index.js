@@ -705,7 +705,7 @@ export default function createGame(api) {
       if (nt >= 6) fx.shake(2 + nt * 0.9, 0.18 + nt * 0.02);
       if (nt > maxTier) {
         if (nt >= 4) {
-          fx.text(W / 2, 300, `NEW: ${N.name.toUpperCase()}!`, { color: '#fff4b0', size: 30, life: 1.3, stroke: 'rgba(120,40,20,0.55)' });
+          fx.text(W / 2, 326, `NEW: ${N.name.toUpperCase()}!`, { color: '#fff4b0', size: 30, life: 1.3, stroke: 'rgba(120,40,20,0.55)' });
           sfx.play('levelup');
           bestPop = 1;
         }
@@ -1179,9 +1179,9 @@ export default function createGame(api) {
         const a = Math.min(1, comboT * 3);
         const sc = 1 + ease.outBack(comboPop) * 0.25;
         g.save();
-        g.translate(W / 2, 250);
+        g.translate(W / 2, 246);
         g.scale(sc, sc);
-        draw.text(g, `COMBO ×${comboN}`, 0, 0, { size: 28 + Math.min(comboN, 8) * 2, weight: 800, color: '#fff4b0', stroke: 'rgba(130,40,20,0.9)', strokeWidth: 7, alpha: a, shadow: false });
+        draw.text(g, `COMBO ×${comboN}`, 0, 0, { size: 28 + Math.min(comboN, 6) * 2, weight: 800, color: '#fff4b0', stroke: 'rgba(130,40,20,0.9)', strokeWidth: 7, alpha: a, shadow: false });
         g.restore();
       }
     },
