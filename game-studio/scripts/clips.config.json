@@ -9,16 +9,16 @@
     "fit": "pad"
   },
   "brick-barrage": {
-    "seed": 7,
-    "start": 0
+    "seed": 3,
+    "start": 113.8
   },
   "color-rush": {
     "seed": 7,
     "start": 44.5
   },
   "juicy-drop": {
-    "seed": 7,
-    "start": 0
+    "seed": 2,
+    "start": 51
   },
   "merge-2048": {
     "seed": 7,
@@ -26,20 +26,20 @@
     "fit": "pad"
   },
   "neon-snake": {
-    "seed": 7,
-    "start": 0
+    "seed": 6,
+    "start": 11.5
   },
   "road-hopper": {
-    "seed": 7,
-    "start": 0
+    "seed": 2,
+    "start": 9
   },
   "sky-flap": {
     "seed": 7,
     "start": 11
   },
   "sky-hop": {
-    "seed": 7,
-    "start": 0
+    "seed": 3,
+    "start": 10
   },
   "solitaire": {
     "seed": 7,
