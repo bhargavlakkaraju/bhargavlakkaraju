@@ -5,13 +5,16 @@ Each step below says what to sign up for and which Vercel environment variable t
 the result into (Vercel -> retryarcade -> Settings -> Environment Variables, then Redeploy).
 Or send the values to Claude and it will add them.
 
-## 0. Own the domain first (10 minutes, about $11/year)
+## 0. Domain: done
 
-AdSense and most premium ad networks do not approve `*.vercel.app` addresses, because you
-must own the site's root domain and serve `ads.txt` from it. Buy `retryarcade.com` (Vercel
--> Domains, or any registrar), add it to the `retryarcade` project, and set it as the
-primary domain. The site picks up the new address automatically for canonical links,
-the sitemap, share links and structured data. Keep `retryarcade.vercel.app` redirecting to it.
+`retryarcade.com` is registered (Vercel, auto-renews each September), is the primary
+address of the `retryarcade` project, and `www.retryarcade.com` plus
+`retryarcade.vercel.app` redirect to it. `NEXT_PUBLIC_SITE_URL=https://retryarcade.com`
+drives canonical links, the sitemap, share links, structured data and `ads.txt`.
+
+Still to do: email. `hello@retryarcade.com` is shown on the site but has no mailbox yet.
+Set up free forwarding (for example ImprovMX or Cloudflare Email Routing) to your inbox by
+adding their MX records in Vercel -> Domains -> retryarcade.com -> DNS.
 
 ## 1. Ad money
 
