@@ -25,7 +25,7 @@ export default function Plus() {
       <TrackPageView />
       <div className="text-center">
         <div className="text-5xl">⭐</div>
-        <h1 className="mt-2 font-arcade text-4xl text-white sm:text-5xl">
+        <h1 className="mt-2 font-cond text-6xl font-extrabold uppercase leading-[0.9] text-white sm:text-7xl">
           RETRY ARCADE <span className="gradient-run">PLUS</span>
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-lg text-white/75">Every game stays free for everyone. Plus is for players who want it ad-free and want to back the studio.</p>

@@ -13,7 +13,7 @@ export default function LeaderboardsPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 pt-10">
       <TrackPageView />
-      <h1 className="font-display text-4xl font-bold sm:text-5xl">🏆 Leaderboards</h1>
+      <h1 className="font-cond text-5xl font-extrabold uppercase leading-[0.95] sm:text-6xl">🏆 Leaderboards</h1>
       <p className="mt-2 text-white/70">Boards reset every day at midnight UTC. All-time records last forever.</p>
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {GAMES.map((g) => (

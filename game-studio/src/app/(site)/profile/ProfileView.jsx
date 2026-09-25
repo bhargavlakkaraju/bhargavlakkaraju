@@ -27,7 +27,7 @@ export default function ProfileView() {
           {lvl.level}
         </div>
         <div className="flex-1">
-          <h1 className="font-display text-3xl font-bold">{p.name || 'Anonymous player'}</h1>
+          <h1 className="font-cond text-4xl font-extrabold uppercase leading-none">{p.name || 'Anonymous player'}</h1>
           <div className="mt-1 text-sm text-white/60">
             Level {lvl.level} · {p.xp} XP · {lvl.need - lvl.into} XP to level {lvl.level + 1}
           </div>

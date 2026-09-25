@@ -19,7 +19,7 @@ export default function DailyPage() {
       <TrackPageView />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl font-bold sm:text-5xl">📅 Daily Challenges</h1>
+          <h1 className="font-cond text-5xl font-extrabold uppercase leading-[0.95] sm:text-6xl">📅 Daily Challenges</h1>
           <p className="mt-2 max-w-2xl text-white/70">
             Every game gets a brand-new level every day, identical for every player on Earth. Beat your friends, climb today’s board, and come back tomorrow to
             keep your 🔥 streak alive.

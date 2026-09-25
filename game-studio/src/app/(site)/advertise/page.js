@@ -50,7 +50,7 @@ export default function Advertise() {
       <TrackPageView />
       <div className="max-w-3xl">
         <div className="chip">📣 For brands, agencies and platforms</div>
-        <h1 className="mt-3 font-arcade text-3xl leading-tight text-white sm:text-5xl">PUT YOUR BRAND WHERE PLAYERS COME BACK EVERY DAY</h1>
+        <h1 className="mt-3 font-cond text-5xl font-extrabold uppercase leading-[0.92] text-white sm:text-7xl">PUT YOUR BRAND WHERE PLAYERS COME BACK EVERY DAY</h1>
         <p className="mt-4 text-lg text-white/75">
           {SITE.name} is a free arcade of {GAMES.length} instant-play games built around one feeling: <em>just one more try</em>. Daily levels, streaks and
           challenge links bring players back and bring their friends with them.

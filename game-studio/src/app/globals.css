@@ -11,6 +11,21 @@
   src: url('/fonts/Bungee-400.woff2') format('woff2');
 }
 @font-face {
+  font-family: 'Barlow Condensed';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/BarlowCondensed-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/BarlowCondensed-800.woff2') format('woff2');
+}
+
+@font-face {
   font-family: 'Fredoka';
   font-style: normal;
   font-weight: 500;
@@ -64,43 +79,29 @@
   color-scheme: dark;
 }
 
-/* Only html paints the page color so the fixed neon backdrop (negative z-index) shows through body. */
+/* Content-first dark canvas: the game art is the decoration, the chrome stays quiet. */
 html {
-  background: #0b0618;
+  background: #0a0a0c;
 }
 body {
-  color: #f4f1ff;
-}
-
-body {
+  color: #f4f4f6;
   font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background:
-    radial-gradient(60% 40% at 10% 0%, rgba(139, 92, 246, 0.18), transparent 70%),
-    radial-gradient(50% 35% at 95% 10%, rgba(255, 61, 127, 0.14), transparent 70%),
-    radial-gradient(60% 50% at 50% 110%, rgba(34, 211, 238, 0.08), transparent 70%);
-  pointer-events: none;
-}
-
 @layer components {
+  /* One accent for everything you can press. */
   .btn-pink {
-    @apply inline-flex items-center justify-center rounded-2xl bg-pink px-5 py-3 font-display font-bold text-white shadow-[0_5px_0_#b3134d] transition active:translate-y-[3px] active:shadow-[0_2px_0_#b3134d] hover:brightness-110;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-pink px-5 py-3 font-display font-bold text-white shadow-[0_4px_0_#a8104a] transition active:translate-y-[2px] active:shadow-[0_2px_0_#a8104a] hover:brightness-110;
   }
   .btn-green {
-    @apply inline-flex items-center justify-center rounded-2xl bg-emerald-500 px-5 py-3 font-display font-bold text-white shadow-[0_5px_0_#047857] transition active:translate-y-[3px] active:shadow-[0_2px_0_#047857] hover:brightness-110;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500 px-5 py-3 font-display font-bold text-white shadow-[0_4px_0_#047857] transition active:translate-y-[2px] active:shadow-[0_2px_0_#047857] hover:brightness-110;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center rounded-2xl bg-white/10 px-5 py-2.5 font-display font-bold text-white ring-1 ring-white/15 transition hover:bg-white/15;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-raised px-5 py-2.5 font-display font-bold text-white ring-1 ring-line transition hover:bg-[#2b2b35];
   }
   .icon-btn {
-    @apply grid h-9 w-9 place-items-center rounded-xl bg-black/30 text-base text-white ring-1 ring-white/10 backdrop-blur transition hover:bg-black/50;
+    @apply grid h-9 w-9 place-items-center rounded-xl bg-black/40 text-base text-white ring-1 ring-white/10 backdrop-blur transition hover:bg-black/60;
   }
   .toast {
     @apply rounded-full px-4 py-1.5 text-sm font-extrabold shadow-lg;
@@ -125,13 +126,23 @@ body::before {
     }
   }
   .card {
-    @apply rounded-3xl border border-line bg-panel/80 backdrop-blur;
+    @apply rounded-2xl border border-line bg-panel;
+  }
+  /* Section headings: condensed, uppercase, accent; subtitle muted underneath. */
+  .h-section {
+    @apply font-cond text-[1.75rem] font-extrabold uppercase leading-none tracking-[0.01em] text-pink sm:text-4xl;
+  }
+  .h-sub {
+    @apply mt-1.5 text-sm text-mute sm:text-[15px];
   }
   .section-title {
-    @apply font-display text-2xl font-bold text-white sm:text-3xl;
+    @apply font-cond text-3xl font-extrabold uppercase leading-none text-white sm:text-4xl;
+  }
+  .pill-link {
+    @apply inline-flex shrink-0 items-center gap-1 rounded-full bg-raised px-3.5 py-2 text-sm font-extrabold text-white ring-1 ring-line transition hover:bg-[#2b2b35];
   }
   .prose-game h2 {
-    @apply mt-8 font-display text-xl font-bold text-white;
+    @apply mt-8 font-cond text-2xl font-extrabold uppercase text-white;
   }
   .prose-game p,
   .prose-game li {
@@ -144,7 +155,10 @@ body::before {
     @apply mt-3 list-disc space-y-1.5 pl-5;
   }
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-bold text-white/80;
+    @apply inline-flex items-center gap-1 rounded-full bg-raised px-2.5 py-0.5 text-xs font-bold text-white/80;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-md px-1.5 py-[1px] font-cond text-[12px] font-extrabold uppercase italic tracking-wide;
   }
 }
 
@@ -155,71 +169,7 @@ body::before {
   scrollbar-width: none;
 }
 
-/* ---------- Arcade look: backdrop, neon, tilt cards, rails, ticker ---------- */
-.neon-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  pointer-events: none;
-}
-.neon-backdrop .stars {
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(1.5px 1.5px at 12% 18%, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(1px 1px at 72% 12%, rgba(255, 255, 255, 0.6), transparent),
-    radial-gradient(1.5px 1.5px at 38% 42%, rgba(255, 255, 255, 0.5), transparent),
-    radial-gradient(1px 1px at 88% 36%, rgba(255, 255, 255, 0.6), transparent),
-    radial-gradient(1px 1px at 22% 66%, rgba(255, 255, 255, 0.4), transparent),
-    radial-gradient(1.5px 1.5px at 58% 24%, rgba(255, 210, 63, 0.7), transparent),
-    radial-gradient(1px 1px at 5% 48%, rgba(34, 211, 238, 0.7), transparent);
-  animation: twinkle 6s ease-in-out infinite alternate;
-}
-.neon-backdrop .sun {
-  position: absolute;
-  left: 50%;
-  bottom: 22vh;
-  width: min(70vw, 620px);
-  aspect-ratio: 1;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 40%, rgba(255, 61, 127, 0.28), rgba(139, 92, 246, 0.12) 55%, transparent 70%);
-  filter: blur(8px);
-}
-.neon-backdrop .floor {
-  position: absolute;
-  left: -50%;
-  right: -50%;
-  bottom: -2px;
-  height: 45vh;
-  transform-origin: 50% 0;
-  transform: perspective(420px) rotateX(62deg);
-  background-image:
-    linear-gradient(rgba(255, 61, 127, 0.35) 2px, transparent 2px),
-    linear-gradient(90deg, rgba(139, 92, 246, 0.3) 2px, transparent 2px);
-  background-size: 64px 64px;
-  -webkit-mask-image: linear-gradient(to bottom, transparent, black 35%);
-  mask-image: linear-gradient(to bottom, transparent, black 35%);
-  animation: floor-run 1.6s linear infinite;
-  opacity: 0.55;
-}
-@keyframes floor-run {
-  to {
-    background-position: 0 64px, 0 0;
-  }
-}
-@keyframes twinkle {
-  to {
-    opacity: 0.45;
-  }
-}
-.neon-text {
-  text-shadow: 0 0 18px rgba(255, 61, 127, 0.55), 0 0 42px rgba(139, 92, 246, 0.35);
-}
-.glow-drop {
-  filter: drop-shadow(0 0 14px rgba(255, 61, 127, 0.45));
-}
+/* Kept for pages that still use the gradient wordmark (Plus). */
 .gradient-run {
   background: linear-gradient(90deg, #ff3d7f, #ffd23f, #22d3ee, #a3e635, #ff3d7f);
   background-size: 300% 100%;
@@ -233,52 +183,55 @@ body::before {
     background-position: 300% 0;
   }
 }
-/* Game tiles: glow in the game's own colors, shine sweep, pointer tilt (desktop). */
+.neon-text,
+.glow-drop {
+  text-shadow: none;
+}
+
+/* Game tiles: the cover art fills the card, title sits on a dark fade at the bottom. */
 .tile {
-  --c1: #ff3d7f;
-  --c2: #8b5cf6;
-  --rx: 0deg;
-  --ry: 0deg;
   position: relative;
   display: block;
-  border-radius: 22px;
-  transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
-  transition: transform 0.18s ease-out, box-shadow 0.25s ease;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 10px 30px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  border-radius: 16px;
+  background: #1b1b21;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   -webkit-tap-highlight-color: transparent;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.tile img {
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.tile:hover img,
+.tile:focus-visible img {
+  transform: scale(1.06);
 }
 .tile:hover,
 .tile:focus-visible {
-  box-shadow: 0 0 0 2px var(--c1), 0 0 38px color-mix(in srgb, var(--c1) 55%, transparent), 0 16px 40px rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
 }
 .tile:active {
-  transform: perspective(900px) scale(0.97);
+  transform: scale(0.98);
 }
-.tile .shine {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.22) 45%, transparent 60%);
-  background-size: 250% 100%;
-  background-position: 130% 0;
-  pointer-events: none;
-  transition: background-position 0.7s ease;
+.tile-title {
+  font-family: 'Barlow Condensed', 'Fredoka', system-ui, sans-serif;
+  font-weight: 800;
+  text-transform: uppercase;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
 }
-.tile:hover .shine {
-  background-position: -60% 0;
-}
+
 /* Horizontal swipe rails on phones, grids from tablet up. */
 .rail {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(62%, 1fr);
-  gap: 12px;
+  gap: 10px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   overscroll-behavior-x: contain;
-  padding-bottom: 6px;
+  padding-bottom: 4px;
   scrollbar-width: none;
-  /* bleed to the screen edges on phones so the next card peeks in */
   margin-inline: -16px;
   padding-inline: 16px;
   scroll-padding-inline: 16px;
@@ -307,7 +260,7 @@ body::before {
   display: flex;
   width: max-content;
   gap: 40px;
-  animation: ticker 38s linear infinite;
+  animation: ticker 40s linear infinite;
 }
 .ticker:hover {
   animation-play-state: paused;
@@ -317,46 +270,46 @@ body::before {
     transform: translateX(-50%);
   }
 }
+/* The instant-play cabinet on the home page: a flat framed panel, no glow. */
 .cabinet {
   position: relative;
-  border-radius: 28px;
-  padding: 8px;
-  background: linear-gradient(145deg, #ff3d7f, #8b5cf6 45%, #22d3ee);
-  box-shadow: 0 0 60px rgba(255, 61, 127, 0.35), 0 0 120px rgba(139, 92, 246, 0.25);
+  border-radius: 20px;
+  padding: 0;
+  background: #141418;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 .cabinet-inner {
-  border-radius: 22px;
+  border-radius: 20px;
   overflow: hidden;
-  background: #0b0618;
+  background: #0a0a0c;
 }
 .hero-frame {
-  height: min(72svh, 640px);
-  min-height: 440px;
+  height: min(64svh, 560px);
+  min-height: 420px;
 }
 .bottom-nav {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .pulse-ring {
-  animation: pulse-ring 2.2s ease-out infinite;
+  animation: pulse-ring 2.4s ease-out infinite;
 }
 @keyframes pulse-ring {
   0% {
-    box-shadow: 0 0 0 0 rgba(255, 61, 127, 0.6);
+    box-shadow: 0 0 0 0 rgba(255, 61, 127, 0.5);
   }
   100% {
-    box-shadow: 0 0 0 16px rgba(255, 61, 127, 0);
+    box-shadow: 0 0 0 14px rgba(255, 61, 127, 0);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .neon-backdrop .floor,
-  .neon-backdrop .stars,
   .gradient-run,
   .ticker,
   .pulse-ring,
   .animate-floaty {
     animation: none !important;
   }
-  .tile {
+  .tile,
+  .tile img {
     transition: none;
   }
 }

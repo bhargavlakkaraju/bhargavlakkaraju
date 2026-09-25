@@ -45,7 +45,7 @@ export default function GuidePage({ params }) {
       <Link href="/guides" className="text-sm font-bold text-white/50 hover:text-white">
         ← All guides
       </Link>
-      <h1 className="mt-3 font-display text-4xl font-bold leading-tight">{g.title}</h1>
+      <h1 className="mt-3 font-cond text-[2.6rem] font-extrabold uppercase leading-[0.95] sm:text-5xl">{g.title}</h1>
       <p className="mt-4 text-lg leading-relaxed text-white/75">{g.intro}</p>
       <article className="prose-game mt-2">
         {g.sections.map((s, i) => (

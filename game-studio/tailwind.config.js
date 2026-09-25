@@ -4,11 +4,14 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        ink: '#0b0618',
-        night: '#120b24',
-        panel: '#170f2e',
-        card: '#1f1540',
+        // Content-first dark UI: near-black canvas, flat raised surfaces, one accent (pink).
+        ink: '#0a0a0c',
+        night: '#0f0f12',
+        panel: '#141418',
+        card: '#1b1b21',
+        raised: '#23232b',
         line: 'rgba(255,255,255,0.08)',
+        mute: '#8d8d99',
         pink: { DEFAULT: '#ff3d7f', dark: '#c21556' },
         sun: '#ffd23f',
         aqua: '#22d3ee',
@@ -18,6 +21,7 @@ module.exports = {
       fontFamily: {
         display: ['Fredoka', 'Nunito', 'system-ui', 'sans-serif'],
         arcade: ['Bungee', 'Fredoka', 'system-ui', 'sans-serif'],
+        cond: ['"Barlow Condensed"', 'Fredoka', 'system-ui', 'sans-serif'],
         body: ['Nunito', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
       },
       boxShadow: {

@@ -46,7 +46,7 @@ export default function CollectionsIndex() {
     <div className="mx-auto max-w-5xl px-4 pt-10">
       <TrackPageView />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
-      <h1 className="font-display text-4xl font-bold sm:text-5xl">🎯 Games like your favorites</h1>
+      <h1 className="font-cond text-5xl font-extrabold uppercase leading-[0.95] sm:text-6xl">🎯 Games like your favorites</h1>
       <p className="mt-2 max-w-2xl text-white/70">
         Loved a game and want more like it? Each collection picks the {SITE.name} games that play the most like it, explains why, and answers the questions
         people ask. Every game is free and runs in your browser.

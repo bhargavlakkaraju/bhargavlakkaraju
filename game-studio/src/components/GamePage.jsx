@@ -79,7 +79,7 @@ export default function GamePage({ meta, challenge = null }) {
             <GamePlayer slug={meta.slug} challenge={challenge} />
             <div className="mt-4">
               <div className="mb-2 flex items-center justify-between">
-                <div className="font-arcade text-sm text-white/80">UP NEXT</div>
+                <div className="font-cond text-xl font-extrabold uppercase text-pink">Up next</div>
                 <Link href="/#games" className="text-xs font-extrabold text-aqua hover:underline">
                   All games →
                 </Link>

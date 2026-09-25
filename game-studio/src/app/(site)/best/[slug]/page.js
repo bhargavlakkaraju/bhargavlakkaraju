@@ -96,14 +96,14 @@ export default function CollectionPage({ params }) {
         </Link>
       </nav>
 
-      <h1 className="mt-3 font-display text-4xl font-bold leading-tight sm:text-5xl">{c.title}</h1>
+      <h1 className="mt-3 font-cond text-[2.6rem] font-extrabold uppercase leading-[0.95] sm:text-6xl">{c.title}</h1>
       <p className="mt-2 text-sm text-white/40">
         {picks.length} free games · Updated <time dateTime={updated}>{updated}</time>
       </p>
 
       {/* The direct answer: short, factual, quotable by search snippets and AI assistants. */}
       <section aria-label="Quick answer" className="mt-6 rounded-3xl bg-gradient-to-br from-pink/20 via-grape/15 to-aqua/10 p-5 ring-1 ring-pink/40 sm:p-6">
-        <div className="font-arcade text-xs tracking-wider text-sun">QUICK ANSWER</div>
+        <div className="font-cond text-sm font-extrabold uppercase tracking-wider text-sun">Quick answer</div>
         <p className="mt-2 text-lg leading-relaxed text-white/90">{c.answer}</p>
       </section>
 
@@ -117,7 +117,7 @@ export default function CollectionPage({ params }) {
               <GameCard game={p.meta} priority={i < 2} />
               <div className="min-w-0">
                 <div className="flex items-center gap-3">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-pink font-arcade text-sm text-white shadow-pop" aria-hidden>
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-pink font-cond text-lg font-extrabold text-white shadow-pop" aria-hidden>
                     {i + 1}
                   </span>
                   <h3 className="font-display text-xl font-bold leading-tight text-white sm:text-2xl">

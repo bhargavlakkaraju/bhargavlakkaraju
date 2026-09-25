@@ -33,7 +33,7 @@ export default function Press() {
   return (
     <div className="mx-auto max-w-5xl px-4 pt-10">
       <TrackPageView />
-      <h1 className="font-display text-4xl font-bold sm:text-5xl">Press kit</h1>
+      <h1 className="font-cond text-5xl font-extrabold uppercase leading-[0.95] sm:text-6xl">Press kit</h1>
       <p className="mt-3 max-w-3xl text-lg text-white/75">
         Everything you need to write about {SITE.name}. All logos and screenshots on this page are free to use in editorial coverage.
       </p>
