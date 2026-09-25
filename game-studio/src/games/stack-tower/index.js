@@ -1,4 +1,6 @@
 // Stack Tower - one-tap block stacking. Reference implementation of the game contract.
+import { mulberry32 } from '../engine/rng.js';
+
 const BH = 30; // block height
 const DEPTH = 16; // fake-3D depth of the top/side faces
 const START_W = 230;
@@ -80,6 +82,58 @@ export default function createGame(api) {
   let t;
   let pulses; // perfect-drop outline pulses
 
+  // ---------- demo autopilot (only runs when the engine calls demo()) ----------
+  // Its own tiny PRNG so the seeded game randomness (api.rng) is never touched.
+  const PILOT_SEED = 0x57ac4;
+  let prand = mulberry32(PILOT_SEED);
+  let pilotAim = null; // wanted offset (moving.x - top.x) for the current block
+  let pilotFor = null; // the moving block the aim was chosen for
+  let pilotWait = 0; // reaction time left before the pilot may tap
+  let pilotStreak = 0; // perfect drops left before the next deliberate trim
+
+  function pilotReset() {
+    prand = mulberry32(PILOT_SEED);
+    pilotAim = null;
+    pilotFor = null;
+    pilotWait = 0;
+    pilotStreak = 0;
+  }
+
+  // Trim a little off now and then (it sets up the "block grows back" perfect streaks),
+  // otherwise go for a perfect drop with a hair of human wobble.
+  function pilotPlan() {
+    const floors = blocks.length - 1;
+    const top = blocks[blocks.length - 1];
+    let trim = false;
+    if (floors === 0 || floors === 2) trim = true;
+    else if (floors > 2 && pilotStreak <= 0 && top.w > 170) trim = true;
+    if (trim) {
+      pilotStreak = 5 + Math.floor(prand() * 4);
+      const cut = 14 + prand() * 10;
+      pilotAim = (prand() < 0.5 ? -1 : 1) * cut;
+    } else {
+      pilotStreak -= 1;
+      pilotAim = (prand() - 0.5) * 2;
+    }
+    pilotFor = moving;
+    pilotWait = 0.3 + prand() * 0.15;
+  }
+
+  function demo(dt) {
+    if (!moving || !(dt > 0)) return;
+    if (pilotFor !== moving) pilotPlan();
+    if (pilotWait > 0) {
+      pilotWait -= dt;
+      return;
+    }
+    const top = blocks[blocks.length - 1];
+    const target = top.x + pilotAim;
+    const step = moving.dir * moving.speed * dt;
+    const here = Math.abs(moving.x - target);
+    // tap on the frame that lands closest to the aim point (the block is heading for it)
+    if ((target - moving.x) * moving.dir >= 0 ? here <= Math.abs(moving.x + step - target) : here < Math.abs(step) * 0.5) drop();
+  }
+
   function levelY(i) {
     return baseY - i * BH + cam;
   }
@@ -107,6 +161,7 @@ export default function createGame(api) {
     combo = 0;
     t = 0;
     spawn();
+    pilotReset();
   }
 
   function moveBlock(dt) {
@@ -206,6 +261,7 @@ export default function createGame(api) {
 
   return {
     reset,
+    demo,
     update(dt) {
       stepWorld(dt);
       if (moving) moveBlock(dt);

@@ -224,7 +224,11 @@ export default function createGame(api) {
       ob.cxo = rng.sign() * 74;
       ob.hh = ob.r1 + TH / 2;
     } else {
-      // twin gears touching at the ball's column; right ring mirrors the left one
+      // twin gears touching at the ball's column; right ring mirrors the left one. They always
+      // turn so the contact point moves up with the ball: the ball stays on the rings for ~72
+      // degrees of arc, so turning the other way sweeps it past a whole 90 degree colour and
+      // the gate could never be passed.
+      ob.w = -Math.abs(ob.w);
       ob.r1 = 78;
       ob.order2 = [order[3], order[2], order[1], order[0]];
       ob.hh = ob.r1 + TH / 2;
@@ -273,6 +277,7 @@ export default function createGame(api) {
     cursor = START_Y - 180;
     resetTrail();
     ensureGen();
+    pilotReset();
   }
 
   // bitmask of colours the ball (radius rad) touches on obstacle ob
@@ -457,11 +462,259 @@ export default function createGame(api) {
     }
   }
 
+  // ---------- demo autopilot (only runs when the engine calls demo()) ----------
+  // The pilot climbs a ladder of hover levels: the gap between two gates, and the hollow
+  // middle of rings / squares. At each level it bounces in place, reads the spinning gates
+  // ahead (a side-effect-free copy of the physics below, never touching api.rng) and picks
+  // the earliest moment from which a steady run of hops carries it through in its own colour.
+  const PILOT_SEED = 0xc0105;
+  const P_HOVER_GAP = 8; // min frames between hover hops
+  const P_WAIT = 200; // how many frames ahead a departure may be planned
+  const P_HOLD = 60; // frames the ball must stay safe hovering at the new level
+  const P_RAD = BR * 0.82 + 1.5; // collision radius with a little safety margin
+  let prand = mulberry32(PILOT_SEED);
+  let pilotLevel = START_Y + 5; // y of the current hover level (the ball's lowest point)
+  let pilotPlan = null; // { to, depart, cadence, frame }
+  let pilotSearch = null; // an unfinished search for the next climb
+  let pSteps = 0; // simulated frames (search budget)
+  let pilotRetry = 0;
+  let pilotStuck = 0; // seconds without a safe way up (some gates can't be timed at all)
+  let pilotSince = 99; // frames since the pilot's last hop
+  const pSh = []; // shadow copies of nearby obstacles (sim only)
+  const pOrbs = []; // orbs still up for grabs (sim only)
+  const pCad = [16, 13, 19, 22, 10];
+  const PS = { y: 0, vy: 0, color: 0, cam: 0, mask: 0, since: 0, dead: false };
+  const pPre = { y: new Float64Array(P_WAIT + 2), vy: new Float64Array(P_WAIT + 2), color: new Int8Array(P_WAIT + 2), cam: new Float64Array(P_WAIT + 2), mask: new Int32Array(P_WAIT + 2), since: new Int32Array(P_WAIT + 2) };
+
+  function pilotReset() {
+    prand = mulberry32(PILOT_SEED);
+    pilotLevel = START_Y + 5;
+    pilotPlan = null;
+    pilotSearch = null;
+    pilotRetry = 0;
+    pilotStuck = 0;
+    pilotSince = 99;
+  }
+
+  // snapshot the obstacles and orbs that can matter over the next few seconds
+  function pilotScan() {
+    pSh.length = 0;
+    for (let i = 0; i < obstacles.length; i++) {
+      const ob = obstacles[i];
+      if (ob.removed || ob.y - ob.hh > ball.y + 420 || ob.y + ob.hh < ball.y - 1000) continue;
+      pSh.push({ type: ob.type, y: ob.y, hh: ob.hh, r1: ob.r1, r2: ob.r2, cxo: ob.cxo, order: ob.order, order2: ob.order2, rot0: ob.rot, w: ob.w, off0: ob.off, v: ob.v, rot: ob.rot, off: ob.off });
+    }
+    pOrbs.length = 0;
+    for (let i = 0; i < orbs.length && pOrbs.length < 30; i++) {
+      const o = orbs[i];
+      if (!o.taken && o.y < ball.y + 60 && o.y > ball.y - 1000) pOrbs.push(o);
+    }
+  }
+
+  // one frame of step() for the sim state, k frames from now (hop decided beforehand)
+  function pilotStep(k, dt) {
+    for (let i = 0; i < pSh.length; i++) {
+      const o = pSh[i];
+      o.rot = o.rot0 + o.w * dt * (k + 1);
+      if (o.type === 'bars') o.off = o.off0 + o.v * dt * (k + 1);
+    }
+    const n = Math.max(1, Math.ceil(((Math.abs(PS.vy) + GRAV * dt) * dt) / 9));
+    const sdt = dt / n;
+    for (let j = 0; j < n; j++) {
+      const prevY = PS.y;
+      PS.vy = Math.min(MAX_FALL, PS.vy + GRAV * sdt);
+      PS.y += PS.vy * sdt;
+      if (pad.on && PS.vy >= 0 && prevY + BR <= pad.y + 1 && PS.y + BR > pad.y) {
+        PS.y = pad.y - BR;
+        PS.vy = 0;
+      }
+      for (let i = 0; i < pSh.length; i++) {
+        const o = pSh[i];
+        if (Math.abs(o.y - PS.y) > o.hh + BR + 20) continue;
+        if (probe(o, CX, PS.y, P_RAD) & ~(1 << PS.color)) {
+          PS.dead = true;
+          return;
+        }
+      }
+      for (let i = 0; i < pOrbs.length; i++) {
+        if (PS.mask & (1 << i) || Math.abs(PS.y - pOrbs[i].y) > BR + 14) continue;
+        PS.mask |= 1 << i;
+        PS.color = pOrbs[i].color;
+      }
+    }
+    const target = PS.y - H * 0.52;
+    if (target < PS.cam) PS.cam += (target - PS.cam) * Math.min(1, dt * 9);
+    if (PS.y - BR > PS.cam + H - 40) PS.dead = true;
+  }
+
+  function hoverHop(y, vy, since, level, dt) {
+    return since >= P_HOVER_GAP && y + Math.min(MAX_FALL, vy + GRAV * dt) * dt > level;
+  }
+
+  // the next rung of the ladder above `from`
+  function pilotNextLevel(from) {
+    for (let i = 0; i < obstacles.length; i++) {
+      const ob = obstacles[i];
+      if (ob.removed) continue;
+      if (ob.type === 'ring' || ob.type === 'double' || ob.type === 'square') {
+        const inner = ob.y + 42;
+        if (inner < from - 5) return inner;
+      }
+      const above = ob.y - ob.hh - 63;
+      if (above < from - 5) return above;
+    }
+    return from - 150;
+  }
+
+  // Hover at `pilotLevel` until frame `depart`, then hop every `cad` frames until above `to`,
+  // then hover at `to`. Returns the frame the climb finished, or -1 if the ball would die.
+  function pilotTry(depart, cad, to, dt) {
+    PS.y = pPre.y[depart];
+    PS.vy = pPre.vy[depart];
+    PS.color = pPre.color[depart];
+    PS.cam = pPre.cam[depart];
+    PS.mask = pPre.mask[depart];
+    PS.since = pPre.since[depart];
+    PS.dead = false;
+    if (PS.since < P_HOVER_GAP) return -1;
+    let done = -1;
+    for (let k = depart; k < depart + 170; k++) {
+      let hop = false;
+      if (done < 0) {
+        if ((k - depart) % cad === 0) {
+          if (PS.y <= to) done = k;
+          else hop = true;
+        }
+      }
+      if (done >= 0) {
+        if (k > done + P_HOLD) return done;
+        hop = hoverHop(PS.y, PS.vy, PS.since, to, dt);
+      }
+      if (hop) {
+        PS.vy = HOP_V;
+        PS.since = 0;
+      }
+      PS.since += 1;
+      pSteps += 1;
+      pilotStep(k, dt);
+      if (PS.dead) return -1;
+    }
+    return -1;
+  }
+
+  // Start looking for the next climb: record where the ball goes if it just keeps bouncing
+  // at its current level, then (spread over the next frames) try departures from that path.
+  function pilotBeginSearch(dt) {
+    pilotScan();
+    PS.y = ball.y;
+    PS.vy = ball.vy;
+    PS.color = ball.color;
+    PS.cam = camY;
+    PS.mask = 0;
+    PS.since = pilotSince;
+    PS.dead = false;
+    let last = P_WAIT;
+    for (let k = 0; k <= P_WAIT; k++) {
+      pPre.y[k] = PS.y;
+      pPre.vy[k] = PS.vy;
+      pPre.color[k] = PS.color;
+      pPre.cam[k] = PS.cam;
+      pPre.mask[k] = PS.mask;
+      pPre.since[k] = PS.since;
+      if (k === P_WAIT) break;
+      if (hoverHop(PS.y, PS.vy, PS.since, pilotLevel, dt)) {
+        PS.vy = HOP_V;
+        PS.since = 0;
+      }
+      PS.since += 1;
+      pilotStep(k, dt);
+      if (PS.dead) {
+        last = k;
+        break;
+      }
+    }
+    // a preferred hop rhythm for this climb, so the pilot doesn't look machine-made
+    pilotSearch = { to: pilotNextLevel(pilotLevel), last, d: 0, c0: pCad[(prand() * pCad.length) | 0], elapsed: 0 };
+  }
+
+  // Try departures (earliest first) within a per-frame budget of simulated frames.
+  function pilotContinueSearch(dt) {
+    const q = pilotSearch;
+    let budget = 1500;
+    while (budget > 0) {
+      if (q.d < q.elapsed) q.d = q.elapsed;
+      if (q.d > q.last) {
+        pilotSearch = null;
+        return null;
+      }
+      for (let c = -1; c < pCad.length; c++) {
+        const cad = c < 0 ? q.c0 : pCad[c];
+        if (c >= 0 && cad === q.c0) continue;
+        pSteps = 0;
+        const ok = pilotTry(q.d, cad, q.to, dt) >= 0;
+        budget -= pSteps;
+        if (ok) {
+          pilotSearch = null;
+          return { to: q.to, depart: q.d, cadence: cad, frame: q.elapsed };
+        }
+      }
+      q.d += 2;
+    }
+    return null;
+  }
+
+  function pilotHop() {
+    hop();
+    pilotSince = 0;
+  }
+
+  function demo(dt) {
+    if (ball.dead || !(dt > 0)) return;
+    pilotSince += 1;
+    if (!pilotPlan) {
+      pilotStuck += dt;
+      if (!pilotSearch) {
+        if (pilotRetry > 0) pilotRetry -= 1;
+        else pilotBeginSearch(dt);
+      }
+      if (pilotSearch) {
+        pilotPlan = pilotContinueSearch(dt);
+        if (pilotSearch) pilotSearch.elapsed += 1;
+        else if (!pilotPlan) pilotRetry = 12;
+      }
+      // nothing safe for a long while: go for it anyway, like a player losing patience
+      if (!pilotPlan && pilotStuck > 4) {
+        pilotSearch = null;
+        pilotPlan = { to: pilotNextLevel(pilotLevel), depart: 0, cadence: 16, frame: 0 };
+      }
+      if (pilotPlan) pilotStuck = 0;
+    }
+    const p = pilotPlan;
+    if (!p) {
+      if (hoverHop(ball.y, ball.vy, pilotSince, pilotLevel, dt)) pilotHop();
+      return;
+    }
+    const k = p.frame++;
+    if (k < p.depart) {
+      if (hoverHop(ball.y, ball.vy, pilotSince, pilotLevel, dt)) pilotHop();
+      return;
+    }
+    if ((k - p.depart) % p.cadence === 0) {
+      if (ball.y <= p.to) {
+        // made it: this is the new hover level, plan the next climb from here
+        pilotLevel = p.to;
+        pilotPlan = null;
+        if (hoverHop(ball.y, ball.vy, pilotSince, pilotLevel, dt)) pilotHop();
+      } else pilotHop();
+    }
+  }
+
   reset();
   if (typeof window !== 'undefined' && window.__raDebug && /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__raDebug[api.meta.slug] = { ball, get obstacles() { return obstacles; }, get stars() { return stars; }, get orbs() { return orbs; }, get camY() { return camY; }, get killer() { return killer; }, pad, probe };
 
   return {
     reset,
+    demo,
     forwardStartInput: true,
     update(dt) {
       step(dt, true);

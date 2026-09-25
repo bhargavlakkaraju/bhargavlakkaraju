@@ -2,6 +2,8 @@
 // The path is a strip of raised diamond tiles on an isometric grid. Grid cell (i, j):
 //   +i = up-right on screen, +j = up-left. Every path step increases i + j by exactly 1,
 //   so path tile k always sits at depth s = i + j = S0 + k (cheap O(1) lookups).
+import { mulberry32 } from '../engine/rng.js';
+
 const TW = 66; // tile diamond width
 const HW = TW / 2;
 const HH = TW / 4; // 2:1 isometric
@@ -229,6 +231,7 @@ export default function createGame(api) {
       p.fallV = 0;
       p.appear = -0.04 * (p.i + p.j);
     }
+    pilotReset();
     ensurePath();
     // intro cascade: the path builds itself upward from the platform
     for (let n = 0; n < tiles.length; n++) tiles[n].appear = -0.2 - n * 0.035;
@@ -365,6 +368,30 @@ export default function createGame(api) {
     api.fx.flash('#ffffff', 0.18);
     api.haptic(70);
     api.gameOver({ delay: 1000, stats: { tiles: maxK + 1, gems, turns } });
+  }
+
+  // ---------- demo autopilot (only runs when the engine calls demo()) ----------
+  // Its own tiny PRNG so the seeded game randomness (api.rng) is never touched.
+  const PILOT_SEED = 0x2192a;
+  let prand = mulberry32(PILOT_SEED);
+  let pilotAim = 0.45; // where on the corner tile (0..1 along the travel axis) to tap
+
+  function pilotReset() {
+    prand = mulberry32(PILOT_SEED);
+    pilotAim = 0.4 + prand() * 0.16;
+  }
+
+  // Rolls like a seasoned player: taps on each corner tile close to its centre (PERFECT),
+  // with a little natural spread in the timing.
+  function demo() {
+    tutorial = false; // the first-run "TAP!" hints are for new players, not the attract loop
+    if (!ball.alive || ball.pending || ball.offPath) return;
+    const tl = tileAt(ball.ci, ball.cj);
+    if (!tl || !tl.corner || tl.dirOut === ball.dir) return;
+    const frac = ball.dir === 0 ? ball.u - ball.ci : ball.v - ball.cj;
+    if (frac < pilotAim) return;
+    onTap();
+    pilotAim = 0.4 + prand() * 0.16;
   }
 
   function stepBall(dt) {
@@ -678,6 +705,7 @@ export default function createGame(api) {
 
   return {
     reset,
+    demo,
     update(dt) {
       stepWorld(dt, true);
     },

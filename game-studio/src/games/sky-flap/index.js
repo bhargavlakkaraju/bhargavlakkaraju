@@ -390,6 +390,120 @@ export default function createGame(api) {
   let speed = BASE_SPEED;
   let hitPillar = null;
 
+  // ---------- demo autopilot (only runs when the engine calls demo()) ----------
+  // Its own tiny PRNG so the seeded game randomness (api.rng) is never touched.
+  const PILOT_SEED = 0x5f1a9;
+  let prand = mulberry32(PILOT_SEED);
+  let pilotCool = 1; // seconds since the pilot's last flap
+  let pilotFor = null; // pillar the current plan was picked for
+  let pilotNear = false; // go for a near miss on this pillar?
+  let pilotMargin = 20; // how close (px) the pilot lets the bird dip to the lower pipe
+  let pilotPhase = 0.5; // where in the pipe the dip should happen (0 = entry, 1 = centre)
+  let pilotJit = 0;
+
+  function pilotReset() {
+    prand = mulberry32(PILOT_SEED);
+    pilotCool = 1;
+    pilotFor = null;
+    pilotNear = false;
+    pilotMargin = 20;
+    pilotPhase = 0.5;
+    pilotJit = 0;
+  }
+
+  function pilotFlap() {
+    flap();
+    pilotCool = 0;
+    pilotJit = prand() * 1.5;
+  }
+
+  // Flappy technique: let the bird fall and flap right before it would dip under the
+  // lower edge of the gap it is heading for. For most pipes the pilot also times its last
+  // flap before the pipe so the dip lands inside it, skimming the lip (near miss).
+  function demo(dt) {
+    if (bird.dead || !(dt > 0)) return;
+    pilotCool += dt;
+    let p = null;
+    for (let i = 0; i < pillars.length; i++) {
+      const q = pillars[i];
+      if (q.x + PW + LIP > bird.x - HIT_R - 2 && (!p || q.x < p.x)) p = q;
+    }
+    const ny = bird.y + Math.min(MAX_FALL, bird.vy + GRAV * dt) * dt;
+    if (!p) {
+      if (ny > hoverY + 50 && pilotCool >= 0.17) pilotFlap();
+      return;
+    }
+    if (pilotFor !== p) {
+      pilotFor = p;
+      pilotNear = !p.amp && prand() < 0.8;
+      pilotMargin = pilotNear ? 0.4 + prand() * 0.8 : 14 + prand() * 12;
+      pilotPhase = 0.3 + prand() * 0.45;
+    }
+    const gy = p.amp ? p.baseY + p.amp * Math.sin(p.phase + (p.age + dt) * p.freq) : p.gapY;
+    const bot = gy + p.gap / 2;
+    const top = gy - p.gap / 2;
+    const lead = p.x - LIP - (bird.x + BIRD_R); // px until the pipe reaches the bird
+    const thr = bot - HIT_R - pilotMargin - (pilotNear ? 0 : pilotJit);
+    if (pilotNear && lead > 0) {
+      // Plan the next flap so that a low point of the flight (the moment right before a
+      // flap) falls while the bird is inside the pipe, a hair above its lower lip.
+      const tA = lead / speed;
+      const tB = (p.x + PW / 2 - bird.x) / speed;
+      if (tA < 1.3) {
+        const want = tA + (tB - tA) * pilotPhase;
+        const ceil = top + HIT_R + 2; // stay under the upper pipe while inside it
+        let best = 1e9;
+        let bestS = -1;
+        let y = bird.y;
+        let vy = bird.vy;
+        let high = false;
+        for (let s = 0; s < 1.4; s += dt) {
+          const deep = y > thr;
+          if (y > bot - HIT_R - 0.3 && (s > tA - 0.12 || y > thr + 26)) break;
+          if (s >= tA - 0.02 && y < ceil) high = true;
+          if (!high && pilotCool + s >= 0.17) {
+            let b = s;
+            let low = y;
+            let ok = !(deep && s >= tA);
+            if (ok && s < tA) {
+              // flap at s, then fall to the next low point
+              let fy = y;
+              let fv = FLAP_V;
+              let k = 0;
+              while (k < 90) {
+                fv = Math.min(MAX_FALL, fv + GRAV * dt);
+                fy += fv * dt;
+                k++;
+                if (s + k * dt >= tA - 0.02 && fy < ceil) {
+                  ok = false;
+                  break;
+                }
+                if (fy + Math.min(MAX_FALL, fv + GRAV * dt) * dt > thr) break;
+              }
+              b = s + k * dt;
+              low = fy;
+            }
+            const clear = bot - HIT_R - low;
+            const e = Math.abs(b - want);
+            if (ok && b > tA + 0.03 && b < tB - 0.02 && clear >= 0.3 && clear < 8 && e < best) {
+              best = e;
+              bestS = s;
+            }
+          }
+          vy = Math.min(MAX_FALL, vy + GRAV * dt);
+          y += vy * dt;
+        }
+        if (bestS >= 0) {
+          if (bestS < dt * 0.5) pilotFlap();
+          return;
+        }
+      }
+    }
+    // cruise a little higher while the pipe is still far away
+    const t2 = lead > 70 ? Math.min(thr, bot - HIT_R - 22) : thr;
+    if (ny > t2 && pilotCool >= 0.17) pilotFlap();
+  }
+
   function newPillar() {
     return { x: 0, baseY: 0, gapY: 0, gap: 0, amp: 0, freq: 0, phase: 0, age: 0, passed: false, minClear: 999, color: NEON[0], pulse: 0, hit: 0 };
   }
@@ -420,6 +534,7 @@ export default function createGame(api) {
     nearStreak = 0;
     speed = BASE_SPEED;
     hitPillar = null;
+    pilotReset();
   }
 
   function spawnPillar(x) {
@@ -647,6 +762,7 @@ export default function createGame(api) {
     reset,
     update,
     idle,
+    demo,
     forwardStartInput: true,
     input(e) {
       if (e.type === 'down' || (e.type === 'keydown' && !e.repeat && api.isTapKey(e.key))) {

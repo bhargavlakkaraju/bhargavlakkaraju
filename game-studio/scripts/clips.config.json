@@ -1,7 +1,7 @@
 {
   "blade-spin": {
     "seed": 7,
-    "start": 0
+    "start": 13.6
   },
   "block-crush": {
     "seed": 10,
@@ -14,7 +14,7 @@
   },
   "color-rush": {
     "seed": 7,
-    "start": 0
+    "start": 44.5
   },
   "juicy-drop": {
     "seed": 7,
@@ -35,7 +35,7 @@
   },
   "sky-flap": {
     "seed": 7,
-    "start": 0
+    "start": 11
   },
   "sky-hop": {
     "seed": 7,
@@ -48,7 +48,7 @@
   },
   "stack-tower": {
     "seed": 7,
-    "start": 0
+    "start": 4.5
   },
   "sudoku": {
     "seed": 7,
@@ -60,7 +60,7 @@
     "start": 3.31
   },
   "zig-zag": {
-    "seed": 7,
-    "start": 0
+    "seed": 2,
+    "start": 5
   }
 }

@@ -1,4 +1,6 @@
 // Blade Spin - throw blades into a spinning wooden target. Never hit steel.
+import { mulberry32 } from '../engine/rng.js';
+
 const TAU = Math.PI * 2;
 const HALF_PI = Math.PI / 2;
 const CX = 210;
@@ -380,6 +382,7 @@ export default function createGame(api) {
     startStage(1);
     introT = 1;
     knifeIn = 1;
+    pilotReset();
   }
 
   function throwBlade() {
@@ -595,6 +598,132 @@ export default function createGame(api) {
     knifeIn = Math.min(1, knifeIn + dt * 9);
   }
 
+  // ---------- demo autopilot (only runs when the engine calls demo()) ----------
+  // Its own tiny PRNG so the seeded game randomness (api.rng) is never touched.
+  const PILOT_SEED = 0xb1ade;
+  const PILOT_LOOK = 70; // frames of spin the pilot reads ahead
+  let prand = mulberry32(PILOT_SEED);
+  let pilotWait = 0; // reaction time left before the pilot lines up its next throw
+  let pilotAt = -1; // frames until the planned throw (-1 = nothing planned)
+  const pilotTh = new Float64Array(PILOT_LOOK + 8);
+  const pilotRes = { ok: false, chord: 0, fruit: false };
+
+  function pilotReset() {
+    prand = mulberry32(PILOT_SEED);
+    pilotWait = 0.3;
+    pilotAt = -1;
+  }
+
+  // theta after each of the next n spin steps (a copy of spinStep that changes nothing)
+  function pilotSpin(n, dt) {
+    const s = stage.spin;
+    let t = s.t;
+    let segT = s.segT;
+    let idx = s.idx;
+    let w = s.w;
+    let th = theta;
+    for (let i = 0; i < n; i++) {
+      t += dt;
+      if (s.type === 'const') w = s.dir * s.base;
+      else if (s.type === 'sine') w = s.dir * (s.base + s.amp * Math.sin(t * s.freq + s.phase));
+      else {
+        segT += dt;
+        if (segT > s.sched[idx * 2 + 1]) {
+          segT = 0;
+          idx = (idx + 1) % (s.sched.length / 2);
+        }
+        w += (s.sched[idx * 2] - w) * Math.min(1, dt * s.accel);
+      }
+      th += w * dt;
+      pilotTh[i] = th;
+    }
+  }
+
+  // Where would a blade thrown j frames from now land? Mirrors moveFlying() and arrive()
+  // on the spin read ahead by pilotSpin().
+  function pilotProbe(j, dt) {
+    const res = pilotRes;
+    res.ok = false;
+    res.chord = 0;
+    res.fruit = false;
+    const R = stage.R;
+    const st = stage.stuck;
+    const dy = (THROW_SPEED * dt) / 4;
+    let y = THROW_Y;
+    for (let f = j; f < pilotTh.length; f++) {
+      const th = pilotTh[f];
+      for (let k = 0; k < 4; k++) {
+        y -= dy;
+        if (y <= CY + R) {
+          const a = HALF_PI - th;
+          let chord = 1e9;
+          for (let i = 0; i < st.length; i++) chord = Math.min(chord, angDist(a, st[i].a) * R);
+          for (let i = 0; i < stage.fruits.length; i++) {
+            const fr = stage.fruits[i];
+            if (fr.alive && angDist(a, fr.a) < FRUIT_HIT - 0.05) res.fruit = true;
+          }
+          res.chord = chord;
+          res.ok = chord >= BLADE_W;
+          return res;
+        }
+        const py = y - CY;
+        for (let i = 0; i < st.length; i++) {
+          const wa = th + st[i].a;
+          const tt = py * Math.sin(wa);
+          if (tt < R - 2 || tt > R - EMBED + BLADE_LEN + 2) continue;
+          if (Math.abs(py * Math.cos(wa)) < 11) return res;
+        }
+      }
+    }
+    return res;
+  }
+
+  // Read the spin ahead and pick the throw: slice a fruit when one swings by soon, now and
+  // then thread a blade right next to another one (CLOSE!), otherwise the first clean gap.
+  function pilotPlan(dt) {
+    pilotSpin(pilotTh.length, dt);
+    let fruitAlive = false;
+    for (let i = 0; i < stage.fruits.length; i++) if (stage.fruits[i].alive) fruitAlive = true;
+    const wantClose = stage.stuck.length >= 2 && prand() < 0.4;
+    let clean = -1;
+    let fruit = -1;
+    let close = -1;
+    for (let j = 0; j < PILOT_LOOK; j++) {
+      const r = pilotProbe(j, dt);
+      if (!r.ok) continue;
+      if (clean < 0 && r.chord >= BLADE_W + 5) clean = j;
+      if (fruitAlive && fruit < 0 && r.fruit && r.chord >= BLADE_W + 4) fruit = j;
+      if (wantClose && close < 0 && j < 40 && r.chord >= BLADE_W + 1.5 && r.chord < BLADE_W + 6) close = j;
+    }
+    if (fruit >= 0 && fruit < 56) return fruit;
+    if (close >= 0) return close;
+    return clean;
+  }
+
+  function demo(dt) {
+    if (!(dt > 0)) return;
+    if (failed || transition || pendingClear >= 0 || stage.left <= 0) {
+      pilotAt = -1;
+      return;
+    }
+    if (flying || queued || knifeIn < 0.65 || introT < 0.35) return;
+    if (pilotWait > 0) {
+      pilotWait -= dt;
+      return;
+    }
+    if (pilotAt < 0) pilotAt = pilotPlan(dt);
+    if (pilotAt < 0) return; // nothing safe in sight: look again next frame
+    if (pilotAt > 0) {
+      pilotAt -= 1;
+      return;
+    }
+    pilotAt = -1;
+    pilotSpin(8, dt);
+    if (!pilotProbe(0, dt).ok) return;
+    throwBlade();
+    pilotWait = 0.14 + prand() * 0.2;
+  }
+
   function update(dt) {
     stepCosmetic(dt);
     if (transition) {
@@ -723,6 +852,7 @@ export default function createGame(api) {
     reset,
     update,
     idle,
+    demo,
     forwardStartInput: true,
     input(e) {
       if (e.type === 'down' || (e.type === 'keydown' && !e.repeat && api.isTapKey(e.key))) {
