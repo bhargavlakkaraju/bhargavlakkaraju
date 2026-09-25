@@ -1,12 +1,14 @@
 // Brand + deployment configuration. Everything monetization-related is driven by env
 // vars so the site runs fully (with no ads) before any ad account is approved.
+
 export const SITE = {
   name: 'Retry Arcade',
   short: 'Retry',
   tagline: 'Just one more try.',
   description:
     'Free online games you can play instantly in your browser. No downloads, no sign-ups: tap, play, and try to beat your best. New daily challenges every day.',
-  url: (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, ''),
+  // Resolved at build time in next.config.mjs (explicit NEXT_PUBLIC_SITE_URL, else the Vercel domain).
+  url: process.env.SITE_URL_RESOLVED || 'http://localhost:3000',
   twitter: process.env.NEXT_PUBLIC_TWITTER || '@retryarcade',
   email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'hello@retryarcade.com',
   themeColor: '#0b0618',

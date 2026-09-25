@@ -1,6 +1,19 @@
+// Public site URL for canonical links, sitemap, embeds and share images. An explicit
+// NEXT_PUBLIC_SITE_URL wins; on Vercel fall back to the production domain, or the stable
+// branch alias for preview deployments.
+function resolveSiteUrl() {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
+  const host =
+    process.env.VERCEL_ENV === 'production'
+      ? process.env.VERCEL_PROJECT_PRODUCTION_URL
+      : process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL;
+  return host ? `https://${host}` : 'http://localhost:3000';
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  env: { SITE_URL_RESOLVED: resolveSiteUrl() },
   poweredByHeader: false,
   async headers() {
     return [
