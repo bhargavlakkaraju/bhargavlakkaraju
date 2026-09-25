@@ -52,7 +52,13 @@ export default function GamePage({ meta, challenge = null }) {
     <>
       <JsonLd meta={meta} />
       <TrackPageView game={meta.slug} />
-      <div className="mx-auto max-w-7xl px-3 pt-4 sm:px-4">
+      {/* Cinematic backdrop from the game's own art */}
+      <div className="pointer-events-none absolute inset-x-0 top-14 -z-10 h-[560px] overflow-hidden" aria-hidden>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`/covers/${meta.slug}.webp`} alt="" className="h-full w-full scale-125 object-cover opacity-35 blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-b from-ink/30 via-ink/70 to-ink" />
+      </div>
+      <div className="mx-auto max-w-7xl px-3 pt-3 sm:px-4 sm:pt-4">
         {challenge && (
           <div className="mb-3 rounded-2xl bg-gradient-to-r from-pink/30 to-grape/30 px-3 py-2 text-center font-display text-sm font-bold ring-1 ring-pink/40 sm:px-4 sm:py-3 sm:text-lg">
             ⚔️ {challenge.name} scored <span className="text-sun">{formatScore(meta, challenge.score)}</span> in {meta.title}. Can you beat it?
@@ -67,6 +73,19 @@ export default function GamePage({ meta, challenge = null }) {
 
           <div className="min-w-0">
             <GamePlayer slug={meta.slug} challenge={challenge} />
+            <div className="mt-4">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="font-arcade text-sm text-white/80">UP NEXT</div>
+                <Link href="/#games" className="text-xs font-extrabold text-aqua hover:underline">
+                  All games →
+                </Link>
+              </div>
+              <div className="rail" style={{ gridAutoColumns: 'minmax(42%, 1fr)' }}>
+                {more.slice(0, 6).map((g) => (
+                  <GameCard key={g.slug} game={g} />
+                ))}
+              </div>
+            </div>
           </div>
 
           <aside className="space-y-4">

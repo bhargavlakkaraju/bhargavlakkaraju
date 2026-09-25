@@ -17,6 +17,7 @@ module.exports = {
       },
       fontFamily: {
         display: ['Fredoka', 'Nunito', 'system-ui', 'sans-serif'],
+        arcade: ['Bungee', 'Fredoka', 'system-ui', 'sans-serif'],
         body: ['Nunito', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
       },
       boxShadow: {

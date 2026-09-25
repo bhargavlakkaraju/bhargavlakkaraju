@@ -35,7 +35,7 @@ async function submitScore({ meta, score, mode, name }) {
   return data;
 }
 
-export default function GamePlayer({ slug, challenge = null, embed = false, initialMode = null }) {
+export default function GamePlayer({ slug, challenge = null, embed = false, initialMode = null, frameClass = 'game-frame', compact = false }) {
   const frameRef = useRef(null);
   const outerRef = useRef(null);
   const stageRef = useRef(null);
@@ -294,7 +294,7 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
       )}
       <div
         ref={frameRef}
-        className={`relative w-full overflow-hidden ${full ? 'min-h-0 flex-1' : embed ? 'h-full' : 'game-frame rounded-3xl border border-line shadow-2xl'}`}
+        className={`relative w-full overflow-hidden ${full ? 'min-h-0 flex-1' : embed ? 'h-full' : compact ? frameClass : `${frameClass} rounded-3xl border border-line shadow-2xl`}`}
         style={{ background: `radial-gradient(120% 80% at 50% 0%, ${bg} 0%, #0b0618 100%)` }}
       >
         <div ref={stageRef} className="absolute inset-0" />
@@ -480,7 +480,7 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
         )}
       </div>
 
-      {!embed && !full && meta && (
+      {!embed && !full && !compact && meta && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {meta.daily !== false && (
             <div className="flex rounded-full bg-panel p-1 ring-1 ring-line">

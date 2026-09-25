@@ -73,7 +73,7 @@ export default function Leaderboard({ slug, compact = false }) {
           <span className="font-display font-bold text-sun">{fmt(data.you.score)}</span>
         </div>
       )}
-      {data && data.total > 0 && <div className="mt-2 text-right text-[11px] text-white/40">{data.total} players</div>}
+      {data && data.total > 0 && <div className="mt-2 text-right text-[11px] text-white/40">{data.total} {data.total === 1 ? 'player' : 'players'}</div>}
     </div>
   );
 }
