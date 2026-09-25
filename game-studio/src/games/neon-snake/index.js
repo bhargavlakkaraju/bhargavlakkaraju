@@ -1,3 +1,5 @@
+import { mulberry32 } from '../engine/rng.js';
+
 // Neon Snake - classic snake with smooth interpolated movement and a neon glow look.
 // Grid 20x28, buffered swipe/keyboard turns, combo streaks, golden orbs and seeded obstacles.
 
@@ -795,10 +797,185 @@ export default function createGame(api) {
     }
   }
 
+  // ---------- demo autopilot ----------
+  // Only runs when the engine calls demo() (attract mode / preview clips). Once per grid step
+  // it plans a route to the golden orb (if it can make it in time) or the orb: a time-aware
+  // BFS (body cells free up as the tail moves on) that takes the fewest steps and, among
+  // those, the fewest turns, so paths look like a player's clean L-shaped swipes. A route is
+  // only taken if the tail is still reachable after eating; otherwise the snake heads for the
+  // roomiest open space. Its own PRNG keeps api.rng (the seeded run) untouched.
+  const NC = COLS * ROWS;
+  const pdFree = new Int32Array(NC); // first step at which a cell may be entered
+  const pdTurns = new Int32Array(NC * 4);
+  const pdStep = new Int32Array(NC * 4);
+  const pdPrev = new Int32Array(NC * 4);
+  let pdCur = new Int32Array(NC * 4);
+  let pdNext = new Int32Array(NC * 4);
+  const pdPath = new Int32Array(NC);
+  const pdBody = new Int32Array(NC + 8);
+  const pdOrder = [0, 1, 2, 3];
+  let pRand = mulberry32(0x5a4e);
+  const pilot = { tick: -1, bias: 0, target: -2 };
+
+  function pilotReset() {
+    pRand = mulberry32(0x5a4e);
+    pilot.tick = -1;
+    pilot.bias = 0;
+    pilot.target = -2;
+  }
+
+  // entry times for a body (head first) of length n with g growth still pending
+  function markBody(b, n, g) {
+    pdFree.fill(0);
+    for (let i = 0; i < n; i++) pdFree[b[i]] = g + (n - i);
+  }
+
+  // layered BFS over (cell, heading) from head h (current heading d). Returns the step count
+  // to goal (fills pdPath[0..k-1] with the cells, first move first), or -1. goal -1 = count
+  // reachable cells instead (returned as a negative number - 2).
+  function route(h, d, goal) {
+    pdStep.fill(-1);
+    let nCur = 0;
+    let reach = 0;
+    for (let k = 1; k <= NC; k++) {
+      let nNext = 0;
+      const srcN = k === 1 ? 1 : nCur;
+      for (let q = 0; q < srcN; q++) {
+        const st = k === 1 ? -1 : pdCur[q];
+        const c = k === 1 ? h : st >> 2;
+        const hd = k === 1 ? d : st & 3;
+        const turns = k === 1 ? 0 : pdTurns[st];
+        const x = c % COLS;
+        const y = (c / COLS) | 0;
+        for (let o = 0; o < 4; o++) {
+          const nd = pdOrder[o];
+          if (nd === OPP[hd]) continue;
+          const nx = x + DX[nd];
+          const ny = y + DY[nd];
+          if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) continue;
+          const nc = ny * COLS + nx;
+          if (obst[nc] || pdFree[nc] > k) continue;
+          const ns = nc * 4 + nd;
+          const nt = turns + (nd === hd ? 0 : 1);
+          if (pdStep[ns] === -1) {
+            pdStep[ns] = k;
+            pdTurns[ns] = nt;
+            pdPrev[ns] = st;
+            pdNext[nNext++] = ns;
+            if (goal < 0) reach++;
+          } else if (pdStep[ns] === k && nt < pdTurns[ns]) {
+            pdTurns[ns] = nt;
+            pdPrev[ns] = st;
+          }
+        }
+      }
+      if (goal >= 0) {
+        let best = -1;
+        for (let nd = 0; nd < 4; nd++) {
+          const ns = goal * 4 + nd;
+          if (pdStep[ns] === k && (best < 0 || pdTurns[ns] < pdTurns[best])) best = ns;
+        }
+        if (best >= 0) {
+          for (let st = best, i = k - 1; st >= 0; st = pdPrev[st], i--) pdPath[i] = st >> 2;
+          return k;
+        }
+      } else if (reach > NC) return -reach - 2;
+      if (nNext === 0) break;
+      const tmp = pdCur;
+      pdCur = pdNext;
+      pdNext = tmp;
+      nCur = nNext;
+    }
+    return goal >= 0 ? -1 : -reach - 2;
+  }
+
+  // after following pdPath for k steps and eating (growth add), can the head still reach its tail?
+  function safeAfter(k, add) {
+    const n0 = body.length;
+    const n = Math.min(n0 + Math.min(k, grow), NC);
+    let m = 0;
+    for (let i = k - 1; i >= 0 && m < n; i--) pdBody[m++] = pdPath[i];
+    for (let i = 0; m < n && i < n0; i++) pdBody[m++] = body[i];
+    const g = Math.max(0, grow - k) + add;
+    markBody(pdBody, n, g);
+    const tail = pdBody[n - 1];
+    const hd = k >= 2 ? dirOf(pdPath[k - 2], pdPath[k - 1]) : dirOf(body[0], pdPath[0]);
+    pdFree[tail] = g + 1;
+    return route(pdBody[0], hd, tail) > 0;
+  }
+
+  function dirOf(a, b) {
+    const d = b - a;
+    return d === -COLS ? 0 : d === 1 ? 1 : d === COLS ? 2 : 3;
+  }
+
+  function pilotMove() {
+    const h = body[0];
+    const heading = queue.length ? queue[queue.length - 1] : dir;
+    // shuffle the tie-break order once per target so equal routes are not always the same shape
+    const tgt = gold >= 0 ? gold : orb;
+    if (tgt !== pilot.target) {
+      pilot.target = tgt;
+      pilot.bias = (pRand() * 4) | 0;
+      for (let i = 0; i < 4; i++) pdOrder[i] = (pilot.bias + (pRand() < 0.5 ? i : 3 - i)) % 4;
+      const seen = [false, false, false, false];
+      for (let i = 0; i < 4; i++) {
+        while (seen[pdOrder[i]]) pdOrder[i] = (pdOrder[i] + 1) % 4;
+        seen[pdOrder[i]] = true;
+      }
+    }
+    const goals = [];
+    if (gold >= 0) goals.push(gold);
+    if (orb >= 0) goals.push(orb);
+    for (const goal of goals) {
+      markBody(body, body.length, grow);
+      const k = route(h, heading, goal);
+      if (k < 0) continue;
+      if (goal === gold && k * tickLen > goldT - 0.25) continue;
+      if (!safeAfter(k, goal === gold ? 3 : 1)) continue;
+      // route() again: safeAfter reused the buffers
+      markBody(body, body.length, grow);
+      route(h, heading, goal);
+      return dirOf(h, pdPath[0]);
+    }
+    // no safe meal: take the move that keeps the most room
+    let bestD = heading;
+    let bestA = -1;
+    const x = h % COLS;
+    const y = (h / COLS) | 0;
+    for (let nd = 0; nd < 4; nd++) {
+      if (nd === OPP[heading]) continue;
+      const nx = x + DX[nd];
+      const ny = y + DY[nd];
+      if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) continue;
+      const nc = ny * COLS + nx;
+      markBody(body, body.length, grow);
+      if (obst[nc] || pdFree[nc] > 1) continue;
+      pdFree[h] = 99999;
+      const area = -route(nc, nd, -1) - 2;
+      if (area > bestA) {
+        bestA = area;
+        bestD = nd;
+      }
+    }
+    return bestD;
+  }
+
+  function demo() {
+    if (dead || ticks === pilot.tick || queue.length) return;
+    pilot.tick = ticks;
+    const d = pilotMove();
+    if (d !== (queue.length ? queue[queue.length - 1] : dir)) enqueue(d);
+  }
+
   return {
     hud: false,
     forwardStartInput: true,
-    reset,
+    reset() {
+      reset();
+      pilotReset();
+    },
+    demo,
     update(dt) {
       animate(dt);
       if (dead) return;

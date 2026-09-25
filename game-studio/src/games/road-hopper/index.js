@@ -1,3 +1,5 @@
+import { mulberry32 } from '../engine/rng.js';
+
 // Road Hopper - endless forward hopper on a grid of grass, roads, rivers and railways.
 // Rows are indexed upward from 0 (the start). The camera creeps forward on its own, so
 // dawdling too long lets a hawk swoop in. Everything that affects the level layout
@@ -1069,10 +1071,275 @@ export default function createGame(api) {
     api.draw.text(g, coinsRun, 40, 31, { size: 22, align: 'left', color: '#ffffff', shadow: 'rgba(0,0,0,0.4)' });
   }
 
+  // ---------- demo autopilot ----------
+  // Only runs when the engine calls demo() (attract mode / preview clips). Cars, logs and
+  // trains move on fixed loops, so the pilot predicts them and plans a few hops ahead with a
+  // small depth-limited search: forward whenever it is safe, sidestep to line up with logs or
+  // gaps in the hedges, wait for traffic, grab a coin when it is close.
+  // Model and execution share the same decision points: after every landing the chick pauses
+  // for a short, slightly uneven beat (human rhythm), then either hops or commits to a short
+  // wait. Its own PRNG keeps api.rng (the seeded run) untouched.
+  const PD_DEPTH = 5;
+  const PD_HOLD = 0.11; // modelled pause after landing for hops deeper in the plan
+  const PD_WAIT = 0.1;
+  const PD_TAIL = 0.3; // the last planned spot must stay safe this long
+  const PD_BAD = -1e8;
+  const PD_LAG = 1 / 60; // a landing is seen one frame late
+  let pRand = mulberry32(0x40ad);
+  // pauses after the next few hops, drawn ahead so every plan uses the ones that will happen
+  const holds = new Float32Array(PD_DEPTH + 1);
+  const pilot = { t: 0, busy: 0, hopping: false, nextHold: PD_HOLD };
+  const drawHold = () => 0.05 + pRand() * 0.13;
+
+  function pilotReset() {
+    pRand = mulberry32(0x40ad);
+    for (let i = 0; i < holds.length; i++) holds[i] = drawHold();
+    pilot.t = 0;
+    pilot.busy = 0.2;
+    pilot.hopping = false;
+    pilot.nextHold = PD_HOLD;
+  }
+
+  function objXAt(row, o, tt) {
+    if (!o.vx) return o.x;
+    const u = o.x + o.vx * tt - row.x0;
+    return row.x0 + (((u % row.loop) + row.loop) % row.loop);
+  }
+
+  function trainXAt(row, tt) {
+    const tq = (((gt + tt + row.phase) % row.period) + row.period) % row.period;
+    const run = (W + row.tlen + 2 * C) / 1150;
+    if (tq >= run) return -9999;
+    return row.dir > 0 ? -row.tlen - C + tq * 1150 : W + C - tq * 1150;
+  }
+
+  // would a car / train hit a chick standing at x in this row tt seconds from now?
+  // The safety margin grows with the vehicle's speed and how far ahead we look (timing slack).
+  function hazardAt(row, x, tt) {
+    const slack = Math.min(0.03, tt);
+    if (row.type === 'road') {
+      for (let k = 0; k < row.objs.length; k++) {
+        const o = row.objs[k];
+        const m = Math.abs(o.vx) * slack + 1;
+        const ox = objXAt(row, o, tt);
+        if (ox + 3 < x + C * 0.3 + m && ox + o.len - 3 > x - C * 0.3 - m) return true;
+      }
+    } else if (row.type === 'rail') {
+      const tx = trainXAt(row, tt);
+      const m = 1150 * Math.min(0.05, tt) + 12;
+      if (tx > -9000 && tx < x + C * 0.3 + m && tx + row.tlen > x - C * 0.3 - m) return true;
+    }
+    return false;
+  }
+
+  function camAt(tt) {
+    const rate = autoOn && graceT <= 0 ? 0.3 + 0.45 * difficulty(maxRow) : 0;
+    return cam + rate * Math.max(0, tt - Math.max(0, graceT));
+  }
+
+  // can the chick stay at (r, x) (riding log if given) from t0 to t1?
+  function standOK(r, x, log, t0, t1) {
+    const row = getRow(r);
+    if (!row) return false;
+    const traffic = !log && (row.type === 'road' || row.type === 'rail');
+    for (let tt = t0; ; tt += 0.025) {
+      const tq = tt < t1 ? tt : t1;
+      if (log) {
+        const px = x + log.vx * (tq - t0);
+        if (px < -0.1 * C || px > W + 0.1 * C) return false;
+      } else if (traffic && hazardAt(row, x, tq)) return false;
+      if (r < camAt(tq) - 0.35) return false;
+      if (tq >= t1) return true;
+    }
+  }
+
+  const hopOut = { r: 0, x: 0, log: null, coin: false };
+  // mirror of tryHop + land for a hop starting ts seconds from now; fills hopOut, false if deadly/blocked
+  function simHop(r, x, onLog, ts, dir) {
+    let tr = r;
+    let tx = x;
+    if (dir === 0) tr++;
+    else if (dir === 2) tr--;
+    else tx += dir === 1 ? C : -C;
+    const row = getRow(tr);
+    if (!row) return false;
+    if (row.type !== 'river') {
+      const c = Math.round(tx / C - 0.5);
+      if (c < 0 || c >= COLS || row.blocked[c]) return false;
+      tx = colX(c);
+    } else if (dir === 1 || dir === 3) {
+      if (tx < C * 0.3 || tx > W - C * 0.3) return false;
+    } else if (!onLog) {
+      tx = colX(Math.max(0, Math.min(COLS - 1, Math.round(tx / C - 0.5))));
+    }
+    const from = getRow(r);
+    for (let k = 0; k <= 1.001; k += 0.125) {
+      const er = k < 0.5 ? from : row;
+      if (er && (er.type === 'road' || er.type === 'rail') && hazardAt(er, x + (tx - x) * k, ts + k * HOP_T)) return false;
+    }
+    const tl = ts + HOP_T;
+    let log = null;
+    if (row.type === 'river') {
+      for (let k = 0; k < row.objs.length; k++) {
+        const o = row.objs[k];
+        const ox = objXAt(row, o, tl);
+        if (tx > ox - C * 0.12 && tx < ox + o.len + C * 0.12) {
+          log = o;
+          const cells = Math.max(1, Math.round(o.len / C));
+          const kk = Math.max(0, Math.min(cells - 1, Math.floor((tx - ox) / C)));
+          tx = ox + (kk + 0.5) * C;
+          break;
+        }
+      }
+      if (!log || tx < -0.1 * C || tx > W + 0.1 * C) return false;
+    }
+    hopOut.r = tr;
+    hopOut.x = tx;
+    hopOut.log = log;
+    hopOut.coin = row.coin >= 0 && Math.abs(colX(row.coin) - tx) < C * 0.5;
+    return true;
+  }
+
+  // Static potential field: hops needed to get PF_AHEAD rows further, around trees and
+  // between lily pads (traffic and logs ignored). Rewarding hops that lower it steers the
+  // chick through the gap in a hedge instead of into a dead end.
+  const PF_BACK = 3;
+  const PF_AHEAD = 10;
+  const PF_ROWS = PF_BACK + PF_AHEAD + 1;
+  const pf = new Int16Array(PF_ROWS * COLS);
+  const pfQ = new Int16Array(PF_ROWS * COLS);
+  let pfBase = 0;
+  function passable(row, c) {
+    if (!row) return false;
+    if (row.type === 'grass') return !row.blocked[c];
+    if (row.type === 'river' && row.lily) {
+      for (let k = 0; k < row.objs.length; k++) if (Math.abs(row.objs[k].x - c * C) < 1) return true;
+      return false;
+    }
+    return true;
+  }
+  function buildField(r0) {
+    pfBase = r0 - PF_BACK;
+    pf.fill(999);
+    let head = 0;
+    let tail = 0;
+    const last = PF_ROWS - 1;
+    const far = getRow(pfBase + last);
+    for (let c = 0; c < COLS; c++) {
+      if (passable(far, c)) {
+        pf[last * COLS + c] = 0;
+        pfQ[tail++] = last * COLS + c;
+      }
+    }
+    while (head < tail) {
+      const i = pfQ[head++];
+      const ri = (i / COLS) | 0;
+      const c = i % COLS;
+      const d = pf[i] + 1;
+      for (let n = 0; n < 4; n++) {
+        const rj = ri + (n === 0 ? 1 : n === 1 ? -1 : 0);
+        const cj = c + (n === 2 ? 1 : n === 3 ? -1 : 0);
+        if (rj < 0 || rj >= PF_ROWS || cj < 0 || cj >= COLS) continue;
+        const j = rj * COLS + cj;
+        if (pf[j] <= d || !passable(getRow(pfBase + rj), cj)) continue;
+        pf[j] = d;
+        pfQ[tail++] = j;
+      }
+    }
+  }
+  function potAt(r, x) {
+    const ri = r - pfBase;
+    if (ri < 0 || ri >= PF_ROWS) return 999;
+    const c = Math.max(0, Math.min(COLS - 1, Math.round(x / C - 0.5)));
+    return Math.min(60, pf[ri * COLS + c]);
+  }
+
+  const rootV = [0, 0, 0, 0, 0]; // forward, right, back, left, wait
+  // Node = the chick standing at a decision point t. Rewards: +10 per hop of progress along
+  // the field (earlier is worth more), small costs for sidesteps and waits, a coin bonus.
+  function search(r, x, log, t, depth, maxDepth, nh) {
+    if (depth === 0) {
+      if (!standOK(r, x, log, t, t + PD_TAIL)) return -1e9;
+      return -Math.abs(x - W / 2) / W;
+    }
+    const root = depth === maxDepth;
+    const disc = Math.pow(0.85, maxDepth - depth);
+    let best = -1e9;
+    for (let a = 0; a < 5; a++) {
+      let v = -1e9;
+      if (a === 4) {
+        if (standOK(r, x, log, t, t + PD_WAIT)) v = search(r, log ? x + log.vx * PD_WAIT : x, log, t + PD_WAIT, depth - 1, maxDepth, nh) - 0.3 * disc;
+      } else if (a !== 2 || depth >= maxDepth - 1) {
+        // (backing off is only considered as an early escape move)
+        if (simHop(r, x, !!log, t, a)) {
+          const hold = holds[nh] + PD_LAG;
+          const tl = t + HOP_T;
+          if (standOK(hopOut.r, hopOut.x, hopOut.log, tl, tl + hold)) {
+            const gain = (potAt(r, x) - potAt(hopOut.r, hopOut.x)) * 10 + (hopOut.coin ? 12 : 0) + (a === 1 || a === 3 ? -0.6 : 0);
+            const nx = hopOut.log ? hopOut.x + hopOut.log.vx * hold : hopOut.x;
+            v = search(hopOut.r, nx, hopOut.log, tl + hold, depth - 1, maxDepth, nh + 1) + gain * disc;
+          }
+        }
+      }
+      if (root) rootV[a] = v;
+      if (v > best) best = v;
+    }
+    return best;
+  }
+
+  function demo(dt) {
+    pilot.t += dt;
+    if (!P.alive) return;
+    if (P.hopT >= 0) {
+      pilot.hopping = true;
+      return;
+    }
+    if (pilot.hopping) {
+      // just landed: the short pause the plan assumed
+      pilot.hopping = false;
+      pilot.busy = pilot.t + pilot.nextHold - 0.004;
+    }
+    if (pilot.t < pilot.busy) return;
+    // decision point
+    buildField(P.r);
+    let bestA = -1;
+    for (let depth = PD_DEPTH; depth >= 1 && bestA < 0; depth -= 2) {
+      search(P.r, P.x, P.log, 0, depth, depth, 0);
+      let bestV = PD_BAD;
+      for (const a of [4, 0, 1, 3, 2]) {
+        if (rootV[a] > bestV + 0.001) {
+          bestV = rootV[a];
+          bestA = a;
+        }
+      }
+    }
+    if (bestA < 0) {
+      // nothing looks safe for long: jump anywhere that is safe right now
+      for (const a of [0, 1, 3, 2]) {
+        if (simHop(P.r, P.x, !!P.log, 0, a)) {
+          bestA = a;
+          break;
+        }
+      }
+    }
+    if (bestA < 0 || bestA === 4) {
+      pilot.busy = pilot.t + PD_WAIT - 0.004;
+      return;
+    }
+    pilot.nextHold = holds[0];
+    for (let i = 0; i < holds.length - 1; i++) holds[i] = holds[i + 1];
+    holds[holds.length - 1] = drawHold();
+    tryHop(bestA);
+  }
+
   reset();
 
   return {
-    reset,
+    reset() {
+      reset();
+      pilotReset();
+    },
+    demo,
     update(dt) {
       gt += dt;
       stepRows(dt);

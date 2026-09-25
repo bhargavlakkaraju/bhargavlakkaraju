@@ -1,3 +1,5 @@
+import { mulberry32 } from '../engine/rng.js';
+
 // Brick Barrage - turn-based ball volley shooter.
 // Aim from the launcher, release a volley of balls, break numbered bricks before they
 // reach the bottom. Every turn the wall steps down one row and a tougher row appears.
@@ -949,9 +951,216 @@ export default function createGame(api) {
     }
   }
 
+  // ---------- demo autopilot ----------
+  // Only runs when the engine calls demo() (attract mode / preview clips). Each turn it
+  // "thinks" for a few frames, test-firing candidate angles on a copy of the wall (the game's
+  // own collision code, no damage to the real bricks), scores them (bricks broken, damage,
+  // extra balls, and above all clearing the row about to reach the floor), then drags the aim
+  // line smoothly to the best angle, holds a beat and releases. Long volleys get a tap or two
+  // to speed them up, like an impatient player. Its own PRNG keeps api.rng untouched.
+  const PA_N = 56; // coarse candidate angles
+  const PA_FINE = 9; // refinement candidates around the best coarse one
+  const PA_PER_FRAME = 3;
+  const PA_BALLS = 12;
+  const PA_TIME = 3.2; // simulated seconds per test volley
+  const simHp = new Int32Array(COLS * ROWS);
+  const simBalls = [];
+  for (let i = 0; i < PA_BALLS; i++) simBalls.push({ x: 0, y: 0, vx: 0, vy: 0, st: 0 });
+  let pRand = mulberry32(0xb41c);
+  const pilot = { stage: 'idle', wait: 0, k: 0, best: 0, bestV: -Infinity, coarse: 0, from: 0, to: 0, t: 0, dur: 0, hold: 0, taps: 0, tapAt: 0 };
+
+  function pilotReset() {
+    pRand = mulberry32(0xb41c);
+    pilot.stage = 'idle';
+    pilot.taps = 0;
+  }
+
+  function simStep(b, h, m) {
+    b.x += b.vx * h;
+    b.y += b.vy * h;
+    let hit = false;
+    if (b.x < FX + BR) {
+      b.x = FX + BR;
+      if (b.vx < 0) (b.vx = -b.vx), (hit = true);
+    } else if (b.x > FX + FW - BR) {
+      b.x = FX + FW - BR;
+      if (b.vx > 0) (b.vx = -b.vx), (hit = true);
+    }
+    if (b.y < FY + BR) {
+      b.y = FY + BR;
+      if (b.vy < 0) (b.vy = -b.vy), (hit = true);
+    }
+    const cc = Math.floor((b.x - FX) / CS);
+    const rr = Math.floor((b.y - FY) / CS);
+    for (let r = rr - 1; r <= rr + 1; r++) {
+      if (r < 0 || r >= ROWS) continue;
+      for (let c = cc - 1; c <= cc + 1; c++) {
+        if (c < 0 || c >= COLS) continue;
+        const i = r * COLS + c;
+        const v = simHp[i];
+        if (v > 0) {
+          if (collideBrick(b, grid[i], r, c)) {
+            hit = true;
+            simHp[i] = v - 1;
+            m.dmg += r >= ROWS - 3 ? 2 : 1;
+            if (v === 1) {
+              m.broken++;
+              m.brokenW += r >= ROWS - 2 ? 60 : r >= ROWS - 3 ? 12 : r >= ROWS - 4 ? 5 : 2;
+            }
+          }
+        } else if (v < 0) {
+          const dx = b.x - (FX + (c + 0.5) * CS);
+          const dy = b.y - (FY + (r + 0.5) * CS);
+          if (dx * dx + dy * dy < (BR + PR) * (BR + PR)) {
+            simHp[i] = 0;
+            m.picks++;
+          }
+        }
+      }
+    }
+    if (hit) normalize(b);
+  }
+
+  const simM = { dmg: 0, broken: 0, brokenW: 0, picks: 0 };
+  // test-fire a volley at angle a on a copy of the wall and score the outcome
+  function evalAngle(a) {
+    for (let i = 0; i < grid.length; i++) {
+      const o = grid[i];
+      simHp[i] = !o ? 0 : o.type === BRICK ? o.hp : -1;
+    }
+    simM.dmg = simM.broken = simM.brokenW = simM.picks = 0;
+    const n = Math.min(ballCount, PA_BALLS);
+    const h = 3.4 / SPEED;
+    const vx = Math.cos(a) * SPEED;
+    const vy = Math.sin(a) * SPEED;
+    let launched = 0;
+    let acc = FIRE_GAP;
+    for (let st = 0, tt = 0; tt < PA_TIME; st++, tt += h) {
+      acc += h;
+      if (launched < n && acc >= FIRE_GAP) {
+        acc -= FIRE_GAP;
+        const b = simBalls[launched++];
+        b.x = launchX;
+        b.y = LAUNCH_Y;
+        b.vx = vx;
+        b.vy = vy;
+        b.st = 1;
+      }
+      let active = launched < n;
+      for (let i = 0; i < launched; i++) {
+        const b = simBalls[i];
+        if (b.st !== 1) continue;
+        simStep(b, h, simM);
+        if (b.y >= LAUNCH_Y && b.vy > 0) b.st = 2;
+        else active = true;
+      }
+      if (!active) break;
+    }
+    // what is left near the floor after this volley decides whether we survive the next shift
+    let left = 0;
+    for (let c = 0; c < COLS; c++) {
+      if (simHp[(ROWS - 2) * COLS + c] > 0) left += 400;
+      if (simHp[(ROWS - 3) * COLS + c] > 0) left += 4 + simHp[(ROWS - 3) * COLS + c] * 0.5;
+    }
+    // balls fired beyond the simulated ones repeat the last ones' work, roughly
+    const scale = ballCount > n ? 1 + ((ballCount - n) / n) * 0.5 : 1;
+    return simM.brokenW * scale + simM.dmg * 0.35 * scale + simM.picks * 9 - left;
+  }
+
+  const candAngle = (k) => -Math.PI + MIN_ANG + ((Math.PI - 2 * MIN_ANG) * (k + 0.5)) / PA_N;
+
+  // the finger sits on the aim line, a little way out from the launcher; these mirror what
+  // input() does for a pointer down / move / up while aiming
+  const aimPX = (a) => launchX + Math.cos(a) * 230;
+  const aimPY = (a) => LAUNCH_Y + Math.sin(a) * 230;
+  function fingerDown(a) {
+    aiming = true;
+    kbAim = false;
+    setAimFrom(aimPX(a), aimPY(a));
+  }
+  function fingerMove(a) {
+    if (aiming) setAimFrom(aimPX(a), aimPY(a));
+  }
+  function fingerUp(a) {
+    aiming = false;
+    setAimFrom(aimPX(a), aimPY(a));
+    if (aimValid) fire();
+  }
+
+  function demo(dt) {
+    if (phase === 'fire') {
+      pilot.stage = 'idle';
+      // tap to speed up the volley, like an impatient player (same as a tap during a volley)
+      if (speed < 3 && volleyT > pilot.tapAt) {
+        if (volleyT > 0.35) speedUp(false);
+        pilot.tapAt = volleyT + 0.8 + pRand() * 0.5;
+      }
+      return;
+    }
+    if (phase !== 'aim') {
+      pilot.stage = 'idle';
+      return;
+    }
+    if (pilot.stage === 'done') pilot.stage = 'idle'; // the release did not fire: aim again
+    if (pilot.stage === 'idle') {
+      pilot.stage = 'think';
+      pilot.wait = 0.12 + pRand() * 0.15;
+      pilot.k = 0;
+      pilot.bestV = -Infinity;
+      pilot.tapAt = 0.7 + pRand() * 0.4;
+    }
+    if (pilot.stage === 'think') {
+      pilot.wait -= dt;
+      for (let q = 0; q < PA_PER_FRAME && pilot.k < PA_N + PA_FINE; q++, pilot.k++) {
+        let a;
+        if (pilot.k < PA_N) a = candAngle(pilot.k);
+        else {
+          if (pilot.k === PA_N) pilot.coarse = pilot.best;
+          const step = (Math.PI - 2 * MIN_ANG) / PA_N;
+          a = clamp(pilot.coarse + (pilot.k - PA_N - (PA_FINE - 1) / 2) * (step / (PA_FINE - 1)) * 1.6, -Math.PI + MIN_ANG, -MIN_ANG);
+        }
+        // a slight preference for steeper shots when outcomes tie (they read better)
+        const v = evalAngle(a) - Math.abs(a + Math.PI / 2) * 0.4;
+        if (v > pilot.bestV) {
+          pilot.bestV = v;
+          pilot.best = a;
+        }
+      }
+      if (pilot.k >= PA_N + PA_FINE && pilot.wait <= 0) {
+        // put a finger down roughly where the last shot went and sweep over to the target
+        pilot.from = clamp(aimAng + (pRand() - 0.5) * 0.5, -Math.PI + MIN_ANG, -MIN_ANG);
+        pilot.to = pilot.best;
+        pilot.t = 0;
+        pilot.dur = 0.35 + Math.min(0.35, Math.abs(pilot.to - pilot.from) * 0.3) + pRand() * 0.12;
+        pilot.hold = 0.12 + pRand() * 0.14;
+        pilot.stage = 'drag';
+        fingerDown(pilot.from);
+      }
+      return;
+    }
+    if (pilot.stage === 'drag') {
+      pilot.t += dt;
+      const k = Math.min(1, pilot.t / pilot.dur);
+      // ease in-out with a touch of overshoot that settles, like a thumb homing in
+      const e = k < 1 ? ease.inOutQuad(k) + Math.sin(k * Math.PI) * 0.06 : 1;
+      fingerMove(pilot.from + (pilot.to - pilot.from) * e);
+      if (k >= 1) {
+        pilot.hold -= dt;
+        if (pilot.hold <= 0) {
+          fingerUp(pilot.to);
+          pilot.stage = 'done';
+        }
+      }
+    }
+  }
+
   return {
     hud: false,
-    reset,
+    reset() {
+      reset();
+      pilotReset();
+    },
+    demo,
     update(dt) {
       animate(dt);
       if (phase === 'aim') {

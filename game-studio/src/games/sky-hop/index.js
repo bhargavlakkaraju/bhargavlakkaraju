@@ -1,3 +1,5 @@
+import { mulberry32 } from '../engine/rng.js';
+
 // Sky Hop - endless vertical bouncer. The hero bounces automatically; you only steer.
 // World coordinates: y grows downward (like the screen), the ground is at y = 0 and the
 // climb goes into negative y. The camera only ever moves up.
@@ -797,10 +799,174 @@ export default function createGame(api) {
     }
   }
 
+  // ---------- demo autopilot ----------
+  // Only runs when the engine calls demo() (attract mode / preview clips). It steers like a
+  // player holding left/right: after each bounce it picks the best ledge it can reach
+  // (springs first, then height), detours through coins on the way and avoids crumbling planks.
+  // Its own tiny PRNG keeps api.rng (the seeded run) untouched.
+  let pRand = mulberry32(0x5ce1);
+  const pilot = { target: null, react: 0, lastVy: 0, s: 0, jitter: 0 };
+
+  function pilotReset() {
+    pRand = mulberry32(0x5ce1);
+    pilot.target = null;
+    pilot.react = 0;
+    pilot.lastVy = 0;
+    pilot.s = 0;
+    pilot.jitter = 0;
+  }
+
+  function wrapDX(d) {
+    if (d > W / 2) return d - W;
+    if (d < -W / 2) return d + W;
+    return d;
+  }
+
+  // x of a (possibly moving) platform after tt seconds, bouncing between the walls
+  function platXAt(p, tt) {
+    if (!p.vx) return p.x;
+    const lo = 4;
+    const span = W - 4 - p.w - lo;
+    if (span <= 0) return p.x;
+    const per = span * 2;
+    let u = p.vx > 0 ? p.x - lo : per - (p.x - lo);
+    u = (((u + Math.abs(p.vx) * tt) % per) + per) % per;
+    return lo + (u <= span ? u : per - u);
+  }
+
+  // seconds until the hero's feet reach world y py on the way down (-1 if never)
+  function fallTime(py) {
+    const disc = hero.vy * hero.vy + 2 * GRAV * (py - hero.y - R);
+    if (disc < 0) return -1;
+    return (-hero.vy + Math.sqrt(disc)) / GRAV;
+  }
+
+  // seconds until the hero's centre passes world y cy (first crossing, -1 if never)
+  function passTime(cy) {
+    const disc = hero.vy * hero.vy + 2 * GRAV * (cy - hero.y);
+    if (disc < 0) return -1;
+    const s = Math.sqrt(disc);
+    const t1 = (-hero.vy - s) / GRAV;
+    return t1 > 0 ? t1 : (-hero.vy + s) / GRAV;
+  }
+
+  function aimFor(p, tt) {
+    const px = platXAt(p, tt);
+    return p.spring ? px + p.springX : px + p.w / 2 + pilot.jitter * (p.w / 2 - 14);
+  }
+
+  function reachable(p, tt, x) {
+    const tol = p.spring ? 6 : Math.max(4, p.w / 2 - 10);
+    const need = Math.max(0, Math.abs(wrapDX(x - hero.x)) - tol);
+    return need <= 300 * Math.max(0, tt - 0.08);
+  }
+
+  function pilotPick() {
+    let best = null;
+    let bestV = -Infinity;
+    for (let n = 0; n < plats.length; n++) {
+      const p = plats[n];
+      if (p.broken || p.vanishT > 0 || p.type === 'break') continue;
+      const tt = fallTime(p.y);
+      if (tt <= 0.02) continue;
+      const x = aimFor(p, tt);
+      if (!reachable(p, tt, x)) continue;
+      let v = -p.y - Math.abs(wrapDX(x - hero.x)) * 0.12;
+      if (p.spring) v += 320;
+      if (p.type === 'cloud') v -= 30;
+      if (p.type === 'ground') v -= 2000;
+      for (let k = 0; k < coins.length; k++) {
+        const c = coins[k];
+        if (!c.taken && Math.abs(c.x - x) < 22 && c.y < p.y && c.y > p.y - 70) v += 60;
+      }
+      if (v > bestV) {
+        bestV = v;
+        best = p;
+      }
+    }
+    pilot.target = best;
+  }
+
+  // a coin we can grab on the way that still leaves time to reach the target ledge
+  function pilotCoin(landT, landX) {
+    let best = null;
+    let bestT = Infinity;
+    for (let k = 0; k < coins.length; k++) {
+      const c = coins[k];
+      if (c.taken) continue;
+      const tc = passTime(c.y);
+      if (tc <= 0.05 || tc >= landT - 0.12) continue;
+      const d1 = Math.abs(wrapDX(c.x - hero.x)) - 14;
+      const d2 = Math.abs(wrapDX(landX - c.x)) - 14;
+      if (d1 > 290 * (tc - 0.05) || d2 > 290 * (landT - tc - 0.08)) continue;
+      if (tc < bestT) {
+        bestT = tc;
+        best = c;
+      }
+    }
+    return best;
+  }
+
+  function demo(dt) {
+    if (!hero.alive) {
+      keyL = keyR = false;
+      return;
+    }
+    // a bounce just happened: take a beat (human reaction), then choose the next ledge
+    if (pilot.lastVy >= 0 && hero.vy < 0) {
+      pilot.react = 0.06 + pRand() * 0.1;
+      pilot.target = null;
+      pilot.jitter = (pRand() - 0.5) * 0.7;
+    }
+    pilot.lastVy = hero.vy;
+    if (pilot.react > 0) {
+      pilot.react -= dt;
+      return;
+    }
+    let p = pilot.target;
+    let tt = p ? fallTime(p.y) : -1;
+    if (!p || p.broken || p.vanishT > 0 || tt <= 0 || !reachable(p, tt, aimFor(p, tt))) {
+      pilotPick();
+      p = pilot.target;
+      tt = p ? fallTime(p.y) : -1;
+    }
+    if (!p || tt <= 0) {
+      keyL = keyR = false;
+      return;
+    }
+    let aimX = aimFor(p, tt);
+    let aimT = tt;
+    const c = pilotCoin(tt, aimX);
+    if (c) {
+      aimX = c.x;
+      aimT = passTime(c.y);
+    }
+    // pick the steer (-1/0/1) whose next velocity best matches the one we want
+    const dx = wrapDX(aimX - hero.x);
+    const want = Math.sign(dx) * Math.min(MAX_VX, Math.max(Math.abs(dx) / Math.max(0.12, aimT - 0.04), Math.abs(dx) * 5));
+    let bestS = 0;
+    let bestE = Infinity;
+    for (let s = -1; s <= 1; s++) {
+      const nv = hero.vx + (s * MAX_VX - hero.vx) * Math.min(1, dt * (s ? 10 : 6));
+      const e = Math.abs(nv - want) + (s === pilot.s ? 0 : 6);
+      if (e < bestE) {
+        bestE = e;
+        bestS = s;
+      }
+    }
+    pilot.s = bestS;
+    keyL = bestS < 0;
+    keyR = bestS > 0;
+  }
+
   reset();
 
   return {
-    reset,
+    reset() {
+      reset();
+      pilotReset();
+    },
+    demo,
     update(dt) {
       update(dt);
       animate(dt);

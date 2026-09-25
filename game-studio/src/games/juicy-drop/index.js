@@ -1,3 +1,5 @@
+import { mulberry32 } from '../engine/rng.js';
+
 // Juicy Drop - fruit-merge physics puzzle.
 // Drop fruit into the jar; two identical fruits that touch merge into the next bigger one.
 // Physics: position-based Verlet circles, fixed 480 Hz substeps, 2 solver iterations,
@@ -1070,9 +1072,144 @@ export default function createGame(api) {
     g.globalAlpha = 1;
   }
 
+  // ---------- demo autopilot ----------
+  // Only runs when the engine calls demo() (attract mode / preview clips). For each new fruit
+  // it takes a beat, picks a drop spot, then drags the fruit there (so the guide line shows
+  // where it will land) and lets go, like a finger sliding along the top of the jar. A spot
+  // scores well when the fruit lands on its twin (instant merge), even better when the merged
+  // fruit would then touch its own twin (chain), and badly when it buries smaller fruit or
+  // stacks near the danger line. Its own PRNG keeps api.rng (the seeded run) untouched.
+  let pRand = mulberry32(0x7a1c);
+  const pilot = { stage: 'wait', t: 0, wait: 0, from: 0, to: 0, dur: 0, hold: 0, tier: -1 };
+
+  function pilotReset() {
+    pRand = mulberry32(0x7a1c);
+    pilot.stage = 'wait';
+    pilot.tier = -1;
+  }
+
+  // first fruit a drop at x touches on the way down (null = the floor); fills landY
+  let landY = 0;
+  function landingOn(x, r) {
+    let hit = null;
+    landY = JB - r;
+    for (let i = 0; i < bodies.length; i++) {
+      const b = bodies[i];
+      const rs = r + b.r;
+      const dx = Math.abs(b.x - x);
+      if (dx >= rs) continue;
+      const y = b.y - Math.sqrt(rs * rs - dx * dx);
+      if (y < landY) {
+        landY = y;
+        hit = b;
+      }
+    }
+    return hit;
+  }
+
+  function spotScore(tier, x) {
+    const r = FRUITS[tier].r;
+    const hit = landingOn(x, r);
+    const ly = landY;
+    let v = 0;
+    if (hit && hit.tier === tier) {
+      // instant merge; bigger merges are worth more, and a follow-up merge even more
+      v += 120 + tier * 25;
+      const nt = tier + 1;
+      if (nt <= MAX_TIER) {
+        const mx = (hit.x + x) / 2;
+        const my = (hit.y + ly) / 2;
+        const nr = FRUITS[nt].r;
+        for (let i = 0; i < bodies.length; i++) {
+          const b = bodies[i];
+          if (b === hit || b.tier !== nt) continue;
+          const d = Math.hypot(b.x - mx, b.y - my);
+          if (d < nr + b.r + 14) v += 160 + nt * 30;
+          else if (d < nr + b.r + 40) v += 40;
+        }
+      }
+    } else {
+      if (hit) v -= Math.max(0, tier - hit.tier) * 12 + (hit.tier - tier > 2 ? 10 : 0);
+      // a twin next to where it settles will probably meet it
+      for (let i = 0; i < bodies.length; i++) {
+        const b = bodies[i];
+        if (b.tier !== tier || b === hit) continue;
+        const d = Math.hypot(b.x - x, b.y - ly);
+        if (d < r + b.r + 18) v += 45;
+        else if (d < r + b.r + 45) v += 12;
+      }
+      // keep big fruit low and towards the left wall, small fruit free to roam
+      v -= ((x - JL) / (JR - JL)) * tier * 4;
+    }
+    // stay clear of the danger line
+    const top = ly - r;
+    if (top < DY + 140) v -= (DY + 140 - top) * 1.5;
+    v += (ly - HOLD_Y) * 0.02;
+    return v;
+  }
+
+  function pickSpot(tier) {
+    const r = FRUITS[tier].r;
+    let best = W / 2;
+    let bestV = -Infinity;
+    for (let x = JL + r; x <= JR - r; x += 4) {
+      const v = spotScore(tier, x);
+      if (v > bestV + 0.5) {
+        bestV = v;
+        best = x;
+      }
+    }
+    return best;
+  }
+
+  function demo(dt) {
+    if (dead || !held) {
+      pilot.stage = 'wait';
+      pilot.tier = -1;
+      return;
+    }
+    if (pilot.stage === 'wait') {
+      // a new fruit is in hand: take a beat before reaching for it
+      pilot.stage = 'think';
+      pilot.wait = 0.12 + pRand() * 0.2;
+      pilot.tier = held.tier;
+      return;
+    }
+    if (pilot.stage === 'think') {
+      pilot.wait -= dt;
+      if (pilot.wait > 0) return;
+      pilot.from = heldX;
+      pilot.to = pickSpot(held.tier);
+      pilot.t = 0;
+      pilot.dur = 0.28 + Math.min(0.4, Math.abs(pilot.to - pilot.from) / 500) + pRand() * 0.1;
+      pilot.hold = 0.08 + pRand() * 0.14;
+      pilot.stage = 'drag';
+      // finger down on the fruit
+      targetX = pilot.from;
+      pointerActive = true;
+      return;
+    }
+    if (pilot.stage === 'drag') {
+      pilot.t += dt;
+      const k = Math.min(1, pilot.t / pilot.dur);
+      targetX = pilot.from + (pilot.to - pilot.from) * ease.inOutQuad(k);
+      if (k < 1 || Math.abs(heldX - pilot.to) > 2) return;
+      pilot.hold -= dt;
+      if (pilot.hold > 0) return;
+      // let go: the same thing a pointer release does
+      pointerActive = false;
+      drop();
+      pilot.stage = 'wait';
+    }
+  }
+
   return {
     hud: false,
-    reset,
+    reset() {
+      reset();
+      pilotReset();
+    },
+    demo,
     update(dt) {
       tick(dt, true);
     },
