@@ -65,7 +65,8 @@ export async function POST(req) {
   } catch {
     return json({ ok: false }, { status: 400 });
   }
-  const { vid, events, exp, ref, utm, act } = body || {};
+  const { vid, events, exp, ref, utm, act, pc } = body || {};
+  const post = typeof pc === 'string' && SAFE.test(pc) ? pc : null;
   if (!VID_RE.test(String(vid)) || !Array.isArray(events)) return json({ ok: false }, { status: 400 });
   if (!(await rateLimit(`ev:${clientIp(req)}`, 240, 60))) return json({ ok: false }, { status: 429 });
 
@@ -91,12 +92,18 @@ export async function POST(req) {
       cmds.push(['PFADD', `pu:${day}:${slug}`, vid], ['EXPIRE', `pu:${day}:${slug}`, TTL]);
     }
     if (e.n === 'share_click' && e.c && SAFE.test(e.c)) cmds.push(['HINCRBY', dk, `share_ch|${e.c}`, 1]);
+    if (post && (e.n === 'game_start' || e.n === 'game_over')) cmds.push(['HINCRBY', `sc:${day}`, `${post}|${e.n === 'game_start' ? 'plays' : 'runs'}`, 1]);
     for (const [k, v] of expPairs) cmds.push(['HINCRBY', `x:${day}`, `${k}:${v}:${e.n}`, 1]);
   }
   if (expPairs.length) cmds.push(['EXPIRE', `x:${day}`, TTL]);
 
   const host = ref ? refHost(ref) : null;
   if (host) cmds.push(['HINCRBY', `r:${day}`, host, 1], ['EXPIRE', `r:${day}`, TTL]);
+  // Per-post results for the social feed: visits (first batch of a session) and plays.
+  if (post) {
+    if (utm) cmds.push(['HINCRBY', `sc:${day}`, `${post}|visits`, 1]);
+    cmds.push(['EXPIRE', `sc:${day}`, TTL]);
+  }
   if (utm && utm.source && SAFE.test(utm.source)) {
     const camp = utm.campaign && SAFE.test(utm.campaign) ? utm.campaign : '-';
     cmds.push(['HINCRBY', `s:${day}`, `${utm.source}|${camp}`, 1], ['EXPIRE', `s:${day}`, TTL]);

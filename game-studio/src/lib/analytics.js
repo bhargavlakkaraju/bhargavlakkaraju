@@ -35,12 +35,24 @@ function attribution() {
   return out;
 }
 
+// The social post (utm_content) that brought this visitor, kept for the whole session so
+// the plays that follow are credited to that post.
+function postRef() {
+  try {
+    const c = new URLSearchParams(location.search).get('utm_content');
+    if (c) sessionStorage.setItem('ra:post', c);
+    return sessionStorage.getItem('ra:post') || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function flush(beacon = false) {
   if (timer) clearTimeout(timer);
   timer = null;
   if (!queue.length) return;
   const p = getPlayer();
-  const payload = { vid: p.vid, events: queue.splice(0, 60), exp: getAssignments(), ...attribution() };
+  const payload = { vid: p.vid, events: queue.splice(0, 60), exp: getAssignments(), pc: postRef(), ...attribution() };
   const age = touchActivity();
   if (age != null) payload.act = { age };
   const body = JSON.stringify(payload);

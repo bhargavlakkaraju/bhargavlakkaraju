@@ -254,6 +254,49 @@ export default function Dashboard() {
                   </div>
                 ))}
             </div>
+            <div className="rounded-2xl bg-panel p-4 ring-1 ring-line lg:col-span-2 lg:order-last">
+              <div className="mb-2 font-bold">📱 Social posts (Grokbot)</div>
+              <p className="mb-2 text-xs text-white/50">
+                Platform numbers are reported by the posting agent; visits and plays come from each post&apos;s tracked link. Feed: /api/social/feed
+              </p>
+              {!data.social?.length && <p className="text-sm text-white/50">No social posts reported yet.</p>}
+              {data.social?.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[640px] text-sm">
+                    <thead className="text-left text-xs uppercase text-white/50">
+                      <tr>
+                        <th className="py-1">Post</th>
+                        <th>Where</th>
+                        <th className="text-right">Views</th>
+                        <th className="text-right">Likes</th>
+                        <th className="text-right">Visits</th>
+                        <th className="text-right">Plays</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.social.map((row) => (
+                        <tr key={row.id} className="border-t border-line">
+                          <td className="py-1.5 font-mono text-xs">{row.id}</td>
+                          <td className="text-xs">
+                            {row.posts.length
+                              ? row.posts.map((p) => (
+                                  <a key={p.platform} href={p.url || undefined} target="_blank" rel="noopener" className="mr-2 text-aqua underline">
+                                    {p.platform}
+                                  </a>
+                                ))
+                              : 'not reported'}
+                          </td>
+                          <td className="text-right tabular-nums">{n(row.posts.reduce((t, p) => t + (p.metrics?.views || p.metrics?.impressions || 0), 0))}</td>
+                          <td className="text-right tabular-nums">{n(row.posts.reduce((t, p) => t + (p.metrics?.likes || 0), 0))}</td>
+                          <td className="text-right tabular-nums">{n(row.visits || 0)}</td>
+                          <td className="text-right tabular-nums">{n(row.plays || 0)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
             <div className="rounded-2xl bg-panel p-4 ring-1 ring-line">
               <div className="mb-2 flex items-baseline justify-between">
                 <div className="font-bold">📣 Advertiser & sponsor enquiries</div>

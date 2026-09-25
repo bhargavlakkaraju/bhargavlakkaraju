@@ -6,7 +6,7 @@
 //   node scripts/brand/render.mjs --domain=retryarcade.vercel.app   # change the URL printed on posts/stories/carousel
 //   node scripts/brand/render.mjs --fast             # use public/covers/*.jpg instead of re-rendering hi-res art
 //
-// Outputs: public/brand/* (site press kit) and marketing/social/* (files for posting).
+// Outputs: public/brand/* (site press kit) and public/social/* (files for posting).
 // Game art is re-rendered at the exact pixel size needed from each game's cover() function through
 // harness/render.html (file:// + --allow-file-access-from-files, no server needed), falling back to public/covers.
 import fs from 'node:fs';
@@ -28,7 +28,7 @@ const DOMAIN = flag('domain', 'retryarcade.com');
 const FAST = flag('fast', false);
 
 const BRAND = path.join(ROOT, 'public/brand');
-const SOCIAL = path.join(ROOT, 'marketing/social');
+const SOCIAL = path.join(ROOT, 'public/social');
 for (const d of [BRAND, SOCIAL, path.join(SOCIAL, 'posts'), path.join(SOCIAL, 'stories'), path.join(TMP, 'art'), path.join(TMP, 'pages')]) fs.mkdirSync(d, { recursive: true });
 
 const games = await loadGames();
@@ -105,13 +105,13 @@ if (want('banners')) {
   await shot('public/brand/banner-discord-960x540.jpg', await T.bannerDiscord(ctx));
 }
 if (want('posts')) {
-  for (const g of games) await shot(`marketing/social/posts/${g.slug}-1080x1350.jpg`, await T.post(ctx, g));
+  for (const g of games) await shot(`public/social/posts/${g.slug}-1080x1350.jpg`, await T.post(ctx, g));
 }
 if (want('stories')) {
-  for (const s of T.STORIES) await shot(`marketing/social/stories/${s.slug}-1080x1920.jpg`, await T.story(ctx, bySlug[s.slug], s));
+  for (const s of T.STORIES) await shot(`public/social/stories/${s.slug}-1080x1920.jpg`, await T.story(ctx, bySlug[s.slug], s));
 }
 if (want('carousel')) {
-  for (let i = 1; i <= 5; i++) await shot(`marketing/social/launch-carousel-${i}-1080x1350.jpg`, await T.carousel(ctx, i));
+  for (let i = 1; i <= 5; i++) await shot(`public/social/launch-carousel-${i}-1080x1350.jpg`, await T.carousel(ctx, i));
 }
 if (want('carousel') || want('pdf')) {
   // LinkedIn posts carousels as a document (PDF), one slide per page.
@@ -121,7 +121,7 @@ if (want('carousel') || want('pdf')) {
   const page = await browser.newPage();
   await page.goto(fileUrl(htmlFile));
   await page.evaluate(() => Promise.all([...document.images].map((i) => (i.complete ? 0 : new Promise((r) => (i.onload = r))))));
-  const rel = 'marketing/social/launch-carousel-linkedin.pdf';
+  const rel = 'public/social/launch-carousel-linkedin.pdf';
   await page.pdf({ path: path.join(ROOT, rel), width: '1080px', height: '1350px', printBackground: true, pageRanges: '1-5' });
   await page.close();
   const kb = Math.round(fs.statSync(path.join(ROOT, rel)).size / 1024);
@@ -129,7 +129,7 @@ if (want('carousel') || want('pdf')) {
   console.log(`wrote ${rel}  ${kb} KB`);
 }
 if (want('x')) {
-  await shot('marketing/social/x-launch-1200x675.jpg', await T.xLaunch(ctx));
+  await shot('public/social/x-launch-1200x675.jpg', await T.xLaunch(ctx));
 }
 if (want('contact')) {
   await shot('marketing/social/contact-sheet.jpg', { ...T.contactSheet(ctx), quality: 80 });

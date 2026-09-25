@@ -165,6 +165,13 @@ async function newPage(opts = {}) {
   check(badLead.status === 422, 'sponsor enquiry validates input');
   const plus = await fetch(BASE + '/api/plus/verify', { method: 'POST', body: JSON.stringify({ code: 'not-a-code' }) });
   check(plus.status === 400, 'Plus verify rejects malformed codes');
+  const feedRes = await fetch(BASE + '/api/social/feed');
+  const feed = await feedRes.json();
+  check(feedRes.ok && feed.posts?.length >= 4 && feed.posts.every((p) => p.id && p.links && p.text), `social feed has ${feed.posts?.length} posts`);
+  const xPost = feed.posts.find((p) => p.text.x);
+  check(xPost && xPost.text.x.replace(/https?:\/\/\S+/g, 'x'.repeat(23)).length <= 280, 'X post text fits 280 characters');
+  const noAuth = await fetch(BASE + '/api/social/report', { method: 'POST', body: JSON.stringify({ id: 'x', platform: 'x' }) });
+  check(noAuth.status === 401, 'social report webhook requires a token');
   const cron = await fetch(BASE + '/api/cron/indexnow');
   check(cron.status === 401, 'IndexNow cron requires auth');
   if (process.env.STUDIO_TOKEN) {

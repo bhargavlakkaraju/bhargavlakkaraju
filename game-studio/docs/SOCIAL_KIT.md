@@ -29,11 +29,11 @@ All images are already made. All copy is ready to paste.
 | `public/brand/banner-youtube-2560x1440.jpg` | 2560x1440 | YouTube banner (key content inside the 1546x423 safe area) |
 | `public/brand/cover-facebook-1640x624.jpg` | 1640x624 | Facebook Page cover |
 | `public/brand/banner-discord-960x540.jpg` | 960x540 | Discord server banner / invite background / #welcome image, Pinterest profile cover |
-| `marketing/social/launch-carousel-1..5-1080x1350.jpg` | 1080x1350 x5 | Launch carousel for Instagram and Facebook |
-| `marketing/social/launch-carousel-linkedin.pdf` | 5 pages | The same carousel as a LinkedIn document post |
-| `marketing/social/x-launch-1200x675.jpg` | 1200x675 | Image for the X launch post |
-| `marketing/social/posts/<game>-1080x1350.jpg` | 1080x1350 x15 | One portrait post per game (Instagram, Facebook, LinkedIn, Pinterest, X) |
-| `marketing/social/stories/<game>-1080x1920.jpg` | 1080x1920 x6 | Stories, and covers for Reels / TikTok / Shorts (Stack Tower, Juicy Drop, Block Crush, Blade Spin, Color Rush, Sky Flap) |
+| `public/social/launch-carousel-1..5-1080x1350.jpg` | 1080x1350 x5 | Launch carousel for Instagram and Facebook |
+| `public/social/launch-carousel-linkedin.pdf` | 5 pages | The same carousel as a LinkedIn document post |
+| `public/social/x-launch-1200x675.jpg` | 1200x675 | Image for the X launch post |
+| `public/social/posts/<game>-1080x1350.jpg` | 1080x1350 x15 | One portrait post per game (Instagram, Facebook, LinkedIn, Pinterest, X) |
+| `public/social/stories/<game>-1080x1920.jpg` | 1080x1920 x6 | Stories, and covers for Reels / TikTok / Shorts (Stack Tower, Juicy Drop, Block Crush, Blade Spin, Color Rush, Sky Flap) |
 | `marketing/social/contact-sheet.jpg` | overview | Everything on one page, for a quick review |
 
 Platform UI was checked on every banner: text and key art stay out of the X / LinkedIn avatar zone (bottom left),
@@ -141,7 +141,7 @@ the link at the game itself: `{SITE}/games/<game>?utm_source=...`. Game slugs: `
      15 free games. 1 second to play, no download. retryarcade.com 👇
      ```
    - **Website:** `{SITE}/?utm_source=tiktok&utm_medium=social&utm_campaign=profile`
-4. For the six games with a story file, upload `marketing/social/stories/<game>-1080x1920.jpg` as the video cover
+4. For the six games with a story file, upload `public/social/stories/<game>-1080x1920.jpg` as the video cover
    (Edit cover > Upload, where available) or use it as the last frame of the clip.
 5. **Pin (up to 3 videos):** the "15 games in 15 seconds" trailer (clip C1), your best performer, and the latest
    "Can you beat...?" challenge clip.
@@ -285,7 +285,7 @@ the link at the game itself: `{SITE}/games/<game>?utm_source=...`. Game slugs: `
    deployed, click Verify. Claiming shows your logo and stats on every Pin from the site.
 4. **Boards** (create 5): "Free Online Games (No Download)", "Puzzle Games and Brain Teasers", "Arcade Games You Can
    Play in 1 Second", "Game Tips and Strategy Guides", "Word Games and Daily Puzzles".
-5. **Pins:** one per game from `marketing/social/posts/<game>-1080x1350.jpg`, destination
+5. **Pins:** one per game from `public/social/posts/<game>-1080x1350.jpg`, destination
    `{SITE}/games/<game>?utm_source=pinterest&utm_medium=social&utm_campaign=pin_<game>`. Title = "`<Game>`: free online
    game, no download". Description = the game's tagline + one sentence on how to play. Pinterest has no pinning to the
    profile; instead choose the 5 boards above as your **featured boards**.
@@ -316,7 +316,7 @@ Reddit is spread over the following days (see the calendar).
 
 ### X: launch thread (pin post 1)
 
-**Post 1** with image `marketing/social/x-launch-1200x675.jpg`
+**Post 1** with image `public/social/x-launch-1200x675.jpg`
 ```
 We built 15 free games you can play in 1 second. ↻
 
@@ -326,7 +326,7 @@ No download. No sign-up. Just one more try.
 ```
 Alt text: `Retry Arcade launch card: the Retry Arcade logo, the text "15 free games. Play in 1 sec. No download. No sign-up. Just one more try." and a pink button reading retryarcade.com, next to a tilted wall of colorful game covers including a block tower, fruit in a jar, a block puzzle and a knife-throwing target.`
 
-**Post 2** with image `marketing/social/launch-carousel-3-1080x1350.jpg`
+**Post 2** with image `public/social/launch-carousel-3-1080x1350.jpg`
 ```
 Every game has a Daily Challenge: the same level for every player on Earth. It resets at midnight UTC.
 
@@ -334,7 +334,7 @@ Post your score before the reset. 📅
 ```
 Alt text: `Graphic titled "New levels every day." A daily leaderboard card with a reset countdown shows rank 1 "You?", rank 2 "Your best friend" and rank 3 "Your group chat", above chips for streaks, medals and XP levels.`
 
-**Post 3** with image `marketing/social/launch-carousel-4-1080x1350.jpg`
+**Post 3** with image `public/social/launch-carousel-4-1080x1350.jpg`
 ```
 Beat a score? Tap "Challenge a friend".
 
@@ -342,7 +342,7 @@ They get a link that shows exactly the score they need to beat. Friendships have
 ```
 Alt text: `Graphic titled "Beat it? Prove it." A chat bubble says "42 floors. Your move." above a link preview of a stacked block tower captioned "Sam scored 42 in Stack Tower. Can you beat it?" Labeled as an example challenge link preview.`
 
-**Post 4** with image `marketing/social/launch-carousel-2-1080x1350.jpg`
+**Post 4** with image `public/social/launch-carousel-2-1080x1350.jpg`
 ```
 The lineup:
 🕹️ Arcade: Stack Tower, Sky Flap, Blade Spin, Color Rush, Road Hopper, Zig Zag, Sky Hop, Brick Barrage
@@ -409,7 +409,7 @@ Pinned comment: `Play free: link on our channel page. Post your score below 👇
 
 ### LinkedIn Company Page (document post)
 
-Upload `marketing/social/launch-carousel-linkedin.pdf` as a document. Document title: `15 free games you can play in 1 second`. Text:
+Upload `public/social/launch-carousel-linkedin.pdf` as a document. Document title: `15 free games you can play in 1 second`. Text:
 ```
 Today we are launching Retry Arcade: 15 free games that start in about a second, right in the browser.
 
@@ -555,7 +555,7 @@ to TikTok, Instagram Reels, YouTube Shorts and X (and Facebook Reels via cross-p
    and buttons sit). Keep the score visible the whole time.
 6. End on the score (or on the matching story file as a 1-second end card) and say "link in bio" in the caption.
 7. Covers: for Stack Tower, Juicy Drop, Block Crush, Blade Spin, Color Rush and Sky Flap use
-   `marketing/social/stories/<game>-1080x1920.jpg`.
+   `public/social/stories/<game>-1080x1920.jpg`.
 
 | ID | Game | What to record (the exact moment) | Length | Hook overlay (first second) |
 |---|---|---|---|---|

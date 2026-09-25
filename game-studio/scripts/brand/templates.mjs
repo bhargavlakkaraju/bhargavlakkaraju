@@ -390,11 +390,11 @@ export function contactSheet(ctx) {
       item('public/brand/banner-linkedin-company-1128x191.jpg', 1500, 254, 'banner-linkedin-company-1128x191.jpg'),
     ])}
     ${section('LAUNCH CAROUSEL + X CARD', [
-      ...[1, 2, 3, 4, 5].map((i) => item(`marketing/social/launch-carousel-${i}-1080x1350.jpg`, 360, 450, `launch-carousel-${i}`)),
-      item('marketing/social/x-launch-1200x675.jpg', 800, 450, 'x-launch-1200x675.jpg'),
+      ...[1, 2, 3, 4, 5].map((i) => item(`public/social/launch-carousel-${i}-1080x1350.jpg`, 360, 450, `launch-carousel-${i}`)),
+      item('public/social/x-launch-1200x675.jpg', 800, 450, 'x-launch-1200x675.jpg'),
     ])}
-    ${section('STORY / REEL / TIKTOK COVERS', STORIES.map((s) => item(`marketing/social/stories/${s.slug}-1080x1920.jpg`, 340, 604, `stories/${s.slug}`)))}
-    ${section('GAME POSTS (1080x1350)', slugs.map((s) => item(`marketing/social/posts/${s}-1080x1350.jpg`, 400, 500, `posts/${s}`)))}
+    ${section('STORY / REEL / TIKTOK COVERS', STORIES.map((s) => item(`public/social/stories/${s.slug}-1080x1920.jpg`, 340, 604, `stories/${s.slug}`)))}
+    ${section('GAME POSTS (1080x1350)', slugs.map((s) => item(`public/social/posts/${s}-1080x1350.jpg`, 400, 500, `posts/${s}`)))}
   </div>`;
   return { W, H: 9000, element: '#root', html: page(W, 9000, body) };
 }

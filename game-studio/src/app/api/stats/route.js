@@ -36,10 +36,30 @@ export async function GET(req) {
   for (const g of GAMES) cmds.push(['PFCOUNT', ...keys.map((d) => `pu:${d}:${g.slug}`)]);
   cmds.push(['PFCOUNT', ...keys.map((d) => `u:${d}`)], ['SCARD', 'subs']);
   const res = await pipeline(cmds);
-  const [leadRows, plusStats] = await pipeline([
+  const [leadRows, plusStats, socialPosts, ...socialDays] = await pipeline([
     ['LRANGE', 'leads', 0, 19],
     ['HGETALL', 'plus:stats'],
+    ['HGETALL', 'social:posts'],
+    ...keys.map((d) => ['HGETALL', `sc:${d}`]),
   ]);
+  // Social posts: what the posting agent reported, joined with the visits and plays each
+  // post's tracked link produced on the site.
+  const social = {};
+  for (const reply of socialDays)
+    for (const [k, v] of pairs(reply)) {
+      const [id, what] = k.split('|');
+      social[id] ??= { id, visits: 0, plays: 0, runs: 0, posts: [] };
+      social[id][what] = (social[id][what] || 0) + Number(v);
+    }
+  for (const [, v] of pairs(socialPosts)) {
+    try {
+      const r = JSON.parse(v);
+      social[r.id] ??= { id: r.id, visits: 0, plays: 0, runs: 0, posts: [] };
+      social[r.id].posts.push({ platform: r.platform, url: r.url, postedAt: r.postedAt, metrics: r.metrics });
+    } catch {
+      /* skip bad record */
+    }
+  }
   const leads = (leadRows || []).map((r) => {
     try {
       return JSON.parse(r);
@@ -118,6 +138,9 @@ export async function GET(req) {
     subscribers: Number(res[base + GAMES.length + 1]) || 0,
     leads,
     plus: toObj(plusStats),
+    social: Object.values(social)
+      .sort((a, b) => b.visits - a.visits || String(b.id).localeCompare(String(a.id)))
+      .slice(0, 40),
     series,
     totals: {
       pageViews: totals.page_view || 0,
