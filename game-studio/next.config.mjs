@@ -33,7 +33,16 @@ const nextConfig = {
     ];
   },
   async redirects() {
-    return [{ source: '/game/:slug', destination: '/games/:slug', permanent: true }];
+    const site = resolveSiteUrl();
+    return [
+      { source: '/game/:slug', destination: '/games/:slug', permanent: true },
+      // The old vercel.app address moves permanently to the custom domain so search engines
+      // merge the two. /api stays reachable there (Vercel cron calls it with an auth header,
+      // which a cross-host redirect would drop).
+      ...(site.startsWith('https://retryarcade.com')
+        ? [{ source: '/:path((?!api/).*)', has: [{ type: 'host', value: 'retryarcade.vercel.app' }], destination: `${site}/:path`, permanent: true }]
+        : []),
+    ];
   },
 };
 
