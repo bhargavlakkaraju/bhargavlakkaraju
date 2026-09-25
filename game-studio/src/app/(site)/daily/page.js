@@ -40,7 +40,7 @@ export default function DailyPage() {
       <h2 className="section-title mt-12">All daily challenges</h2>
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {all.map((g) => (
-          <GameCard key={g.slug} game={g} href={`/games/${g.slug}?mode=daily`} badge="DAILY" />
+          <GameCard key={g.slug} game={g} href={`/games/${g.slug}?mode=daily`} badge="DAILY" variant="tall" />
         ))}
       </div>
     </div>

@@ -39,7 +39,7 @@ export default function CategoryPage({ params }) {
       <p className="mt-2 max-w-3xl text-white/70">{copy ? copy.intro : c.blurb}</p>
       <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {games.map((g, i) => (
-          <GameCard key={g.slug} game={g} priority={i < 4} />
+          <GameCard key={g.slug} game={g} priority={i < 4} variant="tall" />
         ))}
       </div>
       {copy && (

@@ -29,8 +29,14 @@ const SCROLL_KEYS = new Set([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRig
  * @param {object} [options.platform] ads/portal adapter (engine/platform.js)
  * @param {boolean} [options.autoFocus]
  */
+// Stand-in for sfx while a game plays itself: same methods, no sound.
+const SILENT_SFX = new Proxy({}, { get: () => () => undefined });
+
 export function mountGame(container, createGame, meta, options = {}) {
-  const { mode = 'classic', target = null, onEvent = () => {}, platform = null, autoFocus = true } = options;
+  // demo: the game plays itself (attract mode / recorded preview clips). It starts at once,
+  // asks the game's optional demo(dt) autopilot for moves every frame, never saves scores,
+  // stays silent and restarts itself after a game over. seed makes runs reproducible.
+  const { mode = 'classic', target = null, onEvent = () => {}, platform = null, autoFocus = true, demo = false, seed = null } = options;
   const W = meta.width;
   const H = meta.height;
   const slug = meta.slug;
@@ -75,7 +81,8 @@ export function mountGame(container, createGame, meta, options = {}) {
 
   // ---------- state ----------
   const fx = createFx();
-  const rng = createRng(daily ? dailySeed(slug) : randomSeed());
+  const rng = createRng(seed != null ? seed : daily ? dailySeed(slug) : randomSeed());
+  let demoRuns = 0;
   let state = 'ready';
   let score = 0;
   let best = load(bestKey, null);
@@ -99,9 +106,10 @@ export function mountGame(container, createGame, meta, options = {}) {
     meta,
     mode,
     daily,
+    demo,
     target,
     rng,
-    sfx,
+    sfx: demo ? SILENT_SFX : sfx,
     fx,
     ease,
     draw,
@@ -133,6 +141,14 @@ export function mountGame(container, createGame, meta, options = {}) {
     gameOver(result = {}) {
       if (state !== 'playing') return;
       state = 'over';
+      if (demo) {
+        overTimer = setTimeout(() => {
+          overTimer = null;
+          if (!destroyed) controller.restart();
+        }, (result.delay ?? 750) + 900);
+        onEvent('demo-over', { slug, score });
+        return;
+      }
       const win = result.win ?? null;
       const counts = !(lowerIsBetter && win === false);
       let isNewBest = false;
@@ -160,6 +176,7 @@ export function mountGame(container, createGame, meta, options = {}) {
       }, result.delay ?? 750);
     },
     haptic(ms = 12) {
+      if (demo) return;
       try {
         if (navigator.vibrate) navigator.vibrate(ms);
       } catch {
@@ -176,7 +193,8 @@ export function mountGame(container, createGame, meta, options = {}) {
   if (!game || typeof game.render !== 'function') throw new Error(`${slug}: createGame must return an object with render()`);
 
   function beginRun() {
-    if (!daily) rng.reseed(randomSeed());
+    if (seed != null) rng.reseed(seed + demoRuns++);
+    else if (!daily) rng.reseed(randomSeed());
     else rng.reseed(dailySeed(slug));
     score = 0;
     runTime = 0;
@@ -194,7 +212,7 @@ export function mountGame(container, createGame, meta, options = {}) {
   }
 
   beginRun();
-  if (!tapToStart) start();
+  if (!tapToStart || demo) start();
 
   // ---------- input ----------
   function toLocal(e) {
@@ -292,6 +310,7 @@ export function mountGame(container, createGame, meta, options = {}) {
       totalTime += dt;
       if (state === 'playing') {
         runTime += dt;
+        if (demo && game.demo) game.demo(dt);
         if (game.update) game.update(dt);
       } else if (game.idle) {
         game.idle(dt);
@@ -384,7 +403,7 @@ export function mountGame(container, createGame, meta, options = {}) {
       beginRun();
       state = 'ready';
       readyT = 0;
-      if (!tapToStart) start();
+      if (!tapToStart || demo) start();
       onEvent('restart', { slug, mode });
       canvas.focus({ preventScroll: true });
     },

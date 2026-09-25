@@ -1,0 +1,62 @@
+{
+  "blade-spin": {
+    "seed": 7,
+    "start": 0
+  },
+  "block-crush": {
+    "seed": 7,
+    "start": 0
+  },
+  "brick-barrage": {
+    "seed": 7,
+    "start": 0
+  },
+  "color-rush": {
+    "seed": 7,
+    "start": 0
+  },
+  "juicy-drop": {
+    "seed": 7,
+    "start": 0
+  },
+  "merge-2048": {
+    "seed": 7,
+    "start": 0
+  },
+  "neon-snake": {
+    "seed": 7,
+    "start": 0
+  },
+  "road-hopper": {
+    "seed": 7,
+    "start": 0
+  },
+  "sky-flap": {
+    "seed": 7,
+    "start": 0
+  },
+  "sky-hop": {
+    "seed": 7,
+    "start": 0
+  },
+  "solitaire": {
+    "seed": 7,
+    "start": 0
+  },
+  "stack-tower": {
+    "seed": 7,
+    "start": 0
+  },
+  "sudoku": {
+    "seed": 7,
+    "start": 0
+  },
+  "wordy": {
+    "seed": 7,
+    "start": 0
+  },
+  "zig-zag": {
+    "seed": 7,
+    "start": 0
+  }
+}

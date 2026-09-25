@@ -175,7 +175,7 @@ export function GameBrowser({ games, cats }) {
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4 xl:grid-cols-5">
         {list.map((g, i) => (
-          <GameTile key={g.slug} game={g} priority={i < 4} />
+          <GameTile key={g.slug} game={g} priority={i < 4} variant="tall" />
         ))}
       </div>
     </>

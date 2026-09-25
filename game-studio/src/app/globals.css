@@ -199,12 +199,15 @@ body {
   -webkit-tap-highlight-color: transparent;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.tile img {
+.tile img,
+.tile video {
   transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 .tile:hover img,
-.tile:focus-visible img {
-  transform: scale(1.06);
+.tile:focus-visible img,
+.tile:hover video,
+.tile:focus-visible video {
+  transform: scale(1.04);
 }
 .tile:hover,
 .tile:focus-visible {
@@ -309,7 +312,8 @@ body {
     animation: none !important;
   }
   .tile,
-  .tile img {
+  .tile img,
+  .tile video {
     transition: none;
   }
 }

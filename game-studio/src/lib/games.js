@@ -1,4 +1,4 @@
-import { ALL_META, LOADERS } from './registry.generated.js';
+import { ALL_META, LOADERS, CLIPS } from './registry.generated.js';
 import { hashString, todayKey } from '@/games/engine/rng.js';
 
 // Showcase order (best "first impression" games first). Unknown slugs go last.
@@ -23,6 +23,9 @@ const rank = (m) => {
   const i = ORDER.indexOf(m.slug);
   return i < 0 ? 999 : i;
 };
+
+/** True when public/clips has a recorded gameplay loop for this game. */
+export const hasClip = (slug) => CLIPS.has(slug);
 
 export const GAMES = [...ALL_META].sort((a, b) => rank(a) - rank(b) || a.title.localeCompare(b.title));
 export { LOADERS };

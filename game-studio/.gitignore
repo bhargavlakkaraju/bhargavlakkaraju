@@ -10,3 +10,4 @@ dist/
 *.tsbuildinfo
 next-env.d.ts
 src/lib/registry.generated.js
+.clips/

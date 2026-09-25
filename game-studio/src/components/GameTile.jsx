@@ -3,16 +3,64 @@
 // Game card: the cover art fills the card and the title sits on a dark fade at the
 // bottom (content first). Badges: an optional label from the page (DAILY, +15 XP)
 // and, once played, the player's medal and best score.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { getPlayer } from '@/lib/player';
-import { getGame, formatScore, MEDALS } from '@/lib/games';
+import { getGame, formatScore, MEDALS, hasClip } from '@/lib/games';
 import { CATEGORIES } from '@/lib/site';
 import { IconPlay } from './Icons';
 
-export default function GameTile({ game, size = 'md', badge = null, href = null, priority = false }) {
+// Looping gameplay clip: plays only while on screen, poster first, never for players who
+// asked for reduced motion or data saving. The file downloads only when scrolled into view.
+function ClipVideo({ slug }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v || typeof IntersectionObserver === 'undefined') return undefined;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const save = navigator.connection && navigator.connection.saveData;
+    if (reduce || save) return undefined;
+    v.muted = true;
+    v.defaultMuted = true;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          if (v.preload !== 'auto') v.preload = 'auto';
+          const p = v.play();
+          if (p && p.catch) p.catch(() => {});
+        } else {
+          v.pause();
+        }
+      },
+      { threshold: 0.35 },
+    );
+    io.observe(v);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <video
+      ref={ref}
+      className="absolute inset-0 h-full w-full object-cover"
+      poster={`/clips/${slug}.webp`}
+      muted
+      playsInline
+      loop
+      preload="none"
+      disablePictureInPicture
+      aria-hidden
+      tabIndex={-1}
+    >
+      <source src={`/clips/${slug}.webm`} type='video/webm; codecs="vp9"' />
+      <source src={`/clips/${slug}.mp4`} type='video/mp4; codecs="avc1.64001f"' />
+    </video>
+  );
+}
+
+export default function GameTile({ game, size = 'md', badge = null, href = null, priority = false, variant = 'wide' }) {
   const [mine, setMine] = useState(null);
   const big = size === 'lg';
+  const tall = variant === 'tall';
+  const clip = tall && hasClip(game.slug);
 
   useEffect(() => {
     const g = getPlayer().games[game.slug];
@@ -31,16 +79,20 @@ export default function GameTile({ game, size = 'md', badge = null, href = null,
 
   return (
     <Link href={href || `/games/${game.slug}`} className="tile group" aria-label={`Play ${game.title}`}>
-      <div className={`relative ${big ? 'aspect-[16/11]' : 'aspect-[4/3]'}`}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={`/covers/${game.slug}.webp`}
-          alt=""
-          className="h-full w-full object-cover"
-          loading={priority ? 'eager' : 'lazy'}
-          width={800}
-          height={600}
-        />
+      <div className={`relative ${tall ? 'aspect-[9/16]' : big ? 'aspect-[16/11]' : 'aspect-[4/3]'}`}>
+        {clip ? (
+          <ClipVideo slug={game.slug} />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`/covers/${game.slug}.webp`}
+            alt=""
+            className="h-full w-full object-cover"
+            loading={priority ? 'eager' : 'lazy'}
+            width={800}
+            height={600}
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
         <div className="absolute left-2.5 right-2.5 top-2.5 flex items-start justify-between gap-2">
           {badge ? <span className="badge bg-sun text-ink">{badge}</span> : <span />}

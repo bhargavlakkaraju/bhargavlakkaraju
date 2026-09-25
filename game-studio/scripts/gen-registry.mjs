@@ -23,6 +23,10 @@ const lines = [
   ...slugs.map((s) => `  '${s}': () => Promise.all([import('@/games/${s}/index.js'), import('@/games/${s}/meta.js')]),`),
   '};',
   '',
+  '// Games with a recorded gameplay loop in public/clips (scripts/clips.mjs).',
+  `export const CLIPS = new Set(${JSON.stringify(slugs.filter((s) => ['mp4', 'webm', 'webp'].every((e) => fs.existsSync(path.join(root, 'public/clips', `${s}.${e}`)))))});`,
+  '',
 ];
 fs.writeFileSync(path.join(root, 'src/lib/registry.generated.js'), lines.join('\n'));
 console.log(`registry: ${slugs.length} games (${slugs.join(', ')})`);
+console.log(`clips: ${slugs.filter((s) => fs.existsSync(path.join(root, 'public/clips', `${s}.mp4`))).length}`);

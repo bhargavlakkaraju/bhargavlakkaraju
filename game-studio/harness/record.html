@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Retry Arcade - demo recorder</title>
+    <style>
+      html,body{margin:0;height:100%;background:#000;overflow:hidden}
+      #game{position:fixed;inset:0}
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+    <script type="module">
+      // Full-bleed demo playback for scripts/clips.mjs: /harness/record.html?game=<slug>&seed=7
+      import { mountGame } from '../src/games/engine/core.js';
+
+      const q = new URLSearchParams(location.search);
+      const slug = q.get('game') || 'stack-tower';
+      const seed = Number(q.get('seed') || 7);
+      window.__raErrors = [];
+      window.addEventListener('error', (e) => window.__raErrors.push(String(e.message)));
+      const rec = (window.__rec = { ready: false, deaths: 0, scores: [] });
+      const [{ default: createGame }, { default: meta }] = await Promise.all([
+        import(`../src/games/${slug}/index.js`),
+        import(`../src/games/${slug}/meta.js`),
+      ]);
+      rec.ctrl = mountGame(document.getElementById('game'), createGame, meta, {
+        demo: true,
+        seed,
+        autoFocus: false,
+        onEvent(name, data) {
+          if (name === 'demo-over') {
+            rec.deaths += 1;
+            rec.scores.push(data.score);
+          }
+        },
+      });
+      rec.hasPilot = typeof createGame === 'function';
+      rec.ready = true;
+    </script>
+  </body>
+</html>
