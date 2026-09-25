@@ -22,6 +22,10 @@ export async function GET(req) {
   const days = Math.min(90, Math.max(1, Number(q.get('days')) || 14));
   const keys = dayKeys(days);
 
+  if (q.get('export') === 'leads') {
+    const [rows] = await pipeline([['LRANGE', 'leads', 0, 499]]);
+    return new Response((rows || []).join('\n'), { headers: { 'content-type': 'application/x-ndjson' } });
+  }
   if (q.get('export') === 'subs') {
     const [emails] = await pipeline([['SMEMBERS', 'subs']]);
     return new Response((emails || []).join('\n'), { headers: { 'content-type': 'text/plain' } });
@@ -32,6 +36,17 @@ export async function GET(req) {
   for (const g of GAMES) cmds.push(['PFCOUNT', ...keys.map((d) => `pu:${d}:${g.slug}`)]);
   cmds.push(['PFCOUNT', ...keys.map((d) => `u:${d}`)], ['SCARD', 'subs']);
   const res = await pipeline(cmds);
+  const [leadRows, plusStats] = await pipeline([
+    ['LRANGE', 'leads', 0, 19],
+    ['HGETALL', 'plus:stats'],
+  ]);
+  const leads = (leadRows || []).map((r) => {
+    try {
+      return JSON.parse(r);
+    } catch {
+      return null;
+    }
+  }).filter(Boolean);
 
   const series = [];
   const totals = {};
@@ -101,6 +116,8 @@ export async function GET(req) {
     range: { from: keys[0], to: keys[keys.length - 1], days },
     uniqueVisitors: Number(res[base + GAMES.length]) || 0,
     subscribers: Number(res[base + GAMES.length + 1]) || 0,
+    leads,
+    plus: toObj(plusStats),
     series,
     totals: {
       pageViews: totals.page_view || 0,

@@ -5,7 +5,7 @@ import { getGame } from '@/lib/games';
 
 export const metadata = {
   title: 'Game Guides & Strategy Tips',
-  description: 'Strategy guides for 2048, Sudoku, Solitaire, word games and more. Learn the techniques, then play free in your browser.',
+  description: 'Free strategy guides for 2048, Sudoku, Solitaire, Block Crush, Juicy Drop, Snake, Sky Flap and more. Learn the techniques, then play free in your browser.',
   alternates: { canonical: '/guides' },
 };
 

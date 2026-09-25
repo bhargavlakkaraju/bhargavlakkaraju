@@ -2,6 +2,7 @@
 import { createPlatform } from '@/games/engine/platform.js';
 import { ADS } from './site';
 import { variant } from './experiments';
+import { isPlusActive } from './plus';
 
 let platform = null;
 let restartsSinceAd = 0;
@@ -10,8 +11,9 @@ let lastAdAt = Date.now();
 export function getPlatform({ embed = false } = {}) {
   if (platform) return platform;
   const forced = new URLSearchParams(window.location.search).get('ads');
-  // Embeds on other sites never show ads (AdSense only allows ads on sites we own).
-  const name = embed ? 'none' : forced === 'dev' ? 'dev' : ADS.provider;
+  // Embeds on other sites never show ads (AdSense only allows ads on sites we own), and
+  // Plus members get the ad-free adapter (no interstitials, free continues).
+  const name = embed || isPlusActive() ? 'none' : forced === 'dev' ? 'dev' : ADS.provider;
   platform = createPlatform(name, { client: ADS.client, test: ADS.test });
   platform.init().catch(() => {});
   return platform;

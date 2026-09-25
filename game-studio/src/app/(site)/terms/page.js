@@ -5,7 +5,7 @@ export const metadata = { title: 'Terms of Use', description: `Terms for using $
 
 export default function Terms() {
   return (
-    <StaticPage title="Terms of Use" updated="September 24, 2026">
+    <StaticPage title="Terms of Use" updated="September 25, 2026">
       <p>By playing games on {SITE.name} you agree to these terms.</p>
       <h2>Using our games</h2>
       <p>
@@ -21,6 +21,12 @@ export default function Terms() {
       <p>
         All games, code, artwork and text are owned by {SITE.name} unless noted. Game names used for descriptive purposes (for example the classic card game
         Solitaire) belong to the public domain or their respective owners.
+      </p>
+      <h2>Plus and sponsorships</h2>
+      <p>
+        Retry Arcade Plus is an optional pass that removes ads and makes continues free for the period shown at checkout. It is for personal use on your own
+        devices; please do not share your purchase code publicly. If Plus does not work for you, email us within 14 days of purchase for a full refund.
+        Sponsored placements are always labelled as sponsored.
       </p>
       <h2>No warranty</h2>
       <p>

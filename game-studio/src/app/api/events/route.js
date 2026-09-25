@@ -33,6 +33,10 @@ const ALLOWED = new Set([
   'nick_set',
   'lb_submit',
   'install_prompt',
+  'lead',
+  'plus_click',
+  'plus_activated',
+  'support_click',
 ]);
 const SAFE = /^[a-z0-9_.-]{1,40}$/i;
 const RET_BUCKETS = [

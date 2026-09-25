@@ -240,6 +240,48 @@ export default function Dashboard() {
               </a>
             </div>
           </div>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-[280px_1fr]">
+            <div className="rounded-2xl bg-panel p-4 ring-1 ring-line">
+              <div className="mb-2 font-bold">⭐ Plus (ad-free pass)</div>
+              <div className="font-display text-3xl font-bold">{n(data.plus?.sales || 0)}</div>
+              <div className="text-xs text-white/50">passes sold, all time</div>
+              {Object.entries(data.plus || {})
+                .filter(([k]) => k.startsWith('cents_'))
+                .map(([k, v]) => (
+                  <div key={k} className="mt-2 text-sm text-white/70">
+                    {(v / 100).toFixed(2)} {k.slice(6).toUpperCase()} gross
+                  </div>
+                ))}
+            </div>
+            <div className="rounded-2xl bg-panel p-4 ring-1 ring-line">
+              <div className="mb-2 flex items-baseline justify-between">
+                <div className="font-bold">📣 Advertiser & sponsor enquiries</div>
+                <a className="text-sm text-aqua underline" href={`/api/stats?export=leads&token=${encodeURIComponent(token)}`}>
+                  Export all
+                </a>
+              </div>
+              {!data.leads?.length && <p className="text-sm text-white/50">No enquiries yet. Share the /advertise page with brands and agencies.</p>}
+              {data.leads?.map((l, i) => (
+                <div key={i} className="border-b border-line py-2 text-sm">
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <span className="font-bold">
+                      {l.name}
+                      {l.company ? ` · ${l.company}` : ''}
+                    </span>
+                    <span className="text-white/50">{l.at?.slice(0, 10)}</span>
+                  </div>
+                  <div className="text-white/70">
+                    <a className="text-aqua underline" href={`mailto:${l.email}`}>
+                      {l.email}
+                    </a>{' '}
+                    · {l.interest} · {l.budget}
+                  </div>
+                  {l.message && <div className="mt-1 text-white/60">{l.message}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
         </>
       )}
     </div>

@@ -4,8 +4,10 @@ import AdSlot from '@/components/AdSlot';
 import { Countdown, NewsletterForm, RecentlyPlayed, TrackPageView } from '@/components/Widgets';
 import { HeroCabinet, WelcomeBack, ChampionsTicker, ChampionsBoard } from '@/components/HomeLive';
 import { RandomButton } from '@/components/Nav';
+import { SponsorStrip } from '@/components/Money';
 import { GAMES, gameOfTheDay, dailyGames, gamesByCategory, getGame } from '@/lib/games';
 import { SITE, CATEGORIES } from '@/lib/site';
+import { HOME_FAQ, itemListLd, faqLd, ld } from '@/lib/seo';
 
 // Re-render hourly so the Game of the Day and Daily picks rotate (ISR).
 export const revalidate = 3600;
@@ -40,12 +42,12 @@ export default function Home() {
   const picks = [gotd, ...['stack-tower', 'juicy-drop', 'block-crush', 'color-rush'].map(getGame).filter((g) => g && g.slug !== gotd.slug)]
     .slice(0, 4)
     .map((g) => ({ slug: g.slug, title: g.title }));
-  const jsonLd = { '@context': 'https://schema.org', '@type': 'WebSite', name: SITE.name, url: SITE.url, description: SITE.description };
 
   return (
     <>
       <TrackPageView />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={ld(itemListLd(`${SITE.name} games`, GAMES, '/'))} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={ld(faqLd(HOME_FAQ))} />
 
       {/* HERO: headline + a real, playable game */}
       <section className="mx-auto max-w-7xl px-4 pt-5 sm:pt-10">
@@ -111,6 +113,7 @@ export default function Home() {
               <div>
                 <h2 className="font-arcade text-2xl text-white sm:text-4xl">📅 DAILY ARENA</h2>
                 <p className="mt-1 max-w-md text-sm text-white/65 sm:text-base">Same level for every player on Earth. Post your best before the reset and keep your 🔥 streak alive.</p>
+                <SponsorStrip className="mt-2" />
               </div>
               <div className="rounded-2xl bg-black/40 px-4 py-2 text-right ring-1 ring-line">
                 <div className="text-[10px] font-black tracking-widest text-white/50">NEW LEVELS IN</div>
@@ -173,6 +176,22 @@ export default function Home() {
             <p className="text-sm text-white/70 sm:text-base">Be first to play new releases and weekly tournaments.</p>
           </div>
           <NewsletterForm src="home" />
+        </div>
+      </section>
+
+      {/* FAQ: short direct answers for searchers and AI assistants */}
+      <section className="mx-auto mt-14 max-w-4xl px-4">
+        <h2 className="font-arcade text-xl text-white sm:text-2xl">QUESTIONS PLAYERS ASK</h2>
+        <div className="mt-4 space-y-2">
+          {HOME_FAQ.map(([q, a]) => (
+            <details key={q} className="group rounded-2xl bg-panel/70 p-4 ring-1 ring-line">
+              <summary className="cursor-pointer list-none font-bold text-white">
+                {q}
+                <span className="float-right text-white/40 transition group-open:rotate-45">+</span>
+              </summary>
+              <p className="mt-2 text-white/70">{a}</p>
+            </details>
+          ))}
         </div>
       </section>
 

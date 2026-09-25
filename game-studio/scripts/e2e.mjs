@@ -97,7 +97,7 @@ async function newPage(opts = {}) {
 // 4. Other pages render
 {
   const { page, errors, ctx } = await newPage({ viewport: { width: 1280, height: 900 } });
-  for (const p of ['/daily', '/leaderboards', '/profile', '/category/arcade', '/about', '/privacy', '/terms', '/developers', '/embed/stack-tower']) {
+  for (const p of ['/daily', '/leaderboards', '/profile', '/category/arcade', '/about', '/privacy', '/terms', '/developers', '/embed/stack-tower', '/advertise', '/plus', '/press', '/best', '/guides']) {
     const r = await page.goto(BASE + p);
     check(r.status() === 200, `${p} -> ${r.status()}`);
   }
@@ -145,6 +145,28 @@ async function newPage(opts = {}) {
   check(bad.status === 422, 'leaderboard rejects impossible score');
   const og = await fetch(BASE + '/api/og?slug=stack-tower&score=12&name=Test');
   check(og.ok && og.headers.get('content-type') === 'image/png', 'OG image renders');
+  // Money + SEO endpoints
+  for (const [path, re] of [
+    ['/llms.txt', /# Retry Arcade/],
+    ['/llms-full.txt', /### How to play/],
+    ['/robots.txt', /GPTBot/],
+    ['/ads.txt', /./],
+  ]) {
+    const t = await fetch(BASE + path);
+    check(t.ok && re.test(await t.text()), `${path} served`);
+  }
+  const lead = await fetch(BASE + '/api/leads', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'E2E Test', email: 'e2e@example.com', company: 'Test', interest: 'sponsor-daily', message: 'automated test' }),
+  });
+  check(lead.ok, `sponsor enquiry accepted (${lead.status})`);
+  const badLead = await fetch(BASE + '/api/leads', { method: 'POST', body: JSON.stringify({ name: '', email: 'nope' }) });
+  check(badLead.status === 422, 'sponsor enquiry validates input');
+  const plus = await fetch(BASE + '/api/plus/verify', { method: 'POST', body: JSON.stringify({ code: 'not-a-code' }) });
+  check(plus.status === 400, 'Plus verify rejects malformed codes');
+  const cron = await fetch(BASE + '/api/cron/indexnow');
+  check(cron.status === 401, 'IndexNow cron requires auth');
   if (process.env.STUDIO_TOKEN) {
     await new Promise((res) => setTimeout(res, 3000));
     const s = await fetch(BASE + '/api/stats?days=7', { headers: { authorization: `Bearer ${process.env.STUDIO_TOKEN}` } });
@@ -152,6 +174,7 @@ async function newPage(opts = {}) {
     check(s.ok && sj.totals.runs > 0, `stats API sees runs (${sj.totals?.runs})`);
     const unauth = await fetch(BASE + '/api/stats');
     check(unauth.status === 401, 'stats API requires token');
+    check(sj.leads?.some((l) => l.email === 'e2e@example.com'), 'sponsor enquiry shows in studio stats');
   }
 }
 

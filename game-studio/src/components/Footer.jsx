@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Logo } from './Header';
 import { GAMES } from '@/lib/games';
-import { SITE, CATEGORIES } from '@/lib/site';
+import { SITE, CATEGORIES, SOCIAL, MONEY } from '@/lib/site';
 
 export default function Footer() {
   return (
@@ -10,6 +10,20 @@ export default function Footer() {
         <div>
           <Logo />
           <p className="mt-3 text-sm text-white/60">{SITE.tagline} Free games that load instantly on any phone, tablet or computer.</p>
+          {SOCIAL.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {SOCIAL.map((s) => (
+                <a key={s.id} href={s.url} target="_blank" rel="me noopener" className="chip hover:bg-white/20">
+                  {s.name}
+                </a>
+              ))}
+            </div>
+          )}
+          {MONEY.supportUrl && (
+            <a href={MONEY.supportUrl} target="_blank" rel="noopener" className="mt-4 inline-flex rounded-full bg-sun px-3 py-1 text-xs font-extrabold text-ink hover:brightness-110">
+              ☕ Support the studio
+            </a>
+          )}
         </div>
         <div>
           <div className="mb-3 text-xs font-extrabold tracking-widest text-white/40">GAMES</div>
@@ -48,6 +62,11 @@ export default function Footer() {
                 📚 Guides & tips
               </Link>
             </li>
+            <li>
+              <Link href="/best" className="hover:text-white">
+                ⭐ Best free games lists
+              </Link>
+            </li>
           </ul>
         </div>
         <div>
@@ -59,8 +78,25 @@ export default function Footer() {
               </Link>
             </li>
             <li>
+              <Link href="/advertise" className="hover:text-white">
+                Advertise & sponsor
+              </Link>
+            </li>
+            <li>
               <Link href="/developers" className="hover:text-white">
                 Embed & license our games
+              </Link>
+            </li>
+            {MONEY.plusLink && (
+              <li>
+                <Link href="/plus" className="hover:text-white">
+                  ⭐ Plus: go ad-free
+                </Link>
+              </li>
+            )}
+            <li>
+              <Link href="/press" className="hover:text-white">
+                Press kit
               </Link>
             </li>
             <li>

@@ -28,7 +28,76 @@ export const ADS = {
   // Show an interstitial at most every N restarts and never more often than minGapSec.
   interstitialEvery: Number(process.env.NEXT_PUBLIC_INTERSTITIAL_EVERY || 3),
   minGapSec: Number(process.env.NEXT_PUBLIC_INTERSTITIAL_MIN_GAP || 60),
+  // Which network fills the display slots (independent of the in-game ad provider above):
+  //   adsense  - AdSense display units (needs client + slot ids)
+  //   adsterra - Adsterra banners, approves any site quickly (needs NEXT_PUBLIC_ADSTERRA_KEYS)
+  //   ezoic    - Ezoic placeholders (needs NEXT_PUBLIC_EZOIC_IDS + Ezoic ads.txt redirect)
+  //   house    - our own promos (sponsor us, go ad-free, daily arena) until a network is live
+  //   none     - empty
+  display: process.env.NEXT_PUBLIC_DISPLAY_NETWORK || (process.env.NEXT_PUBLIC_ADSENSE_CLIENT ? 'adsense' : 'house'),
+  adsterra: {
+    host: process.env.NEXT_PUBLIC_ADSTERRA_HOST || 'www.highperformanceformat.com',
+    // "300x250:key,728x90:key,320x50:key,160x600:key" (one key per banner size from the Adsterra dashboard)
+    keys: parsePairs(process.env.NEXT_PUBLIC_ADSTERRA_KEYS),
+  },
+  // "gameSide:101,gameBelow:102,homeInline:103,rail:104" (placeholder ids from the Ezoic dashboard)
+  ezoic: parsePairs(process.env.NEXT_PUBLIC_EZOIC_IDS),
 };
+
+// Direct revenue that does not depend on an ad network.
+export const MONEY = {
+  // Retry Arcade Plus: a Stripe Payment Link (its success URL must be <site>/plus/thanks?session_id={CHECKOUT_SESSION_ID}).
+  plusLink: process.env.NEXT_PUBLIC_PLUS_LINK || '',
+  plusPrice: process.env.NEXT_PUBLIC_PLUS_PRICE || '$4.99 / year',
+  // Tip jar (Ko-fi, Buy Me a Coffee, a Stripe link...).
+  supportUrl: process.env.NEXT_PUBLIC_SUPPORT_URL || '',
+  // Current sponsor of the Daily Arena, as JSON: {"name","url","logo","tagline","until":"YYYY-MM-DD"}
+  sponsor: parseJson(process.env.NEXT_PUBLIC_SPONSOR),
+};
+
+// Public profiles: shown in the footer and listed as sameAs in structured data.
+export const SOCIAL = [
+  ['x', 'X', process.env.NEXT_PUBLIC_SOCIAL_X],
+  ['instagram', 'Instagram', process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM],
+  ['tiktok', 'TikTok', process.env.NEXT_PUBLIC_SOCIAL_TIKTOK],
+  ['youtube', 'YouTube', process.env.NEXT_PUBLIC_SOCIAL_YOUTUBE],
+  ['linkedin', 'LinkedIn', process.env.NEXT_PUBLIC_SOCIAL_LINKEDIN],
+  ['facebook', 'Facebook', process.env.NEXT_PUBLIC_SOCIAL_FACEBOOK],
+  ['discord', 'Discord', process.env.NEXT_PUBLIC_SOCIAL_DISCORD],
+  ['reddit', 'Reddit', process.env.NEXT_PUBLIC_SOCIAL_REDDIT],
+  ['pinterest', 'Pinterest', process.env.NEXT_PUBLIC_SOCIAL_PINTEREST],
+]
+  .filter(([, , url]) => url)
+  .map(([id, name, url]) => ({ id, name, url }));
+
+// Search engine / platform ownership verification codes (meta tags).
+export const VERIFY = {
+  google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '',
+  bing: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION || '',
+  yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION || '',
+  pinterest: process.env.NEXT_PUBLIC_PINTEREST_VERIFICATION || '',
+  facebook: process.env.NEXT_PUBLIC_FACEBOOK_DOMAIN_VERIFICATION || '',
+};
+
+function parsePairs(raw) {
+  const out = {};
+  for (const part of String(raw || '').split(',')) {
+    const [k, v] = part.split(':').map((x) => x && x.trim());
+    if (k && v) out[k] = v;
+  }
+  return out;
+}
+
+function parseJson(raw) {
+  try {
+    const o = raw ? JSON.parse(raw) : null;
+    if (!o || !o.name || !o.url) return null;
+    if (o.until && new Date(`${o.until}T23:59:59Z`) < new Date()) return null;
+    return o;
+  } catch {
+    return null;
+  }
+}
 
 export const ANALYTICS = {
   ga4: process.env.NEXT_PUBLIC_GA4_ID || '',

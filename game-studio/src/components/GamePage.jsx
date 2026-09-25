@@ -7,6 +7,7 @@ import { EmbedCode, TrackPageView } from './Widgets';
 import { related, formatScore, MEDALS } from '@/lib/games';
 import { SITE, CATEGORIES } from '@/lib/site';
 import { guidesFor } from '@/lib/guides';
+import { collectionsFor } from '@/lib/collections';
 
 function JsonLd({ meta }) {
   const url = `${SITE.url}/games/${meta.slug}`;
@@ -23,8 +24,11 @@ function JsonLd({ meta }) {
       applicationCategory: 'Game',
       operatingSystem: 'Any',
       playMode: 'SinglePlayer',
+      isAccessibleForFree: true,
+      inLanguage: 'en',
       datePublished: meta.released,
-      publisher: { '@type': 'Organization', name: SITE.name, url: SITE.url },
+      publisher: { '@type': 'Organization', '@id': `${SITE.url}/#org`, name: SITE.name, url: SITE.url },
+      author: { '@id': `${SITE.url}/#org` },
       offers: { '@type': 'Offer', price: 0, priceCurrency: 'USD', availability: 'https://schema.org/InStock' },
     },
     {
@@ -128,7 +132,11 @@ export default function GamePage({ meta, challenge = null }) {
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
           <article className="prose-game card p-6 sm:p-8">
-            <h2 className="!mt-0">How to play {meta.title}</h2>
+            <p className="!mt-0 text-base text-white/85">
+              <strong className="text-white">{meta.title}</strong> is a free {meta.category} browser game for phone, tablet and
+              computer. {meta.description}
+            </p>
+            <h2>How to play {meta.title}</h2>
             <ol>
               {meta.howTo.map((s, i) => (
                 <li key={i}>{s}</li>
@@ -168,6 +176,19 @@ export default function GamePage({ meta, challenge = null }) {
                 </Link>
               </p>
             ))}
+            {collectionsFor(meta.slug).length > 0 && (
+              <p className="mt-4">
+                ⭐ Featured in:{' '}
+                {collectionsFor(meta.slug).map((c, i) => (
+                  <span key={c.slug}>
+                    {i > 0 && ', '}
+                    <Link href={`/best/${c.slug}`} className="font-bold text-aqua underline">
+                      {c.title.split(':')[0]}
+                    </Link>
+                  </span>
+                ))}
+              </p>
+            )}
             <h2>FAQ</h2>
             <div className="mt-3 space-y-3">
               {meta.faq.map((f, i) => (

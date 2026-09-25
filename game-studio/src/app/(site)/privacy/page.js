@@ -5,7 +5,7 @@ export const metadata = { title: 'Privacy Policy', description: `How ${SITE.name
 
 export default function Privacy() {
   return (
-    <StaticPage title="Privacy Policy" updated="September 24, 2026">
+    <StaticPage title="Privacy Policy" updated="September 25, 2026">
       <p>
         This policy explains what information {SITE.name} (“we”, “us”) collects when you use {SITE.url.replace(/^https?:\/\//, '')} and our embedded games, and
         how it is used.
@@ -28,6 +28,17 @@ export default function Privacy() {
           <b>Newsletter.</b> If you subscribe, we store your email address to send game updates. Every email includes an unsubscribe link, or you can email
           us to be removed.
         </li>
+        <li>
+          <b>Business enquiries.</b> If you send the form on our advertise page, we store the name, email, company and message you provide so we can reply.
+        </li>
+        <li>
+          <b>Purchases.</b> Payments for the optional Plus pass are handled by Stripe; we never see or store your card details. We keep the purchase
+          reference and its expiry date to turn Plus on for your devices. See{' '}
+          <a href="https://stripe.com/privacy" rel="nofollow noopener">
+            Stripe’s privacy policy
+          </a>
+          .
+        </li>
       </ul>
       <h2>Advertising and cookies</h2>
       <p>
@@ -46,6 +57,10 @@ export default function Privacy() {
           how Google uses data from sites that use its services
         </a>
         . Visitors in the EEA, UK and Switzerland are asked for consent through a certified consent management platform before personalized ads are shown.
+      </p>
+      <p>
+        We may also work with other advertising partners, such as Adsterra or Ezoic, and with sponsors whose links are marked as sponsored. These partners
+        may use cookies or similar technologies to show and measure ads under their own privacy policies. Players with an active Plus pass see no ads.
       </p>
       <h2>Children</h2>
       <p>

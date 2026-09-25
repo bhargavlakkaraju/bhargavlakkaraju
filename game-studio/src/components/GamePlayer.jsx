@@ -10,7 +10,8 @@ import { track } from '@/lib/analytics';
 import { getPlayer, recordRun, setName, markShared, levelInfo, BADGES } from '@/lib/player';
 import { variant } from '@/lib/experiments';
 import { challengeUrl, shareText, shareTo, CHANNELS } from '@/lib/share';
-import { SITE } from '@/lib/site';
+import { SITE, ADS, MONEY } from '@/lib/site';
+import { isPlusActive } from '@/lib/plus';
 
 function nextMedal(meta, best) {
   if (!meta.medals) return null;
@@ -430,6 +431,12 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
                     </form>
                   )}
                 </div>
+              )}
+
+              {!embed && MONEY.plusLink && ADS.provider !== 'none' && !isPlusActive() && (
+                <Link href="/plus" className="mt-3 block text-center text-xs font-bold text-white/50 hover:text-white" onClick={() => track('plus_click', { g: slug })}>
+                  ⭐ Go ad-free with Plus ({MONEY.plusPrice})
+                </Link>
               )}
 
               {suggestions.length > 0 && (

@@ -1,5 +1,6 @@
 import GameCard from '@/components/GameCard';
 import { Countdown, TrackPageView } from '@/components/Widgets';
+import { SponsorStrip } from '@/components/Money';
 import { GAMES, dailyGames } from '@/lib/games';
 
 export const revalidate = 3600;
@@ -23,6 +24,7 @@ export default function DailyPage() {
             Every game gets a brand-new level every day, identical for every player on Earth. Beat your friends, climb today’s board, and come back tomorrow to
             keep your 🔥 streak alive.
           </p>
+          <SponsorStrip className="mt-3" />
         </div>
         <div className="card px-5 py-3 text-right">
           <div className="text-[10px] font-extrabold tracking-widest text-white/40">RESETS IN</div>
