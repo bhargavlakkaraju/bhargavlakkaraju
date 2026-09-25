@@ -60,6 +60,9 @@ try {
     const ctx = await browser.newContext({ viewport: { width: meta.width, height: meta.height }, deviceScaleFactor: 2 });
     const page = await ctx.newPage();
     await page.clock.install({ time: new Date('2026-09-25T12:00:00Z') });
+    // Freeze time: from here on it only moves when we call runFor(), so capture speed
+    // cannot leak into the recording (clips play at true speed and are reproducible).
+    await page.clock.pauseAt(new Date('2026-09-25T12:00:01Z'));
     await page.goto(`http://localhost:${PORT}/harness/record.html?game=${slug}&seed=${cfg.seed}`);
     for (let i = 0; i < 200; i++) {
       if (await page.evaluate(() => window.__rec && window.__rec.ready)) break;
