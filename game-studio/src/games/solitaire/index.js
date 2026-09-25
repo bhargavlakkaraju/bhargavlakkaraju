@@ -728,6 +728,7 @@ export default function createGame(api) {
     lastOrder = null;
     drawCount = api.daily ? 1 : api.store.get('draw', 1) === 3 ? 3 : 1;
     newDeal(false);
+    pilotReset();
   }
 
   function needsConfirm(id, msg) {
@@ -1250,11 +1251,204 @@ export default function createGame(api) {
     },
   };
 
+  // ---------- demo autopilot ----------
+  // Only runs when the engine calls demo() (attract mode / recorded preview clips). It replays
+  // the winning line found by the deal's own solver (solver.js, computed lazily here so normal
+  // play never pays for it) as real pointer gestures through the game's input handler: cards
+  // are picked up and dragged along an eased path onto their target, the stock is tapped, and
+  // once every card is face up it flips through the stock and taps Auto for the finale.
+  const PILOT_ID = -9;
+  let pilotInput = null; // the game's own input(e), set once the game object exists
+  function pilotRng(seed) {
+    let a = seed >>> 0;
+    return () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let q = a;
+      q = Math.imul(q ^ (q >>> 15), q | 1);
+      q ^= q + Math.imul(q ^ (q >>> 7), q | 61);
+      return ((q ^ (q >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  let pRand = pilotRng(0x5017);
+  let pWait = 0.3;
+  let pPath = null; // solver moves still to play
+  let pOrder = null; // the deal pPath belongs to
+  let pAct = null; // gesture in progress
+  let pClicks = 0; // stock taps spent looking for one talon card
+  let pIdle = 0; // stock taps without any other move (fallback play)
+  let pNewTaps = 0;
+
+  function pilotReset() {
+    pRand = pilotRng(0x5017);
+    pWait = 0.3;
+    pPath = null;
+    pOrder = null;
+    pAct = null;
+    pClicks = 0;
+    pIdle = 0;
+    pNewTaps = 0;
+  }
+
+  function pilotFoundationOfSuit(su) {
+    for (let i = 0; i < 4; i++) {
+      const f = piles['f' + i];
+      if (f.length && f[0].suit === su) return 'f' + i;
+    }
+    return null;
+  }
+
+  /** Turn one solver move into a gesture: { drag: { from, index, to } } | { stock: true } | null. */
+  function pilotResolve(m) {
+    const kind = m[0];
+    if (kind === 'tf' || kind === 'tt') {
+      const from = 't' + m[1];
+      const col = piles[from];
+      const index = kind === 'tf' ? col.length - 1 : m[2];
+      const c = col[index];
+      if (!c || !c.up) return null;
+      const to = kind === 'tf' ? foundationFor(c) : 't' + m[3];
+      return to && canMove(from, index, to) ? { drag: { from, index, to }, done: true } : null;
+    }
+    if (kind === 'wf' || kind === 'wt') {
+      const top = piles.w[piles.w.length - 1];
+      if (top && top.id === m[1]) {
+        const to = kind === 'wf' ? foundationFor(top) : 't' + m[2];
+        return to && canMove('w', piles.w.length - 1, to) ? { drag: { from: 'w', index: piles.w.length - 1, to }, done: true } : null;
+      }
+      if (!piles.s.length && !piles.w.length) return null;
+      return ++pClicks > 60 ? null : { stock: true };
+    }
+    if (kind === 'ft') {
+      const from = pilotFoundationOfSuit(m[1]);
+      if (!from) return null;
+      const index = piles[from].length - 1;
+      const to = 't' + m[2];
+      return canMove(from, index, to) ? { drag: { from, index, to }, done: true } : null;
+    }
+    return null;
+  }
+
+  /** Play without a plan: Auto when offered, flip the stock once all is revealed, else a hint. */
+  function pilotFallback() {
+    if (autoAvail) return { button: 'auto' };
+    let allUp = true;
+    for (let i = 0; i < 7 && allUp; i++) for (const c of piles['t' + i]) if (!c.up) allUp = false;
+    if (allUp && piles.s.length) return { stock: true };
+    const h = findHint();
+    if (h && !h.stock) {
+      pIdle = 0;
+      return { drag: { from: h.from, index: h.index, to: h.to } };
+    }
+    if ((piles.s.length || piles.w.length) && ++pIdle < 3 * 52) return { stock: true };
+    // truly stuck: deal a fresh game like a player would (New needs a confirming second tap)
+    return ++pNewTaps <= 2 ? { button: 'new' } : null;
+  }
+
+  function pilotTap(x, y, after) {
+    pilotInput({ type: 'down', x, y, id: PILOT_ID, button: 0 });
+    pAct = { kind: 'tap', x, y, t: 0, hold: 0.07, after };
+  }
+
+  function pilotBegin(act) {
+    if (act.stock) return pilotTap(STOCK_X + CW / 2, TOP_Y + CH / 2, 0.16 + pRand() * 0.06);
+    if (act.button) {
+      const b = buttons().find((q) => q.id === act.button);
+      if (!b) return;
+      return pilotTap(b.x + b.w / 2, b.y + b.h / 2, 0.3);
+    }
+    const { from, index, to } = act.drag;
+    const col = piles[from];
+    const c0 = col[index];
+    const next = col[index + 1];
+    // grab the visible strip of the card (or the middle of a top card)
+    const offX = CW / 2 + (pRand() - 0.5) * 16;
+    const offY = next ? Math.max(4, Math.min(CH * 0.5, (next.y - c0.y) * 0.5)) : CH * 0.42;
+    let tx;
+    let ty;
+    if (to[0] === 'f') {
+      tx = colX(Number(to[1]));
+      ty = TOP_Y;
+    } else {
+      const top = piles[to][piles[to].length - 1];
+      tx = top ? top.tx : colX(Number(to[1]));
+      ty = top ? top.ty + FU * 0.7 : TAB_Y;
+    }
+    const x0 = c0.x + offX;
+    const y0 = c0.y + offY;
+    const x1 = tx + offX;
+    const y1 = ty + offY;
+    const dist = Math.hypot(x1 - x0, y1 - y0);
+    pilotInput({ type: 'down', x: x0, y: y0, id: PILOT_ID, button: 0 });
+    pAct = { kind: 'drag', x0, y0, x1, y1, t: -0.05, dur: 0.22 + dist / 1700 + pRand() * 0.05, hold: 0.04, bend: (pRand() - 0.5) * 50 };
+  }
+
+  function pilotAnimate(dt) {
+    const a = pAct;
+    a.t += dt;
+    if (a.kind === 'tap') {
+      if (a.t >= a.hold) {
+        pAct = null;
+        pilotInput({ type: 'up', x: a.x, y: a.y, id: PILOT_ID });
+        pWait = a.after;
+      }
+      return;
+    }
+    if (a.t < 0) return;
+    const k = Math.min(1, a.t / a.dur);
+    const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    const dx = a.x1 - a.x0;
+    const dy = a.y1 - a.y0;
+    const len = Math.hypot(dx, dy) || 1;
+    const arc = Math.sin(Math.PI * e) * a.bend;
+    const x = a.x0 + dx * e + (-dy / len) * arc;
+    const y = a.y0 + dy * e + (dx / len) * arc;
+    pilotInput({ type: 'move', x, y, id: PILOT_ID, pressed: true });
+    if (a.t >= a.dur + a.hold) {
+      pAct = null;
+      pilotInput({ type: 'up', x: a.x1, y: a.y1, id: PILOT_ID });
+      pWait = 0.14 + pRand() * 0.08;
+    }
+  }
+
+  function pilotStep(dt) {
+    if (!pilotInput || won) return;
+    if (pAct) {
+      pilotAnimate(dt);
+      return;
+    }
+    if (pWait > 0) {
+      pWait -= dt;
+      return;
+    }
+    if (busy() || pending || pressedBtn || activePointer != null) return;
+    if (pOrder !== lastOrder) {
+      // plan once per deal: the same solver that proved the deal winnable, with a move trace
+      pOrder = lastOrder;
+      const res = lastOrder && moves === 0 ? isWinnable(lastOrder, drawCount, SOLVER_BUDGET, true) : null;
+      pPath = res && res.path ? res.path.slice() : [];
+      pClicks = 0;
+      pNewTaps = 0;
+    }
+    // Auto is offered once every card is face up and the stock is drawn: a player taps it
+    let act = autoAvail ? { button: 'auto' } : null;
+    while (pPath.length && !act) {
+      act = pilotResolve(pPath[0]);
+      if (!act) pPath = []; // off the plan (should not happen): improvise from here
+    }
+    if (act && act.done) {
+      pPath.shift();
+      pClicks = 0;
+    }
+    if (!act) act = pilotFallback();
+    if (act) pilotBegin(act);
+  }
+
   reset();
 
-  return {
+  const game = {
     hud: false,
     reset,
+    demo: pilotStep,
     update(dt) {
       step(dt);
     },
@@ -1417,6 +1611,8 @@ export default function createGame(api) {
       renderToast(g);
     },
   };
+  pilotInput = game.input;
+  return game;
 }
 
 // ---------- cover art ----------

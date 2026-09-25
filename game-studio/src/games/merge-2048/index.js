@@ -147,6 +147,7 @@ export default function createGame(api) {
     }
     maxT = maxTile(vals);
     at = 0;
+    pilotReset();
   }
 
   const DIR_VEC = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
@@ -455,11 +456,119 @@ export default function createGame(api) {
 
   const KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', W: 'up', s: 'down', S: 'down', a: 'left', A: 'left', d: 'right', D: 'right' };
 
+  // ---------- demo autopilot ----------
+  // Only runs when the engine calls demo() (attract mode / recorded preview clips). A small
+  // expectimax search with a bottom-left "snake" heuristic swipes at a steady human pace and
+  // drives the same doMove() the arrow keys and swipes use.
+  const PILOT_ORDER = [12, 13, 14, 15, 11, 10, 9, 8, 4, 5, 6, 7, 3, 2, 1, 0]; // snake from bottom-left
+  const PILOT_W = new Float64Array(16);
+  PILOT_ORDER.forEach((cell, k) => {
+    PILOT_W[cell] = Math.pow(0.5, k);
+  });
+  const PILOT_DIRS = ['down', 'left', 'right', 'up'];
+  function pilotRng(seed) {
+    let a = seed >>> 0;
+    return () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let q = a;
+      q = Math.imul(q ^ (q >>> 15), q | 1);
+      q ^= q + Math.imul(q ^ (q >>> 7), q | 61);
+      return ((q ^ (q >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  let pRand = pilotRng(0x2048);
+  let pWait = 0.55;
+
+  function pilotReset() {
+    pRand = pilotRng(0x2048);
+    pWait = 0.55;
+  }
+
+  function pilotEval(v) {
+    let s = 0;
+    let empty = 0;
+    for (let i = 0; i < 16; i++) {
+      if (!v[i]) empty++;
+      else s += v[i] * PILOT_W[i];
+    }
+    // neighbours that could merge are worth a little too
+    let pairs = 0;
+    for (let i = 0; i < 16; i++) {
+      if (!v[i]) continue;
+      if (i % SIZE < SIZE - 1 && v[i] === v[i + 1]) pairs += v[i];
+      if (i < 12 && v[i] === v[i + SIZE]) pairs += v[i];
+    }
+    return s + (empty + pairs * 0.02) * maxTile(v) * 0.04;
+  }
+
+  /** Expected value of the board after a random 2/4 spawn, then the best reply at `depth`. */
+  function pilotChance(v, depth) {
+    const empty = [];
+    for (let i = 0; i < 16; i++) if (!v[i]) empty.push(i);
+    if (!empty.length) return pilotMax(v, depth);
+    let sum = 0;
+    for (const i of empty) {
+      v[i] = 2;
+      sum += 0.9 * pilotMax(v, depth);
+      v[i] = 4;
+      sum += 0.1 * pilotMax(v, depth);
+      v[i] = 0;
+    }
+    return sum / empty.length;
+  }
+
+  function pilotMax(v, depth) {
+    if (depth <= 0) return pilotEval(v);
+    let best = -1;
+    for (const d of PILOT_DIRS) {
+      const r = move(v, d);
+      if (!r.moved) continue;
+      const val = pilotChance(r.vals, depth - 1);
+      if (val > best) best = val;
+    }
+    return best < 0 ? pilotEval(v) * 0.01 : best;
+  }
+
+  function pilotChoose() {
+    let empties = 0;
+    for (let i = 0; i < 16; i++) if (!vals[i]) empties++;
+    const depth = empties <= 4 ? 3 : 2;
+    let bestDir = null;
+    let best = -Infinity;
+    for (const d of PILOT_DIRS) {
+      const r = move(vals, d);
+      if (!r.moved) continue;
+      const val = pilotChance(r.vals, depth - 1);
+      if (val > best) {
+        best = val;
+        bestDir = d;
+      }
+    }
+    return bestDir;
+  }
+
+  function pilotStep(dt) {
+    if (!vals || over) return;
+    if (pWait > 0) {
+      pWait -= dt;
+      return;
+    }
+    if (showWin) {
+      if (winT > 0.9) dismissWin();
+      return;
+    }
+    const d = pilotChoose();
+    if (!d) return;
+    doMove(d);
+    pWait = 0.27 + pRand() * 0.08;
+  }
+
   return {
     hud: false,
     reset,
     update: step,
     idle: step,
+    demo: pilotStep,
     input(e) {
       if (!vals) return false;
       if (e.type === 'keydown') {

@@ -224,6 +224,7 @@ export default function createGame(api) {
     } else if (!restoredDone && rowIdx === 0 && stats.played === 0) {
       showToast('Guess the 5-letter word in 6 tries', 3.2);
     }
+    pilotReset();
   }
 
   function restoreDaily() {
@@ -663,6 +664,125 @@ export default function createGame(api) {
     }
   }
 
+  // ---------- demo autopilot ----------
+  // Only runs when the engine calls demo() (attract mode / recorded preview clips). It plays
+  // like a strong hard-mode player: a classic opener, then words that fit every clue so far,
+  // chosen so the answer is pinned down by the third guess. Letters are tapped on the on-screen
+  // keyboard at about 8 per second (the key visibly goes down), then ENTER.
+  const PILOT_OPENERS = ['crane', 'slate', 'trace', 'stare', 'crate', 'arise', 'raise', 'least', 'roast', 'train', 'saint', 'later', 'alert', 'snare', 'slant', 'plate', 'heart', 'shore', 'cloud', 'pride', 'mouse', 'night', 'sound', 'round'];
+  function pilotRng(seed) {
+    let a = seed >>> 0;
+    return () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let q = a;
+      q = Math.imul(q ^ (q >>> 15), q | 1);
+      q ^= q + Math.imul(q ^ (q >>> 7), q | 61);
+      return ((q ^ (q >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  let pRand = pilotRng(0x3057);
+  let pWait = 1.25; // a moment to read the intro toast before typing
+  let pPlan = null; // the words to play, the last one is the answer
+  let pPlanFor = '';
+  let pRow = 0;
+  let pKeyUp = 0;
+
+  function pilotReset() {
+    pRand = pilotRng(0x3057);
+    pWait = 1.25;
+    pPlan = null;
+    pPlanFor = '';
+    pRow = 0;
+    pKeyUp = 0;
+  }
+
+  const pilotSame = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3] && a[4] === b[4];
+  /** Words in `list` that would have produced the same clues for `guess` as the answer did. */
+  function pilotFilter(list, guess) {
+    const ev = scoreGuess(guess, answer);
+    return list.filter((w) => pilotSame(scoreGuess(guess, w), ev));
+  }
+  function pilotLooks(guess) {
+    // greens count most, yellows a bit: the rows should visibly warm up
+    let v = 0;
+    for (const e of scoreGuess(guess, answer)) v += e === CORRECT ? 2 : e === PRESENT ? 1 : 0;
+    return v;
+  }
+  /** From `pool`, the guess that leaves the fewest candidates (ties: nicer colours, then chance). */
+  function pilotNarrow(pool) {
+    let best = null;
+    for (const w of pool) {
+      if (w === answer) continue;
+      const left = pilotFilter(pool, w).length;
+      const v = -left * 10 + pilotLooks(w) + pRand();
+      if (!best || v > best.v) best = { w, v, left };
+    }
+    return best;
+  }
+
+  function pilotMakePlan() {
+    const ops = PILOT_OPENERS.filter((w) => w !== answer && valid.has(w));
+    for (let i = ops.length - 1; i > 0; i--) {
+      const j = Math.floor(pRand() * (i + 1));
+      const tmp = ops[i];
+      ops[i] = ops[j];
+      ops[j] = tmp;
+    }
+    let fallback = null;
+    for (const op of ops) {
+      if (pilotLooks(op) < 1) continue;
+      const c1 = pilotFilter(answers, op);
+      if (c1.length < 2) continue;
+      const g2 = pilotNarrow(c1);
+      if (!g2) continue;
+      if (g2.left === 1) return [op, g2.w, answer];
+      if (!fallback) {
+        const c2 = pilotFilter(c1, g2.w);
+        const g3 = pilotNarrow(c2);
+        fallback = g3 ? [op, g2.w, g3.w, answer] : [op, g2.w, answer];
+      }
+    }
+    return fallback || [ops[0] || 'crane', answer];
+  }
+
+  function pilotTap(key) {
+    pressed = key;
+    pressKey(key);
+    pKeyUp = 0.07;
+  }
+
+  function pilotStep(dt) {
+    if (pKeyUp > 0) {
+      pKeyUp -= dt;
+      if (pKeyUp <= 0) pressed = null;
+    }
+    if (phase !== 'input' || panel.show) return;
+    if (rowIdx !== pRow) {
+      // the clues just landed: a short look before typing again
+      pRow = rowIdx;
+      pWait = Math.max(pWait, 0.3);
+    }
+    if (pWait > 0) {
+      pWait -= dt;
+      return;
+    }
+    if (!pPlan || pPlanFor !== answer) {
+      pPlanFor = answer;
+      pPlan = pilotMakePlan();
+    }
+    const word = pPlan[Math.min(rowIdx, pPlan.length - 1)];
+    if (cur.length && word.slice(0, cur.length) !== cur) {
+      pilotTap('Backspace');
+      pWait = 0.12;
+    } else if (cur.length < WORD_LEN) {
+      pilotTap(word[cur.length]);
+      pWait = cur.length === WORD_LEN ? 0.24 : 0.105 + pRand() * 0.04;
+    } else {
+      pilotTap('Enter');
+      pWait = 0.2;
+    }
+  }
+
   reset();
 
   // Test/debug hook (reachable via the engine controller's api object).
@@ -721,6 +841,7 @@ export default function createGame(api) {
   return {
     hud: false,
     reset,
+    demo: pilotStep,
     update(dt) {
       step(dt);
     },

@@ -11,7 +11,8 @@
 //
 // Output: public/clips/<slug>.mp4 (H.264, Safari/iOS), <slug>.webm (VP9, smaller),
 // <slug>.webp (poster = first frame) and .clips/<slug>-sheet.jpg (review contact sheet).
-// Per-game seed / start offset live in scripts/clips.config.json.
+// Per-game seed / start offset / fit ("cover" crop, or "pad" to letterbox wider games)
+// live in scripts/clips.config.json.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -86,7 +87,10 @@ try {
     const graph =
       `[0:v]format=yuv420p,split[a][b];[a]trim=start=${FADE},setpts=PTS-STARTPTS,fps=${FPS}[main];[b]trim=end=${FADE},setpts=PTS-STARTPTS,fps=${FPS}[head];` +
       `[main][head]xfade=transition=fade:duration=${FADE}:offset=${SECONDS - FADE}[x];` +
-      `[x]scale=${OW}:${OH}:force_original_aspect_ratio=increase:flags=lanczos,crop=${OW}:${OH},format=yuv420p[v]`;
+      (cfg.fit === 'pad'
+        ? // Wider games: show the whole playfield, with thin bands in the game's own background color.
+          `[x]scale=${OW}:${OH}:force_original_aspect_ratio=decrease:flags=lanczos,pad=${OW}:${OH}:(ow-iw)/2:(oh-ih)/2:color=${(meta.bg || '#0a0a0c').replace('#', '0x')},format=yuv420p[v]`
+        : `[x]scale=${OW}:${OH}:force_original_aspect_ratio=increase:flags=lanczos,crop=${OW}:${OH},format=yuv420p[v]`);
     const input = ['-framerate', String(FPS), '-i', path.join(dir, '%05d.jpg'), '-filter_complex', graph, '-map', '[v]', '-an', '-r', String(FPS)];
     const mp4 = path.join(OUT, `${slug}.mp4`);
     const webm = path.join(OUT, `${slug}.webm`);

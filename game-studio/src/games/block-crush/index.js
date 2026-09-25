@@ -212,6 +212,7 @@ export default function createGame(api) {
     const dealt = dealTray(api.rng, board, PALS.length);
     tray = dealt.map((p, i) => slotFromPiece(p, i, 0.1 + i * 0.08));
     computeFits();
+    pilotReset();
   }
 
   // ---------- geometry ----------
@@ -802,11 +803,197 @@ export default function createGame(api) {
     drawPiece(g, s, ok ? PALS[piece.color] : RED, cellX(kb.c) + (s.w * CELL) / 2, cellY(kb.r) + (s.h * CELL) / 2 - 6 + bob, CELL, 0.82);
   }
 
+  // ---------- demo autopilot ----------
+  // Only runs when the engine calls demo() (attract mode / recorded preview clips). It plans
+  // the whole tray with a small beam search (lines, combos, a tidy roomy board) and then drags
+  // each piece from the tray to its spot along an eased, slightly curved finger path, through
+  // the same startDrag / updateAnchor / endDrag calls a real pointer uses.
+  const PILOT_ID = -7;
+  const PILOT_KEEP = [10, 5, 99];
+  const PILOT_MULTI = 70; // planning bonus per extra line cleared at once (multi-line crushes look great)
+  const PILOT_ROOMY = ['###|###|###', '#####', '#|#|#|#|#', '###|###', '##|##|##', '###|#..|#..', '###|..#|..#', '#..|#..|###', '..#|..#|###'].map((p) =>
+    SHAPES.find((s) => s.pat === p),
+  );
+  function pilotRng(seed) {
+    let a = seed >>> 0;
+    return () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let q = a;
+      q = Math.imul(q ^ (q >>> 15), q | 1);
+      q ^= q + Math.imul(q ^ (q >>> 7), q | 61);
+      return ((q ^ (q >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  let pRand = pilotRng(0xb10c);
+  let pWait = 0.5;
+  let pPlan = null;
+  let pMove = null;
+
+  function pilotReset() {
+    pRand = pilotRng(0xb10c);
+    pWait = 0.5;
+    pPlan = null;
+    pMove = null;
+  }
+
+  /** Place a shape on a copy of src (written into dst) and resolve line clears like place(). */
+  function pilotSim(src, dst, shape, r, c, cmb, life) {
+    dst.set(src);
+    placeShape(dst, shape, r, c, 1);
+    const { rows, cols } = fullLines(dst);
+    const L = rows.length + cols.length;
+    let gain = shape.cells.length;
+    if (L > 0) {
+      cmb += 1;
+      life = COMBO_LIFE;
+      gain += clearPoints(L, cmb) + (L - 1) * PILOT_MULTI;
+      clearLines(dst, rows, cols);
+      if (isEmpty(dst)) gain += ALL_CLEAR_BONUS;
+    } else if (cmb > 0) {
+      life -= 1;
+      if (life <= 0) cmb = 0;
+    }
+    return { gain, cmb, life };
+  }
+
+  /** Board quality: open space, few ragged edges and single-cell holes, room for big pieces. */
+  function pilotEval(b, full) {
+    let empty = 0;
+    let trans = 0;
+    let holes = 0;
+    for (let r = 0; r < N; r++) {
+      let prev = 1;
+      for (let c = 0; c < N; c++) {
+        const f = b[r * N + c] ? 1 : 0;
+        if (!f) empty++;
+        if (f !== prev) trans++;
+        prev = f;
+      }
+      if (prev !== 1) trans++;
+    }
+    for (let c = 0; c < N; c++) {
+      let prev = 1;
+      for (let r = 0; r < N; r++) {
+        const f = b[r * N + c] ? 1 : 0;
+        if (f !== prev) trans++;
+        prev = f;
+      }
+      if (prev !== 1) trans++;
+    }
+    for (let i = 0; i < N * N; i++) {
+      if (b[i]) continue;
+      const r = (i / N) | 0;
+      const c = i % N;
+      if ((r === 0 || b[i - N]) && (r === N - 1 || b[i + N]) && (c === 0 || b[i - 1]) && (c === N - 1 || b[i + 1])) holes++;
+    }
+    let v = empty * 1.2 - trans * 1.6 - holes * 7;
+    if (full) for (const s of PILOT_ROOMY) if (fitsAnywhere(b, s)) v += 4;
+    return v;
+  }
+
+  /** Best order and spots for the pieces left in the tray: [{ slot, r, c }, ...] or null. */
+  function pilotPlan() {
+    const left0 = [];
+    for (let i = 0; i < 3; i++) if (tray[i]) left0.push({ slot: i, shape: tray[i].piece.shape });
+    if (!left0.length) return null;
+    let best = null;
+    const rec = (src, left, cmb, life, acc, path, depth) => {
+      if (!left.length) {
+        const v = acc + pilotEval(src, true);
+        if (!best || v > best.v) best = { v, path };
+        return;
+      }
+      const kids = [];
+      for (let k = 0; k < left.length; k++) {
+        const s = left[k].shape;
+        for (let r = 0; r <= N - s.h; r++) {
+          for (let c = 0; c <= N - s.w; c++) {
+            if (!canPlace(src, s, r, c)) continue;
+            const b = new Uint8Array(N * N);
+            const res = pilotSim(src, b, s, r, c, cmb, life);
+            kids.push({ b, k, r, c, res, q: res.gain + pilotEval(b, false) });
+          }
+        }
+      }
+      if (!kids.length) {
+        const v = acc - 400 * left.length + pilotEval(src, true);
+        if (!best || v > best.v) best = { v, path };
+        return;
+      }
+      kids.sort((a, b) => b.q - a.q);
+      const keep = Math.min(kids.length, PILOT_KEEP[depth] || 99);
+      for (let j = 0; j < keep; j++) {
+        const kd = kids[j];
+        const rest = left.filter((_, i) => i !== kd.k);
+        rec(kd.b, rest, kd.res.cmb, kd.res.life, acc + kd.res.gain, path.concat([{ slot: left[kd.k].slot, r: kd.r, c: kd.c }]), depth + 1);
+      }
+    };
+    rec(board, left0, combo, comboLife, 0, [], 0);
+    return best && best.path.length ? best.path : null;
+  }
+
+  function pilotStep(dt) {
+    if (!tray || stuck) return;
+    if (pMove) {
+      if (!drag || drag.id !== PILOT_ID) {
+        pMove = null;
+        return;
+      }
+      const m = pMove;
+      m.t += dt;
+      const k = Math.max(0, Math.min(1, m.t / m.dur));
+      const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+      const dx = m.x1 - m.x0;
+      const dy = m.y1 - m.y0;
+      const len = Math.hypot(dx, dy) || 1;
+      const arc = Math.sin(Math.PI * e) * m.bend;
+      drag.px = m.x0 + dx * e + (-dy / len) * arc;
+      drag.py = m.y0 + dy * e + (dx / len) * arc;
+      updateAnchor();
+      if (m.t >= m.dur + m.hold) {
+        pMove = null;
+        const before = tray.filter(Boolean).length;
+        endDrag();
+        // a short breather, a little longer while a fresh tray slides in
+        pWait = 0.2 + pRand() * 0.12 + (before === 1 ? 0.25 : 0);
+      }
+      return;
+    }
+    if (drag) return;
+    if (pWait > 0) {
+      pWait -= dt;
+      return;
+    }
+    if (!pPlan || !pPlan.length) {
+      pPlan = pilotPlan();
+      if (!pPlan) return;
+    }
+    const m = pPlan[0];
+    const s = tray[m.slot];
+    if (!s || !canPlace(board, s.piece.shape, m.r, m.c)) {
+      pPlan = null;
+      return;
+    }
+    if (s.appear < 1 || s.ret) return;
+    pPlan.shift();
+    const shape = s.piece.shape;
+    const x0 = SLOT_X[m.slot];
+    const y0 = TRAY_Y;
+    const x1 = BX + m.c * CELL + (shape.w * CELL) / 2;
+    const y1 = BY + m.r * CELL + shape.h * CELL + LIFT;
+    const dist = Math.hypot(x1 - x0, y1 - y0);
+    pMove = { x0, y0, x1, y1, t: 0, dur: 0.34 + dist / 1500 + pRand() * 0.06, hold: 0.14 + pRand() * 0.05, bend: (pRand() - 0.5) * 60 };
+    kb = null;
+    updatePreview(null);
+    startDrag(m.slot, { id: PILOT_ID, x: x0, y: y0 });
+  }
+
   return {
     hud: false,
     reset,
     update: step,
     idle: step,
+    demo: pilotStep,
     input(e) {
       if (stuck || !tray) return false;
       if (e.type === 'down') {

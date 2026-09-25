@@ -4,8 +4,9 @@
     "start": 0
   },
   "block-crush": {
-    "seed": 7,
-    "start": 0
+    "seed": 10,
+    "start": 40.3,
+    "fit": "pad"
   },
   "brick-barrage": {
     "seed": 7,
@@ -21,7 +22,8 @@
   },
   "merge-2048": {
     "seed": 7,
-    "start": 0
+    "start": 79.3,
+    "fit": "pad"
   },
   "neon-snake": {
     "seed": 7,
@@ -41,7 +43,8 @@
   },
   "solitaire": {
     "seed": 7,
-    "start": 0
+    "start": 76.95,
+    "fit": "pad"
   },
   "stack-tower": {
     "seed": 7,
@@ -49,11 +52,12 @@
   },
   "sudoku": {
     "seed": 7,
-    "start": 0
+    "start": 11.6,
+    "fit": "pad"
   },
   "wordy": {
     "seed": 7,
-    "start": 0
+    "start": 3.31
   },
   "zig-zag": {
     "seed": 7,

@@ -215,6 +215,7 @@ export default function createGame(api) {
     const d = api.daily ? 'medium' : api.store.get('difficulty', 'easy');
     newPuzzle(DIFFS.includes(d) ? d : 'easy');
     toast = null;
+    pilotReset();
   }
 
   // ---------- helpers ----------
@@ -816,9 +817,113 @@ export default function createGame(api) {
     g.globalAlpha = 1;
   }
 
+  // ---------- demo autopilot ----------
+  // Only runs when the engine calls demo() (attract mode / recorded preview clips). It solves
+  // like a confident human: it only fills cells that are logically forced (naked or hidden
+  // singles), prefers the ones that finish a row, column or box, drifts across the grid in a
+  // natural reading flow, and taps the cell and then the number pad through onDown().
+  function pilotRng(seed) {
+    let a = seed >>> 0;
+    return () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let q = a;
+      q = Math.imul(q ^ (q >>> 15), q | 1);
+      q ^= q + Math.imul(q ^ (q >>> 7), q | 61);
+      return ((q ^ (q >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  let pRand = pilotRng(0x5d0c);
+  let pWait = 0.9;
+  let pCell = -1; // cell selected and waiting for its digit
+  let pLast = 40;
+
+  function pilotReset() {
+    pRand = pilotRng(0x5d0c);
+    pWait = 0.9;
+    pCell = -1;
+    pLast = 40;
+  }
+
+  /** Candidate mask of an open cell from the digits already solved around it. */
+  function pilotCand(i) {
+    let m = ALL;
+    for (const p of PEERS[i]) if (isCorrect(p)) m &= ~BIT(vals[p]);
+    return m;
+  }
+
+  /** The next forced cell to fill, or -1. */
+  function pilotPick() {
+    const forced = new Int8Array(81); // 1 = naked single, 2 = hidden single
+    for (let i = 0; i < 81; i++) if (!isCorrect(i) && POP[pilotCand(i)] === 1) forced[i] = 1;
+    for (const u of UNITS) {
+      for (let d = 1; d <= 9; d++) {
+        const b = BIT(d);
+        let n = 0;
+        let at = -1;
+        for (const i of u) {
+          if (isCorrect(i)) {
+            if (vals[i] === d) {
+              n = -1;
+              break;
+            }
+            continue;
+          }
+          if (pilotCand(i) & b) {
+            n++;
+            at = i;
+          }
+        }
+        if (n === 1 && !forced[at] && sol[at] === d) forced[at] = 2;
+      }
+    }
+    let best = -1;
+    let bestV = -1e9;
+    for (let i = 0; i < 81; i++) {
+      if (!forced[i]) continue;
+      let fill = 0;
+      for (const u of [ROW[i], 9 + COL[i], 18 + BOX[i]]) {
+        let n = 0;
+        for (const j of UNITS[u]) if (isCorrect(j)) n++;
+        fill = Math.max(fill, n);
+      }
+      const dist = Math.abs(ROW[i] - ROW[pLast]) + Math.abs(COL[i] - COL[pLast]);
+      const v = fill * 2 - dist * 0.55 + (forced[i] === 1 ? 0.5 : 0) + pRand() * 0.8;
+      if (v > bestV) {
+        bestV = v;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  function pilotStep(dt) {
+    if (!puzzle || done) return;
+    if (pWait > 0) {
+      pWait -= dt;
+      return;
+    }
+    if (pCell >= 0) {
+      // second tap: the digit on the number pad
+      const d = sol[pCell];
+      const x = GX + (d - 1) * (PAD_W + PAD_GAP) + PAD_W / 2;
+      if (sel === pCell && !isCorrect(pCell)) onDown(x, PAD_Y + PAD_H / 2);
+      pLast = pCell;
+      pCell = -1;
+      pWait = 0.15 + pRand() * 0.05;
+      return;
+    }
+    const i = pilotPick();
+    if (i < 0) return;
+    const c = cellCenter(i);
+    onDown(c.x, c.y);
+    pCell = i;
+    pWait = 0.13 + pRand() * 0.04;
+  }
+
   return {
     hud: false,
     reset,
+    demo: pilotStep,
     update(dt) {
       if (!done) elapsed += dt;
       step(dt);

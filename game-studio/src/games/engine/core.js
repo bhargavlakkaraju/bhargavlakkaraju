@@ -95,10 +95,18 @@ export function mountGame(container, createGame, meta, options = {}) {
   let scorePop = 0;
   let destroyed = false;
   let runs = 0;
-  const store = {
-    get: (k, d = null) => load(`g:${slug}:${k}`, d),
-    set: (k, v) => save(`g:${slug}:${k}`, v),
-  };
+  // In demo mode nothing is persisted: a self-playing preview must never touch the
+  // visitor's own saved stats, streaks or settings (reads still work).
+  const demoMem = new Map();
+  const store = demo
+    ? {
+        get: (k, d = null) => (demoMem.has(k) ? demoMem.get(k) : load(`g:${slug}:${k}`, d)),
+        set: (k, v) => demoMem.set(k, v),
+      }
+    : {
+        get: (k, d = null) => load(`g:${slug}:${k}`, d),
+        set: (k, v) => save(`g:${slug}:${k}`, v),
+      };
 
   const api = {
     width: W,
