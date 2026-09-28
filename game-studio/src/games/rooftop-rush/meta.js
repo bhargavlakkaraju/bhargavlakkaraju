@@ -1,0 +1,48 @@
+export default {
+  slug: 'rooftop-rush',
+  title: 'Rooftop Rush',
+  tagline: 'One button. Four ninjas. Mind the gap.',
+  description:
+    'A 1 to 4 player ninja race across night-city rooftops on one screen. Everyone gets a lane and one button: tap to jump, hold to jump higher, tap again for a double jump. Bots fill empty seats. Free, instant, no download.',
+  category: 'party',
+  party: { min: 1, max: 4 },
+  tags: ['party', 'multiplayer', 'one-button', 'racing', 'runner', 'local multiplayer'],
+  emoji: '🥷',
+  colors: ['#ff3d8b', '#2fd9ff'],
+  bg: '#0b0720',
+  width: 420,
+  height: 740,
+  startMode: 'immediate',
+  revive: false,
+  daily: false,
+  maxScore: 5,
+  scoreLabel: 'Crowns',
+  controls: {
+    touch: 'Tap your corner to join, then tap it to jump. Hold for a higher jump, tap again in the air to double jump. Bots fill every empty seat.',
+    mouse: 'Click a corner to join, then click that corner to jump. Hold for height, click again in the air to double jump. Bots fill every empty seat.',
+    keyboard: 'Z, M, P and Q are the four players (one button each). Press yours to join, press Enter to start, then press it to jump and hold it to jump higher. Bots fill every empty seat.',
+  },
+  howTo: [
+    'Tap your corner of the screen (or press Z, M, P or Q) to join. Empty seats are taken by bots, so you can always race alone against three of them.',
+    'Your ninja runs on its own in your lane. Tap to jump, hold the button to jump higher, and tap again in the air for one extra jump.',
+    'Clear roof gaps, chimneys, vents, water towers and laundry lines. Hit one and you stumble. Drop into a gap and you pop back up a little behind.',
+    'The camera follows the leader. Fall off the left edge of the screen and you are out.',
+    'First ninja across the finish line wins the round. First to 3 crowns wins the cup, and every round after the first draws a twist card.',
+  ],
+  tips: [
+    'Short taps for vents, a longer hold for chimneys, a full hold for water towers and laundry lines.',
+    'Jump late for roof gaps: take off right at the edge and you have the most room to land.',
+    'Save your air jump. It rescues a jump that came up short over a gap far more often than it helps on a flat roof.',
+    'Landing on top of a chimney or water tower is safe, so when in doubt, jump a little early rather than late.',
+    'Speed pads give a big burst. If one is in your lane, stay on the roof and run across it instead of jumping over it.',
+  ],
+  faq: [
+    { q: 'How many people can play Rooftop Rush?', a: 'One to four on the same phone, tablet or laptop. Everyone uses one button in their own corner of the screen, and bots fill any empty seats.' },
+    { q: 'Can I play Rooftop Rush alone?', a: 'Yes. Just press Play and you race against three bots. You can also tap the bots button in the lobby to race against fewer.' },
+    { q: 'Is every lane the same course?', a: 'Yes. All lanes share the exact same rooftops and obstacles each round, so the only difference is how well you jump.' },
+    { q: 'What are twist cards?', a: 'From round two on, each round draws a random rule change, like Moon Jump with low gravity, Giants, Tiny ninjas, Turbo speed, Lights Out or swapped controls.' },
+  ],
+  about:
+    'Rooftop Rush is a split-screen party race for up to four people on a single screen. Each player gets a lane and a single button, and every lane runs the same seeded course of rooftops, so the race is fair: it all comes down to timing. Ninjas run on their own, so all you do is jump, which makes it easy to teach anyone in five seconds. A shared camera chases the leader, which turns every mistake into a scramble to stay on screen. Play with friends on one phone or tablet, or take on three bots by yourself, and every round after the first adds a twist like low gravity, giant ninjas or lights out.',
+  released: '2026-09-28',
+};

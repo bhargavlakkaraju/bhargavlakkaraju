@@ -1,0 +1,48 @@
+export default {
+  slug: 'paddle-brawl',
+  title: 'Paddle Brawl',
+  tagline: 'Four walls. Four paddles. One button each.',
+  description:
+    'Four-way pong for 1 to 4 players on one screen. Everyone defends a wall of a neon court with one button: tap to turn your paddle around, hold to slow it down. Three lives each, bots fill empty seats. Free, instant, no download.',
+  category: 'party',
+  party: { min: 1, max: 4 },
+  tags: ['party', 'multiplayer', 'one-button', 'pong', 'arcade', 'local multiplayer'],
+  emoji: '🏓',
+  colors: ['#2fd9ff', '#ff3d8b'],
+  bg: '#0c0822',
+  width: 420,
+  height: 740,
+  startMode: 'immediate',
+  revive: false,
+  daily: false,
+  maxScore: 5,
+  scoreLabel: 'Crowns',
+  controls: {
+    touch: 'Tap your corner to join. Your paddle slides on its own: tap your corner to turn it around, hold to slow it down. Bots fill every empty seat.',
+    mouse: 'Click a corner to join. Click that corner to turn your paddle around, hold the button to slow it down. Bots fill every empty seat.',
+    keyboard: 'Z, M, P and Q are the four players (one button each). Press yours to join, press Enter to start, then tap it to turn your paddle around and hold it to slow down. Bots fill every empty seat.',
+  },
+  howTo: [
+    'Tap your corner of the screen (or press Z, M, P or Q) to join. Empty seats are taken by bots, so you can always play alone against three of them.',
+    'Each player guards one wall: P1 the bottom, P2 the right, P3 the top and P4 the left. The little arrow on your paddle shows which way it is sliding.',
+    'Tap to turn your paddle around. Hold the button to slow it down, then let go to slide at full speed again.',
+    'Every ball that gets into your goal costs a heart. Lose all three and your goal is walled off.',
+    'Balls speed up over time. A second ball joins after 10 seconds and a third one later, so nobody stays safe for long. Last paddle standing wins the round, first to 3 crowns wins the cup.',
+  ],
+  tips: [
+    'Turn early. A tap reverses you instantly, so a paddle that is already moving toward the ball beats one that has to stop and turn.',
+    'Hold to creep into position when a ball is coming straight at you, then release to slide away again.',
+    'Hit the ball with the end of your paddle to send it off at a sharp angle toward someone else.',
+    'Balls that hit the corner blocks change direction. Watch the corners on your side of the court.',
+    'When a rival is down to one heart, their hearts start to pulse. The balls do not care who is winning, but you can aim at them.',
+  ],
+  faq: [
+    { q: 'How many people can play Paddle Brawl?', a: 'One to four on the same phone, tablet or laptop. Each player uses one button in their own corner of the screen, and bots take any empty seats.' },
+    { q: 'Can I play Paddle Brawl alone?', a: 'Yes. Press Play and three bots join you. Tap the bots button in the lobby if you want fewer opponents.' },
+    { q: 'How do I control my paddle with one button?', a: 'The paddle always slides along your wall. Tap to make it go the other way, and hold the button to slow it down for precise blocks.' },
+    { q: 'What are twist cards?', a: 'From round two on, every round draws a random rule change, like Multiball with three balls from the start, Pinball bumpers, Giant or Tiny paddles, Turbo speed, Lights Out or swapped controls.' },
+  ],
+  about:
+    'Paddle Brawl is a four-way take on the oldest video game there is, built for a whole group around one screen. Each player guards one wall of a neon court with a paddle that never stops moving, and a single button that turns it around or slows it down. It is simple enough to explain in one sentence, and chaotic enough that nobody is ever safe once the second ball arrives. Play with friends on one phone or tablet, or take on three bots, and every round after the first draws a twist like Multiball, Pinball bumpers or Lights Out.',
+  released: '2026-09-28',
+};
