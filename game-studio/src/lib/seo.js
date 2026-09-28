@@ -92,6 +92,18 @@ export const CATEGORY_COPY = {
       ['How do I control Snake on a phone?', 'Swipe in the direction you want to turn, even slightly ahead of time. On a computer, use the arrow keys or WASD.'],
     ],
   },
+  party: {
+    intro:
+      'Free party games for 1 to 4 players on one phone, tablet or laptop. Every player grabs a corner of the screen and plays with one button, so anyone can join in seconds. Playing alone? Bots fill every empty seat.',
+    more: [
+      'Matches are first to three crowns, and from round two every round draws a Twist card that changes the rules: Turbo speed, Giants, Tiny, Lights Out, Swapped controls, a Wobbly world and twists unique to each game.',
+      'On a keyboard the four players use Z, M, P and Q, the keys in the same corners as the buttons on screen. Nothing to install and no accounts, so it works at parties, in class breaks and on the sofa.',
+    ],
+    faq: [
+      ['Can I play these party games alone?', 'Yes. Press Play without joining any other seats and three bots take the empty corners. Tap the bots button in the lobby to play with fewer.'],
+      ['How do 4 people play on one phone?', 'Lay the phone flat in the middle. Each player takes one corner and holds or taps the button in that corner. Players at the top read their corner upside down, facing them.'],
+    ],
+  },
   word: {
     intro:
       'Wordy is a free daily word puzzle: guess the five-letter word in six tries, with colored hints after every guess. Play the Daily word everyone gets, or keep going with unlimited classic words.',

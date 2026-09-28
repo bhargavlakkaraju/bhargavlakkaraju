@@ -36,7 +36,34 @@ async function submitScore({ meta, score, mode, name }) {
   return data;
 }
 
-export default function GamePlayer({ slug, challenge = null, embed = false, initialMode = null, frameClass = 'game-frame', compact = false }) {
+// Party games (meta.party) end with the match standings instead of a score.
+function PartyResult({ party }) {
+  const w = party.winners[0];
+  const label = (p) => (p.human ? p.tag : `${p.name} 🤖`);
+  const sub =
+    party.humans === 1 ? (party.humanWon ? 'You beat the bots. Now beat a friend.' : 'The bots took this one. Rematch?') : party.humanWon ? 'Rematch? Same seats, one tap.' : 'The bots won. Team up and get revenge.';
+  return (
+    <>
+      <div className="text-xs font-extrabold tracking-[0.2em] text-white/60">{party.humanWon ? 'CUP WON!' : 'MATCH OVER'}</div>
+      <div className="mt-1 text-5xl">🏆</div>
+      <div className="font-display text-3xl font-bold leading-tight" style={{ color: w?.color }}>
+        {w ? `${label(w)} wins the cup` : 'Draw!'}
+      </div>
+      <div className="mt-1 text-sm font-semibold text-white/70">{sub}</div>
+      <div className="mt-3 space-y-1 rounded-2xl bg-white/5 p-2.5 text-left">
+        {party.standings.map((p) => (
+          <div key={p.tag} className="flex items-center gap-2 text-sm font-bold">
+            <span className="inline-block h-3 w-3 rounded-full" style={{ background: p.color }} />
+            <span className="text-white">{label(p)}</span>
+            <span className="ml-auto tabular-nums text-white/80">{'👑'.repeat(p.crowns) || '0'}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+export default function GamePlayer({ slug, challenge = null, embed = false, initialMode = null, frameClass = 'game-frame', compact = false, feed = false, onNext = null }) {
   const frameRef = useRef(null);
   const outerRef = useRef(null);
   const stageRef = useRef(null);
@@ -197,7 +224,7 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
     async (channel) => {
       if (!over || !meta) return;
       const p = getPlayer();
-      const url = challengeUrl(slug, over.score, p.name || 'A friend');
+      const url = meta.party ? `${SITE.url}/games/${slug}?utm_source=share` : challengeUrl(slug, over.score, p.name || 'A friend');
       const text = shareText({ meta, score: over.score, medal: medalFor(meta, over.score), stats: over.stats, cta: variant('share_cta') });
       const ok = await shareTo(channel, { text, url, title: `${meta.title} - ${SITE.name}` });
       track('share_click', { g: slug, c: channel });
@@ -276,7 +303,7 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
   const bg = meta?.bg || '#120b24';
 
   return (
-    <div ref={outerRef} className={full ? 'fixed inset-0 z-50 flex flex-col bg-ink' : embed ? 'h-full' : ''}>
+    <div ref={outerRef} className={full ? 'fixed inset-0 z-50 flex flex-col bg-ink' : embed || feed ? 'h-full' : ''}>
       {full && (
         <div className="flex h-12 shrink-0 items-center gap-2 px-3">
           <div className="truncate font-display text-lg font-bold">
@@ -295,7 +322,7 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
       )}
       <div
         ref={frameRef}
-        className={`relative w-full overflow-hidden ${full ? 'min-h-0 flex-1' : embed ? 'h-full' : compact ? frameClass : `${frameClass} rounded-3xl border border-line shadow-2xl`}`}
+        className={`relative w-full overflow-hidden ${full ? 'min-h-0 flex-1' : embed || feed ? 'h-full' : compact ? frameClass : `${frameClass} rounded-3xl border border-line shadow-2xl`}`}
         style={{ background: `radial-gradient(120% 80% at 50% 0%, ${bg} 0%, #0b0618 100%)` }}
       >
         <div ref={stageRef} className="absolute inset-0" />
@@ -329,9 +356,10 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
           ))}
         </div>
 
-        {/* In-frame mute sits top-right: every game keeps that corner clear (same spot as the portal shell). */}
+        {/* In-frame mute sits top-right: every game keeps that corner clear (same spot as the portal shell).
+            Party games use all four corners for player buttons, so there it sits bottom-center. */}
         {!full && (
-          <button className="icon-btn absolute right-2 top-2 z-20" aria-label={muted ? 'Unmute' : 'Mute'} onClick={() => setMuted(sfx.toggleMuted())}>
+          <button className={`icon-btn absolute z-20 ${meta?.party ? 'bottom-2 left-1/2 -translate-x-1/2 scale-90 opacity-80' : 'right-2 top-2'}`} aria-label={muted ? 'Unmute' : 'Mute'} onClick={() => setMuted(sfx.toggleMuted())}>
             {muted ? '🔇' : '🔊'}
           </button>
         )}
@@ -340,6 +368,10 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
         {over && meta && (
           <div className="absolute inset-0 z-20 flex items-center justify-center overflow-y-auto bg-ink/60 p-3 backdrop-blur-[3px] animate-pop">
             <div className="w-full max-w-[340px] rounded-3xl border border-white/10 bg-gradient-to-b from-[#2a1c55] to-[#170f2e] p-5 text-center shadow-2xl">
+              {meta.party && over.stats?.party ? (
+                <PartyResult party={over.stats.party} />
+              ) : (
+                <>
               <div className="text-xs font-extrabold tracking-[0.2em] text-white/60">
                 {over.win === true ? 'YOU WIN!' : over.win === false ? 'SO CLOSE!' : over.isNewBest ? 'NEW BEST!' : 'GAME OVER'}
               </div>
@@ -352,6 +384,8 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
                 {nm ? ` · ${nm.text}` : ' · all medals earned!'}
               </div>
               {over.isNewBest && <div className="mx-auto mt-2 w-fit animate-pulse rounded-full bg-sun px-3 py-0.5 text-xs font-black text-ink">🎉 PERSONAL BEST</div>}
+                </>
+              )}
               {challenge && (
                 <div className={`mt-2 rounded-xl px-3 py-1.5 text-sm font-bold ${over.beat ? 'bg-lime/20 text-lime' : 'bg-white/5 text-sun'}`}>
                   {over.beat ? `You beat ${challenge.name}! Rub it in 😈` : `${challenge.name} still leads with ${formatScore(meta, challenge.score)}`}
@@ -379,8 +413,13 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
                   </button>
                 )}
                 <button className="btn-pink text-lg" onClick={playAgain} autoFocus>
-                  ↻ Play again
+                  ↻ {meta.party ? 'Rematch' : 'Play again'}
                 </button>
+                {onNext && (
+                  <button className="btn-ghost" onClick={onNext}>
+                    Next game ↓
+                  </button>
+                )}
                 {!embed && (
                   <button className="btn-ghost" onClick={() => (typeof navigator !== 'undefined' && navigator.share ? share('native') : setShareOpen((v) => !v))}>
                     {variant('share_cta') === 'challenge' ? '⚔️ Challenge a friend' : '📣 Share score'}
@@ -439,7 +478,7 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
                 </Link>
               )}
 
-              {suggestions.length > 0 && (
+              {!feed && suggestions.length > 0 && (
                 <div className="mt-3">
                   <div className="mb-1.5 text-[11px] font-extrabold tracking-widest text-white/50">TRY NEXT</div>
                   <div className="grid grid-cols-2 gap-2">
@@ -487,7 +526,7 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
         )}
       </div>
 
-      {!embed && !full && !compact && meta && (
+      {!embed && !full && !compact && !feed && meta && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {meta.daily !== false && (
             <div className="flex rounded-full bg-panel p-1 ring-1 ring-line">

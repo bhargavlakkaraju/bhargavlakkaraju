@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { GAMES } from '@/lib/games';
 import { getPlayer } from '@/lib/player';
-import { IconHome, IconCalendar, IconTrophy, IconUser, IconDice } from './Icons';
+import { IconHome, IconCalendar, IconTrophy, IconUser, IconPlay } from './Icons';
 
 /** Pick a random game, preferring ones this player hasn't tried yet (exploration = retention). */
 export function useRandomGame() {
@@ -34,6 +34,7 @@ const LINKS = [
   { href: '/category/puzzle', label: 'Puzzle', wide: true },
   { href: '/category/classic', label: 'Classics', wide: true },
   { href: '/category/word', label: 'Word', wide: true },
+  { href: '/category/party', label: 'Party' },
   { href: '/daily', label: 'Daily' },
   { href: '/leaderboards', label: 'Leaderboards' },
   { href: '/best', label: 'Best of' },
@@ -49,7 +50,7 @@ export function NavLinks() {
           <Link
             key={l.href}
             href={l.href}
-            className={`rounded-lg px-2.5 py-1.5 transition ${l.wide ? 'hidden xl:block' : ''} ${on ? 'text-pink' : 'text-white/60 hover:text-white'}`}
+            className={`whitespace-nowrap rounded-lg px-2.5 py-1.5 transition ${l.wide ? 'hidden xl:block' : ''} ${on ? 'text-pink' : 'text-white/60 hover:text-white'}`}
           >
             {l.label}
           </Link>
@@ -62,7 +63,7 @@ export function NavLinks() {
 const ITEMS = [
   { href: '/', Icon: IconHome, label: 'Home' },
   { href: '/daily', Icon: IconCalendar, label: 'Daily' },
-  { random: true },
+  { feed: true },
   { href: '/leaderboards', Icon: IconTrophy, label: 'Ranks' },
   { href: '/profile', Icon: IconUser, label: 'Me' },
 ];
@@ -70,7 +71,6 @@ const ITEMS = [
 /** App-style tab bar for phones. Hidden on pages where the game itself needs the space. */
 export function BottomNav() {
   const path = usePathname() || '/';
-  const go = useRandomGame();
   if (path.startsWith('/games/') || path.startsWith('/c/')) return null;
   return (
     <>
@@ -78,16 +78,15 @@ export function BottomNav() {
       <nav className="bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-line bg-night/95 backdrop-blur-xl md:hidden" aria-label="Main">
         <div className="mx-auto grid h-16 max-w-md grid-cols-5 items-center">
           {ITEMS.map((it, i) =>
-            it.random ? (
-              <button
+            it.feed ? (
+              <Link
                 key={i}
-                type="button"
-                onClick={go}
-                aria-label="Play a random game"
+                href="/play"
+                aria-label="Open the play feed: swipe through games"
                 className="mx-auto grid h-12 w-[4.5rem] place-items-center rounded-2xl bg-pink text-white shadow-[0_4px_0_#a8104a] active:translate-y-[2px] active:shadow-[0_2px_0_#a8104a]"
               >
-                <IconDice className="h-6 w-6" />
-              </button>
+                <IconPlay className="h-6 w-6" />
+              </Link>
             ) : (
               <Link
                 key={it.href}

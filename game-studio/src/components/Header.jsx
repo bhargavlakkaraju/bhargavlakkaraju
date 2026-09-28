@@ -2,7 +2,7 @@ import Link from 'next/link';
 import PlayerBadge from './PlayerBadge';
 import { RandomButton, NavLinks } from './Nav';
 import { SearchButton } from './Search';
-import { IconSearch, IconDice } from './Icons';
+import { IconSearch, IconDice, IconPlay } from './Icons';
 import { SITE } from '@/lib/site';
 
 export function Logo({ size = 'md' }) {
@@ -36,9 +36,15 @@ export default function Header() {
             <span className="hidden lg:inline">Search games</span>
             <kbd className="ml-auto hidden rounded-md bg-raised px-1.5 py-0.5 font-sans text-[11px] text-mute xl:inline">⌘K</kbd>
           </SearchButton>
-          <RandomButton className="hidden h-9 items-center gap-1.5 rounded-xl bg-pink px-3.5 text-sm font-extrabold text-white shadow-[0_3px_0_#a8104a] transition hover:brightness-110 active:translate-y-[1px] md:inline-flex">
+          <RandomButton className="hidden h-9 items-center gap-1.5 rounded-xl bg-card px-3 text-sm font-extrabold text-white/80 ring-1 ring-line transition hover:text-white 2xl:inline-flex" label="Random">
             <IconDice className="h-[18px] w-[18px]" />
           </RandomButton>
+          <Link
+            href="/play"
+            className="hidden h-9 items-center gap-1.5 whitespace-nowrap rounded-xl bg-pink px-3.5 text-sm font-extrabold text-white shadow-[0_3px_0_#a8104a] transition hover:brightness-110 active:translate-y-[1px] md:inline-flex"
+          >
+            <IconPlay className="h-[16px] w-[16px]" /> Play feed
+          </Link>
           <PlayerBadge />
         </div>
       </div>

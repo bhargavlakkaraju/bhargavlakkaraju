@@ -6,7 +6,7 @@ export const SITE = {
   short: 'Retry',
   tagline: 'Just one more try.',
   description:
-    'Free online games you can play instantly in your browser. No downloads, no sign-ups: tap, play, and try to beat your best. New daily challenges every day.',
+    'Scroll less, play more: free online games that start instantly in your browser. Swipe through them like a feed, play solo or with up to 4 friends on one phone. No downloads, no sign-ups, new daily challenges.',
   // Resolved at build time in next.config.mjs (explicit NEXT_PUBLIC_SITE_URL, else the Vercel domain).
   url: process.env.SITE_URL_RESOLVED || 'http://localhost:3000',
   twitter: process.env.NEXT_PUBLIC_TWITTER || '@retryarcade',
@@ -109,4 +109,5 @@ export const CATEGORIES = {
   puzzle: { name: 'Puzzle', emoji: '🧩', blurb: 'Relaxing brain teasers you can play for five minutes or five hours.' },
   classic: { name: 'Classics', emoji: '🃏', blurb: 'Timeless favorites, rebuilt to feel great on any screen.' },
   word: { name: 'Word', emoji: '🔤', blurb: 'Daily word puzzles to share with friends.' },
+  party: { name: 'Party', emoji: '👥', blurb: '1 to 4 players on one screen, one button each. Bots fill empty seats and every round has a twist.' },
 };

@@ -12,6 +12,11 @@ export function challengeUrl(slug, score, name) {
 }
 
 export function shareText({ meta, score, medal = 0, stats = {}, cta = 'challenge' }) {
+  if (meta.party && stats.party) {
+    const w = stats.party.winners[0];
+    const who = !w ? 'It was a draw' : w.human ? `${w.tag} won the cup` : 'The bots won the cup';
+    return `${meta.emoji} ${meta.title}: ${who} 👑\n${stats.party.humans > 1 ? `${stats.party.humans} of us on one phone.` : 'Me vs 3 bots.'} Grab a friend and a corner:`;
+  }
   const lines = [`${meta.emoji} ${meta.title}: ${formatScore(meta, score)}${medal ? ' ' + MEDALS[medal] : ''}`];
   if (stats.shareText) lines.push(stats.shareText);
   lines.push(cta === 'challenge' ? 'Bet you can’t beat me 😏' : 'Free to play, no download:');

@@ -32,7 +32,7 @@ export async function GET(req) {
   }
 
   const cmds = [];
-  for (const d of keys) cmds.push(['HGETALL', `d:${d}`], ['PFCOUNT', `u:${d}`], ['HGETALL', `x:${d}`], ['HGETALL', `r:${d}`], ['HGETALL', `s:${d}`]);
+  for (const d of keys) cmds.push(['HGETALL', `d:${d}`], ['PFCOUNT', `u:${d}`], ['HGETALL', `x:${d}`], ['HGETALL', `r:${d}`], ['HGETALL', `s:${d}`], ['HGETALL', `v:${d}`]);
   for (const g of GAMES) cmds.push(['PFCOUNT', ...keys.map((d) => `pu:${d}:${g.slug}`)]);
   cmds.push(['PFCOUNT', ...keys.map((d) => `u:${d}`)], ['SCARD', 'subs']);
   const res = await pipeline(cmds);
@@ -73,15 +73,18 @@ export async function GET(req) {
   const exp = {};
   const refs = {};
   const sources = {};
+  const visitors = {};
+  const N = 6;
   keys.forEach((d, i) => {
-    const counters = toObj(res[i * 5]);
+    const counters = toObj(res[i * N]);
     addInto(totals, counters);
-    addInto(exp, toObj(res[i * 5 + 2]));
-    addInto(refs, toObj(res[i * 5 + 3]));
-    addInto(sources, toObj(res[i * 5 + 4]));
+    addInto(exp, toObj(res[i * N + 2]));
+    addInto(refs, toObj(res[i * N + 3]));
+    addInto(sources, toObj(res[i * N + 4]));
+    addInto(visitors, toObj(res[i * N + 5]));
     series.push({
       day: d,
-      dau: Number(res[i * 5 + 1]) || 0,
+      dau: Number(res[i * N + 1]) || 0,
       pageViews: counters.page_view || 0,
       plays: counters.game_start || 0,
       runs: counters.game_over || 0,
@@ -91,7 +94,7 @@ export async function GET(req) {
       subscribes: counters.subscribe || 0,
     });
   });
-  const base = keys.length * 5;
+  const base = keys.length * N;
   const games = GAMES.map((g, i) => {
     const c = (e) => totals[`${e}|${g.slug}`] || 0;
     const runs = c('game_over');
@@ -153,6 +156,9 @@ export async function GET(req) {
       rewarded: totals.ad_rewarded || 0,
       levelUps: totals.level_up || 0,
       embedsCopied: totals.embed_copy || 0,
+      feedViews: totals.feed_view || 0,
+      feedPlays: totals.feed_play || 0,
+      feedNexts: totals.feed_next || 0,
     },
     shareChannels: Object.fromEntries(Object.entries(totals).filter(([k]) => k.startsWith('share_ch|')).map(([k, v]) => [k.slice(9), v])),
     retention,
@@ -160,5 +166,7 @@ export async function GET(req) {
     experiments,
     referrers: top(refs),
     sources: top(sources),
+    countries: top(Object.fromEntries(Object.entries(visitors).filter(([k]) => k.startsWith('cc|')).map(([k, v]) => [k.slice(3), v]))),
+    devices: Object.fromEntries(Object.entries(visitors).filter(([k]) => k.startsWith('dev|')).map(([k, v]) => [k.slice(4), v])),
   });
 }

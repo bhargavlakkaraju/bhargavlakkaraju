@@ -117,18 +117,18 @@ export default function Home() {
         <section className="flex flex-wrap items-end justify-between gap-4 pt-5 sm:pt-8">
           <div className="min-w-0">
             <h1 className="font-cond text-[2.35rem] font-extrabold uppercase leading-[0.92] text-white sm:text-6xl">
-              Free games. <span className="text-pink">Just one more try.</span>
+              Scroll less. <span className="text-pink">Play more.</span>
             </h1>
             <p className="mt-2 max-w-xl text-[15px] text-mute sm:text-base">
-              {GAMES.length} games that start in one tap. No downloads, no sign-ups: beat your best, grab today’s crown, dare your friends.
+              Swap the endless scroll for {GAMES.length} free games that start in one tap. Swipe through them like a feed, play solo or with friends on one phone. No downloads, no sign-ups.
             </p>
           </div>
-          <div className="hidden gap-2 sm:flex">
-            <Link href="/daily" className="btn-ghost">
+          <div className="flex w-full gap-2 sm:w-auto">
+            <Link href="/daily" className="btn-ghost hidden sm:inline-flex">
               📅 Daily arena
             </Link>
-            <Link href={`/games/${gotd.slug}`} className="btn-pink">
-              <IconPlay className="h-4 w-4" /> Play game of the day
+            <Link href="/play" className="btn-pink w-full sm:w-auto">
+              <IconPlay className="h-4 w-4" /> Start the play feed
             </Link>
           </div>
         </section>

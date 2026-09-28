@@ -12,8 +12,10 @@ export const PLATFORMS = ['x', 'threads', 'instagram', 'tiktok', 'youtube', 'fac
 export const BRAND = {
   name: SITE.name,
   tagline: SITE.tagline,
+  positioning: 'Scroll less. Play more. The fun alternative to doom scrolling: swipe through free games like a video feed and play any of them in one tap.',
   voice: [
     'Playful, punchy, confident. Short sentences. Sound like a friend daring you, not an ad.',
+    'Position every post as a better way to spend five minutes than scrolling: "put the feed down, play a round". Never preachy or guilt-tripping.',
     'Every post has one clear call to action and the tracked link from this feed (or "link in bio" where links are not clickable).',
     'Only real facts: scores, names and numbers come from this feed. Never invent stats, player counts, reviews or awards.',
     'Emoji: at most two per post. Hashtags: X and Threads 0 to 2, LinkedIn 3, Instagram and TikTok 3 to 6. Use the ones provided.',
@@ -23,8 +25,8 @@ export const BRAND = {
   hashtags: {
     x: ['#browsergames', '#indiegames'],
     threads: ['#gaming'],
-    instagram: ['#browsergames', '#mobilegames', '#puzzlegames', '#arcade', '#indiegame'],
-    tiktok: ['#gaming', '#mobilegames', '#puzzle', '#satisfying', '#fyp'],
+    instagram: ['#browsergames', '#mobilegames', '#puzzlegames', '#doomscrolling', '#indiegame'],
+    tiktok: ['#gaming', '#mobilegames', '#satisfying', '#doomscrolling', '#fyp'],
     youtube: ['#shorts', '#gaming', '#browsergames'],
     facebook: [],
     linkedin: ['#gamedev', '#indiegames', '#marketing'],

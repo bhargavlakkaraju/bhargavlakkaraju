@@ -127,6 +127,7 @@ export default function Dashboard() {
             <Tile label="Shares" value={n(data.totals.shares)} sub={`${pct(data.totals.challengeOpens, data.totals.shares)} opened back`} />
             <Tile label="Ads shown" value={n(data.totals.interstitials + data.totals.rewarded)} sub={`${n(data.totals.rewarded)} rewarded`} />
             <Tile label="Subscribers" value={n(data.subscribers)} />
+            <Tile label="Feed cards seen" value={n(data.totals.feedViews || 0)} sub={`${pct(data.totals.feedPlays || 0, data.totals.feedViews || 0)} tapped to play`} />
           </div>
 
           <div className="mt-4 grid gap-3 lg:grid-cols-2">
@@ -206,6 +207,21 @@ export default function Dashboard() {
               <div className="mb-2 font-bold">🌍 Top referrers</div>
               {data.referrers.length === 0 && <p className="text-sm text-white/50">No data yet.</p>}
               {data.referrers.map(([h, c]) => (
+                <div key={h} className="flex justify-between border-b border-line py-1 text-sm">
+                  <span className="truncate">{h}</span>
+                  <span className="tabular-nums text-white/70">{n(c)}</span>
+                </div>
+              ))}
+              <div className="mb-2 mt-4 font-bold">📍 Visitors by country</div>
+              {(data.countries || []).length === 0 && <p className="text-sm text-white/50">No data yet.</p>}
+              {(data.countries || []).slice(0, 10).map(([h, c]) => (
+                <div key={h} className="flex justify-between border-b border-line py-1 text-sm">
+                  <span className="truncate">{h}</span>
+                  <span className="tabular-nums text-white/70">{n(c)}</span>
+                </div>
+              ))}
+              <div className="mb-2 mt-4 font-bold">📱 Visitors by device</div>
+              {Object.entries(data.devices || {}).map(([h, c]) => (
                 <div key={h} className="flex justify-between border-b border-line py-1 text-sm">
                   <span className="truncate">{h}</span>
                   <span className="tabular-nums text-white/70">{n(c)}</span>

@@ -1,4 +1,5 @@
 import Script from 'next/script';
+import { Analytics } from '@vercel/analytics/react';
 import './globals.css';
 import { SITE, ADS, ANALYTICS, SOCIAL, VERIFY } from '@/lib/site';
 
@@ -111,6 +112,8 @@ export default function RootLayout({ children }) {
           </>
         )}
         {ANALYTICS.plausibleDomain && <Script defer data-domain={ANALYTICS.plausibleDomain} src="https://plausible.io/js/script.js" strategy="afterInteractive" />}
+        {/* Vercel Web Analytics: collects as soon as it is switched on in the Vercel dashboard. */}
+        {process.env.VERCEL === '1' && <Analytics />}
       </body>
     </html>
   );

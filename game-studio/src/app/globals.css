@@ -317,3 +317,12 @@ body {
     transition: none;
   }
 }
+
+/* Play feed: full-screen snap scrolling without a visible scrollbar. */
+.feed-scroll {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.feed-scroll::-webkit-scrollbar {
+  display: none;
+}

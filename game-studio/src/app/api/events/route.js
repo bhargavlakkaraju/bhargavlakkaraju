@@ -3,7 +3,9 @@
 //   u:<day>        HyperLogLog of daily active visitors
 //   pu:<day>:<slug> HyperLogLog of players per game
 //   x:<day>        experiment counters "<exp>:<variant>:<event>"
-//   r:<day> / s:<day>  referrer hosts / utm sources
+//   r:<day> / s:<day>  referrer hosts ("(direct)" for none) / utm sources
+//   v:<day>        daily visitors by country "cc|IN" and device "dev|mobile"
+// Requests from crawlers and automated browsers are dropped (QA runs send qa: 1).
 import { pipeline } from '@/lib/store';
 import { json, utcDay, VID_RE, rateLimit, clientIp } from '@/lib/server';
 import { getGame } from '@/lib/games';
@@ -37,8 +39,18 @@ const ALLOWED = new Set([
   'plus_click',
   'plus_activated',
   'support_click',
+  'feed_view',
+  'feed_play',
+  'feed_next',
 ]);
 const SAFE = /^[a-z0-9_.-]{1,40}$/i;
+const BOT_UA = /bot|crawl|spider|slurp|headless|lighthouse|preview|facebookexternalhit|embedly|pinterest|vkshare|whatsapp|telegram/i;
+
+function device(ua) {
+  if (/ipad|tablet|kindle|silk|playbook|(android(?!.*mobile))/i.test(ua)) return 'tablet';
+  if (/mobi|iphone|ipod|android|blackberry|opera mini|iemobile/i.test(ua)) return 'mobile';
+  return 'desktop';
+}
 const RET_BUCKETS = [
   [0, 'd0'],
   [1, 'd1'],
@@ -65,7 +77,9 @@ export async function POST(req) {
   } catch {
     return json({ ok: false }, { status: 400 });
   }
-  const { vid, events, exp, ref, utm, act, pc } = body || {};
+  const { vid, events, exp, ref, utm, act, pc, sess, qa } = body || {};
+  const ua = req.headers.get('user-agent') || '';
+  if (!qa && BOT_UA.test(ua)) return json({ ok: true, skipped: 'bot' });
   const post = typeof pc === 'string' && SAFE.test(pc) ? pc : null;
   if (!VID_RE.test(String(vid)) || !Array.isArray(events)) return json({ ok: false }, { status: 400 });
   if (!(await rateLimit(`ev:${clientIp(req)}`, 240, 60))) return json({ ok: false }, { status: 429 });
@@ -99,6 +113,7 @@ export async function POST(req) {
 
   const host = ref ? refHost(ref) : null;
   if (host) cmds.push(['HINCRBY', `r:${day}`, host, 1], ['EXPIRE', `r:${day}`, TTL]);
+  else if (sess && !(utm && utm.source)) cmds.push(['HINCRBY', `r:${day}`, '(direct)', 1], ['EXPIRE', `r:${day}`, TTL]);
   // Per-post results for the social feed: visits (first batch of a session) and plays.
   if (post) {
     if (utm) cmds.push(['HINCRBY', `sc:${day}`, `${post}|visits`, 1]);
@@ -113,6 +128,9 @@ export async function POST(req) {
     const age = Math.max(0, Number(act.age));
     const bucket = RET_BUCKETS.find(([max]) => age <= max)[1];
     cmds.push(['HINCRBY', dk, `active|${bucket}`, 1]);
+    // Once per visitor per day: where they are and what they play on.
+    const cc = (req.headers.get('x-vercel-ip-country') || '').toUpperCase();
+    cmds.push(['HINCRBY', `v:${day}`, `cc|${/^[A-Z]{2}$/.test(cc) ? cc : '??'}`, 1], ['HINCRBY', `v:${day}`, `dev|${device(ua)}`, 1], ['EXPIRE', `v:${day}`, TTL]);
   }
 
   await pipeline(cmds);

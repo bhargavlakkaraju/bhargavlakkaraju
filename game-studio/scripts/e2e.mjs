@@ -20,6 +20,14 @@ const check = (cond, msg) => {
 
 async function newPage(opts = {}) {
   const ctx = await browser.newContext(opts);
+  // The site ignores automated browsers in its analytics; tests opt back in.
+  await ctx.addInitScript(() => {
+    try {
+      localStorage.setItem('ra:qa', '1');
+    } catch {
+      /* ignore */
+    }
+  });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));

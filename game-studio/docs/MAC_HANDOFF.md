@@ -25,6 +25,19 @@ Preview) and keep a list of what you set. At the end, redeploy production once
 1. **Vercel production branch.** Vercel -> retryarcade -> Settings -> Environments ->
    Production -> Branch Tracking: set the branch to `claude/vibrant-fermi-8m1anm` and save.
 
+1b. **Vercel Web Analytics (1 click).** Vercel -> retryarcade -> Analytics tab -> Enable
+   (Web Analytics, the free tier is enough). The site already ships the tracking code, so it
+   starts collecting on the next production deploy. No environment variable needed.
+
+1c. **Google Analytics 4.** Go to https://analytics.google.com with my Google account.
+   Admin -> Create -> Property: name `Retry Arcade`, time zone India, currency INR, business
+   size Small, objectives "Get baseline reports". Stop for me to accept the terms. Then
+   create a **Web** data stream for `https://retryarcade.com` (stream name `retryarcade.com`,
+   keep Enhanced measurement on). Copy the Measurement ID (`G-` followed by letters and
+   digits) and set `NEXT_PUBLIC_GA4_ID=G-...`. The site already loads GA4 and mirrors every
+   game event to it when that variable is set. Later, after task 4, link GA4 to Search
+   Console (GA4 Admin -> Product links -> Search Console links).
+
 2. **Google AdSense.** Go to https://adsense.google.com and start with my Google account.
    Website: `retryarcade.com`. Country: India. Stop for me to accept the terms. When the
    publisher ID appears (`ca-pub-` followed by 16 digits), set

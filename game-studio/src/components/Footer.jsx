@@ -67,6 +67,16 @@ export default function Footer() {
                 ⭐ Best free games lists
               </Link>
             </li>
+            <li>
+              <Link href="/play" className="hover:text-white">
+                ▶ Play feed
+              </Link>
+            </li>
+            <li>
+              <Link href="/instead-of-scrolling" className="hover:text-white">
+                📵 Instead of doom scrolling
+              </Link>
+            </li>
           </ul>
         </div>
         <div>

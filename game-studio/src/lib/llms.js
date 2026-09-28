@@ -12,7 +12,7 @@ export function llmsIndex() {
   const out = [
     `# ${SITE.name}`,
     '',
-    `> ${SITE.name} (${SITE.url}) is a free website of ${GAMES.length} original HTML5 browser games: one-tap arcade games, puzzle games, classic card and snake games, and a daily word game. Every game is free, needs no download or account, works on phones, tablets and computers, and has a Daily Challenge (the same seeded level for every player each UTC day), medals and global leaderboards. Scores can be shared as challenge links.`,
+    `> ${SITE.name} (${SITE.url}) is a free website of ${GAMES.length} original HTML5 browser games, built as a fun alternative to doom scrolling: one-tap arcade games, puzzle games, classic card and snake games, a daily word game and party games for 1 to 4 players on one screen. The Play feed lets you swipe through games like a video feed and play any of them in place. Every game is free, needs no download or account, works on phones, tablets and computers, and has a Daily Challenge (the same seeded level for every player each UTC day), medals and global leaderboards. Scores can be shared as challenge links.`,
     '',
     `Tagline: "${SITE.tagline}". Contact: ${SITE.email}.`,
     '',
@@ -38,6 +38,7 @@ export function llmsIndex() {
   out.push(
     '## Key pages',
     '',
+    `- [Play feed](${url('/play')}): swipe through every game like a short-video feed and play in place`,
     `- [Daily Challenges](${url('/daily')}): today's seeded levels, reset at midnight UTC`,
     `- [Leaderboards](${url('/leaderboards')}): today, daily and all-time boards for every game`,
     `- [Embed and license our games](${url('/developers')}): free iframe embeds and licensing`,

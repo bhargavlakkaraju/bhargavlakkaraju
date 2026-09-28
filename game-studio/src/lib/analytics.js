@@ -7,6 +7,22 @@ import { ANALYTICS } from './site';
 let queue = [];
 let timer = null;
 let bound = false;
+let skip = null;
+
+// Crawlers, link previews and automated browsers (our own tests included) are not people:
+// leave them out of the numbers. QA runs opt back in with localStorage ra:qa = 1.
+const BOT_UA = /bot|crawl|spider|slurp|headless|lighthouse|preview|facebookexternalhit|embedly|pinterest|vkshare|whatsapp|telegram/i;
+function isQa() {
+  try {
+    return localStorage.getItem('ra:qa') === '1';
+  } catch {
+    return false;
+  }
+}
+function skipTracking() {
+  if (skip == null) skip = !isQa() && (!!navigator.webdriver || BOT_UA.test(navigator.userAgent || ''));
+  return skip;
+}
 
 function sessionOnce(key) {
   try {
@@ -21,6 +37,7 @@ function sessionOnce(key) {
 function attribution() {
   const out = {};
   if (!sessionOnce('ra:attr')) return out;
+  out.sess = 1;
   const ref = document.referrer;
   if (ref) {
     try {
@@ -53,6 +70,7 @@ function flush(beacon = false) {
   if (!queue.length) return;
   const p = getPlayer();
   const payload = { vid: p.vid, events: queue.splice(0, 60), exp: getAssignments(), pc: postRef(), ...attribution() };
+  if (isQa()) payload.qa = 1;
   const age = touchActivity();
   if (age != null) payload.act = { age };
   const body = JSON.stringify(payload);
@@ -72,7 +90,7 @@ function flush(beacon = false) {
  * for GA4. Names must be in the server allow-list (src/app/api/events/route.js).
  */
 export function track(name, props = {}) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || skipTracking()) return;
   if (!bound) {
     bound = true;
     document.addEventListener('visibilitychange', () => {
