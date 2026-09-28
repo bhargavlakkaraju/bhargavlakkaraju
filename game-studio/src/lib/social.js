@@ -4,6 +4,7 @@
 // with the visits and plays it brings (see api/events: utm_content = post id).
 import { GAMES, getGame, gameOfTheDay, dailyGames, hasClip } from './games';
 import { GUIDES } from './guides';
+import { hashString } from '@/games/engine/rng.js';
 import { COLLECTIONS } from './collections';
 import { SITE, SOCIAL, CATEGORIES } from './site';
 
@@ -143,6 +144,29 @@ export function buildFeed({ date = new Date(), champions = [] } = {}) {
       },
     }),
   );
+
+  // 1b. Party pack: one party game a day, in the evening when friends are together.
+  const partyGames = GAMES.filter((g) => g.party);
+  if (partyGames.length) {
+    const pg = partyGames[hashString(`party:${day}`) % partyGames.length];
+    posts.push(
+      post({
+        day,
+        kind: 'party',
+        slug: pg.slug,
+        when: at(day, 18, 30),
+        platforms: ['instagram', 'tiktok', 'youtube', 'x'],
+        campaign: 'party',
+        url: `${SITE.url}/games/${pg.slug}`,
+        media: gameMedia(pg.slug),
+        copy: {
+          default: `${pg.title}: ${pg.tagline} Up to 4 players on one phone, one button each, and every round draws a twist card. Free, no download.`,
+          caption: `4 friends. 1 phone. ${pg.title} ${pg.emoji}\n${pg.tagline}\nOne button each, a new twist every round. Tag who you are playing tonight.`,
+          youtubeTitle: `${pg.title}: 4 players on one phone #shorts`,
+        },
+      }),
+    );
+  }
 
   // 2. Daily Arena reset (right after midnight UTC).
   const daily = dailyGames(date, 4);

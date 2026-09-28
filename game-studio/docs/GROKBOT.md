@@ -43,7 +43,7 @@ Every day at 00:30, 09:30, 12:30, 16:30 and 20:30 UTC:
      type "video". For X, Threads, Facebook and LinkedIn prefer the video too; if video
      upload fails use the first image. Always set the provided `alt` text.
    - Respect `rules.maxPostsPerDay` and `rules.minMinutesBetweenPosts`. When over a
-     limit, keep this priority: gotd, champ, daily, gold, tip, list, brands, build.
+     limit, keep this priority: gotd, party, champ, daily, gold, tip, list, brands, build.
 3. Right after publishing, POST https://retryarcade.com/api/social/report with header
    Authorization: Bearer <SOCIAL_REPORT_TOKEN> and body
    {"id": "<post id>", "platform": "<platform>", "url": "<public post URL>",

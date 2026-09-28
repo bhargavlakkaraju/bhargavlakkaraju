@@ -134,7 +134,7 @@ export default function Home() {
           </div>
         </section>
 
-        <SearchBar className="mt-4 md:hidden" />
+        <SearchBar className="mt-4 md:hidden" count={GAMES.length} />
 
         <div className="mt-4 empty:hidden">
           <WelcomeBack />

@@ -602,7 +602,7 @@ export const COLLECTIONS = [
       {
         h: 'Playing alone or with fewer friends',
         p: [
-          'Every empty seat is filled by a bot, so one player gets three rivals and two players get two. Tap the bots button in the lobby to play with fewer. Matches are first to three crowns, and from round two each round draws a twist card such as Turbo, Giants, Lights Out or swapped controls.',
+          'Every empty seat is filled by a bot, so one player gets three rivals and two players get two. Tap the bots button in the lobby to play with fewer. Matches are first to two or three crowns, and from round two each round draws a twist card such as Turbo, Giants, Lights Out or swapped controls.',
         ],
       },
     ],

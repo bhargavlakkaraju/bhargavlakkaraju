@@ -16,6 +16,10 @@
     "seed": 7,
     "start": 44.5
   },
+  "hole-party": {
+    "seed": 1,
+    "start": 61.8
+  },
   "juicy-drop": {
     "seed": 2,
     "start": 51
@@ -40,6 +44,10 @@
   "rooftop-rush": {
     "seed": 3,
     "start": 109.2
+  },
+  "shark-attack": {
+    "seed": 5,
+    "start": 66.8
   },
   "sky-flap": {
     "seed": 7,

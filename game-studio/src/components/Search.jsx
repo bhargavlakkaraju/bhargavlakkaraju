@@ -20,7 +20,7 @@ export function SearchButton({ className = '', children }) {
 }
 
 /** Full-width search field for the top of the mobile home page (opens the overlay). */
-export function SearchBar({ className = '' }) {
+export function SearchBar({ className = '', count = null }) {
   return (
     <button
       type="button"
@@ -28,7 +28,7 @@ export function SearchBar({ className = '' }) {
       className={`flex w-full items-center gap-3 rounded-2xl bg-card px-4 py-3.5 text-left text-mute ring-1 ring-line ${className}`}
     >
       <IconSearch className="h-5 w-5" />
-      <span className="text-[15px]">Search 15 free games…</span>
+      <span className="text-[15px]">{count ? `Search ${count} free games…` : 'Search free games…'}</span>
     </button>
   );
 }

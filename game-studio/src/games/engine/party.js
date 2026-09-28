@@ -18,7 +18,7 @@
 //       bot(p, dt, ctx) {},       // return true while this bot "holds" its button
 //       timeUp(ctx) {},           // optional: winners when roundTime runs out (player or array)
 //       idle(dt, ctx) {},         // optional, cosmetic only: runs in the lobby and between rounds
-//       lightRadius: 105,         // optional: LIGHTS OUT radius around each player
+//       lightRadius: 105,         // optional: LIGHTS OUT radius around each player (p.light widens one player)
 //     });
 //   }
 //
@@ -56,7 +56,8 @@ export function createParty(api, spec) {
   // Seat config survives rematches (engine restart -> reset -> lobby with the same seats).
   const seats = [false, false, false, false]; // human joined?
   let botsWanted = -1; // -1 = fill every empty seat
-  const seatDown = [0, 0, 0, 0]; // pointers/keys currently holding each seat's button
+  const seatDown = [0, 0, 0, 0]; // pointers currently holding each seat's button
+  const seatKey = [false, false, false, false]; // keys holding each seat's button (kept apart so a keyup never cancels a finger)
   const pointerSeat = new Map();
 
   const players = [0, 1, 2, 3].map((i) => ({
@@ -332,12 +333,12 @@ export function createParty(api, spec) {
         // Space / Enter / arrows also drive the only human in a solo game.
         if (s < 0 && (startKey || k === 'arrowup')) s = soloSeat();
         if (s < 0) return false;
-        seatDown[s] = 1;
+        seatKey[s] = true;
         return true;
       }
       if (s < 0 && (startKey || k === 'arrowup')) s = soloSeat();
       if (s < 0) return false;
-      seatDown[s] = 0;
+      seatKey[s] = false;
       return true;
     }
     return false;
@@ -352,7 +353,7 @@ export function createParty(api, spec) {
       const seatHuman = players[s].human;
       let down;
       if (!p.alive) down = false;
-      else if (seatHuman && !api.demo) down = seatDown[s] > 0;
+      else if (seatHuman && !api.demo) down = seatDown[s] > 0 || seatKey[s];
       else down = !!spec.bot(p, dt, ctx);
       p.down = down;
       p.tap = down && !p.prev;
@@ -509,13 +510,14 @@ export function createParty(api, spec) {
       dark.height = H;
     }
     const d = dark.getContext('2d');
-    const r = (spec.lightRadius || 105) * ctx.size;
+    const base = (spec.lightRadius || 105) * ctx.size;
     d.globalCompositeOperation = 'source-over';
     d.clearRect(0, 0, W, H);
     d.fillStyle = 'rgba(4,2,12,0.94)';
     d.fillRect(0, 0, W, H);
     d.globalCompositeOperation = 'destination-out';
     for (const p of ctx.alive()) {
+      const r = Math.max(base, p.light || 0); // games may widen a big player's light (p.light)
       const grad = d.createRadialGradient(p.x, p.y, r * 0.5, p.x, p.y, r);
       grad.addColorStop(0, 'rgba(0,0,0,1)');
       grad.addColorStop(1, 'rgba(0,0,0,0)');
@@ -584,6 +586,7 @@ export function createParty(api, spec) {
     const n = ctx.active.length;
     const cw = 44;
     const x0 = W / 2 - ((n - 1) * cw) / 2;
+    draw.roundRect(g, x0 - 26, 43, (n - 1) * cw + 52, 22, 11, 'rgba(10,6,24,0.45)');
     ctx.active.forEach((p, k) => {
       const x = x0 + k * cw;
       draw.circle(g, x - 9, 54, 6, p.color);
@@ -591,6 +594,7 @@ export function createParty(api, spec) {
     });
     if (spec.roundTime && phase === 'play') {
       const left = Math.max(0, Math.ceil(spec.roundTime - ctx.time));
+      draw.roundRect(g, W / 2 - 22, 68, 44, 24, 12, 'rgba(10,6,24,0.45)');
       draw.text(g, `${left}`, W / 2, 80, { size: 20, color: left <= 5 ? '#ff5a5a' : 'rgba(255,255,255,0.85)' });
     }
     if (ctx.twist.id === 'swap' && phase === 'play' && swapT > SWAP_EVERY - 1.2) {
@@ -708,6 +712,7 @@ export function createParty(api, spec) {
 
   function reset() {
     seatDown.fill(0);
+    seatKey.fill(false);
     pointerSeat.clear();
     t = 0;
     if (api.demo) {

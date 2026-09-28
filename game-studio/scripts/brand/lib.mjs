@@ -21,7 +21,7 @@ export const C = {
   grape: '#8b5cf6',
 };
 
-export const CATEGORY_LABEL = { arcade: 'Arcade', puzzle: 'Puzzle', classic: 'Classic', word: 'Word' };
+export const CATEGORY_LABEL = { arcade: 'Arcade', puzzle: 'Puzzle', classic: 'Classic', word: 'Word', party: 'Party · 1-4 players' };
 
 // ---------- game data ----------
 export async function loadGames() {

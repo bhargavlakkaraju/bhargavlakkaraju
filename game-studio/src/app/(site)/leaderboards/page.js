@@ -16,7 +16,7 @@ export default function LeaderboardsPage() {
       <h1 className="font-cond text-5xl font-extrabold uppercase leading-[0.95] sm:text-6xl">🏆 Leaderboards</h1>
       <p className="mt-2 text-white/70">Boards reset every day at midnight UTC. All-time records last forever.</p>
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {GAMES.map((g) => (
+        {GAMES.filter((g) => !g.party).map((g) => (
           <div key={g.slug} className="card p-5">
             <div className="mb-3 flex items-center justify-between">
               <div className="font-display text-lg font-bold">

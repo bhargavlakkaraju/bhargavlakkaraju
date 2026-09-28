@@ -29,7 +29,7 @@ export default {
     'While you are not holding, the arrow around your hole spins. Hold your button to glide the way it points.',
     'Glide over anything smaller than your hole and it tips over and falls in. Every bite makes you bigger.',
     'Grow about 20% bigger than a rival and you can swallow their hole whole. Smaller holes bounce off each other.',
-    'When the 40 second clock runs out the biggest hole wins the round, unless it is the last hole left first. First to 3 crowns wins the cup.',
+    'When the 40 second clock runs out the biggest hole wins the round, unless it is the last hole left first. First to 2 crowns wins the cup.',
     'From round 2 a twist card changes the rules: turbo, giants, lights out, swapped buttons, gold rush, rush hour and more.',
   ],
   tips: [

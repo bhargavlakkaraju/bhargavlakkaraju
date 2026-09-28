@@ -96,7 +96,7 @@ export const CATEGORY_COPY = {
     intro:
       'Free party games for 1 to 4 players on one phone, tablet or laptop. Every player grabs a corner of the screen and plays with one button, so anyone can join in seconds. Playing alone? Bots fill every empty seat.',
     more: [
-      'Matches are first to three crowns, and from round two every round draws a Twist card that changes the rules: Turbo speed, Giants, Tiny, Lights Out, Swapped controls, a Wobbly world and twists unique to each game.',
+      'Matches are first to two or three crowns, and from round two every round draws a Twist card that changes the rules: Turbo speed, Giants, Tiny, Lights Out, Swapped controls, a Wobbly world and twists unique to each game.',
       'On a keyboard the four players use Z, M, P and Q, the keys in the same corners as the buttons on screen. Nothing to install and no accounts, so it works at parties, in class breaks and on the sofa.',
     ],
     faq: [

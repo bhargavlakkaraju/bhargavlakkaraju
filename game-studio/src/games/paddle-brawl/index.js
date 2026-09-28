@@ -1142,7 +1142,7 @@ export default function createGame(api) {
   }
 
   return createParty(api, {
-    roundsToWin: 3,
+    roundsToWin: 2, // long rallies: first to 2 keeps a match near 3 minutes
     twists: ['turbo', 'giants', 'tiny', 'swap', 'lights', 'wobble', MULTI, PINBALL],
     setup,
     update,

@@ -42,8 +42,9 @@ function pickBy(list, seedStr) {
   return list[hashString(seedStr) % list.length];
 }
 
+// Scored games only: the game of the day comes with a score to beat and a leaderboard.
 export function gameOfTheDay(date = new Date()) {
-  return pickBy(GAMES, `gotd:${todayKey(date)}`);
+  return pickBy(GAMES.filter((g) => !g.party), `gotd:${todayKey(date)}`);
 }
 
 /** A rotating set of games featured as today's Daily Challenges. */

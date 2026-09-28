@@ -122,10 +122,12 @@ export default function GamePage({ meta, challenge = null }) {
                 </div>
               )}
             </div>
-            <div className="card p-5">
-              <div className="mb-3 font-display text-lg font-bold">🏆 Leaderboard</div>
-              <Leaderboard slug={meta.slug} />
-            </div>
+            {!meta.party && (
+              <div className="card p-5">
+                <div className="mb-3 font-display text-lg font-bold">🏆 Leaderboard</div>
+                <Leaderboard slug={meta.slug} />
+              </div>
+            )}
             <AdSlot slot="gameSide" style={{ minHeight: 250 }} />
           </aside>
         </div>

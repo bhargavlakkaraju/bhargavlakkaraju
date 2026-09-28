@@ -115,14 +115,14 @@
         g.textBaseline = 'alphabetic';
         g.fillStyle = '#fff';
         g.font = `700 92px ${FONT}`;
-        g.fillText('Just one', 64, 320);
+        g.fillText('Scroll less.', 64, 320);
         const tg = g.createLinearGradient(64, 0, 520, 0);
         tg.addColorStop(0, '#ff3d7f'); tg.addColorStop(0.5, '#ffd23f'); tg.addColorStop(1, '#22d3ee');
         g.fillStyle = tg;
-        g.fillText('more try.', 64, 420);
+        g.fillText('Play more.', 64, 420);
         g.fillStyle = 'rgba(255,255,255,0.75)';
         g.font = `600 34px ${FONT}`;
-        g.fillText(`${q.get('count') || slugs.length}+ free games · no download`, 66, 500);
+        g.fillText(`${q.get('count') || slugs.length} free games · swipe to play`, 66, 500);
       } else if (kind === 'icon') {
         const s = +q.get('size') || 512;
         c.width = s; c.height = s;

@@ -1408,6 +1408,7 @@ export default function createGame(api) {
       if (h.sinks.length && now() - h.sinks[0].t0 > 1.4) h.sinks = h.sinks.filter((s) => now() - s.t0 < s.dur);
       p.x = h.x;
       p.y = h.y;
+      p.light = h.r + 70; // LIGHTS OUT: a big hole still sees around its rim
     }
 
     // holes against holes: bump when close in size, swallow when 20% bigger
@@ -1875,7 +1876,7 @@ export default function createGame(api) {
   }
 
   return createParty(api, {
-    roundsToWin: 3,
+    roundsToWin: 2, // 40 s rounds between evenly matched holes: first to 2 keeps a match near 3 minutes
     roundTime: ROUND_TIME,
     twists: [
       'turbo',

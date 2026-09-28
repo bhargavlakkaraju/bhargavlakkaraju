@@ -422,7 +422,7 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
                 )}
                 {!embed && (
                   <button className="btn-ghost" onClick={() => (typeof navigator !== 'undefined' && navigator.share ? share('native') : setShareOpen((v) => !v))}>
-                    {variant('share_cta') === 'challenge' ? '⚔️ Challenge a friend' : '📣 Share score'}
+                    {meta.party ? '📣 Invite friends' : variant('share_cta') === 'challenge' ? '⚔️ Challenge a friend' : '📣 Share score'}
                   </button>
                 )}
                 {!embed && typeof navigator !== 'undefined' && navigator.share && (
@@ -544,7 +544,7 @@ export default function GamePlayer({ slug, challenge = null, embed = false, init
           <button className="rounded-full bg-panel px-3.5 py-1.5 text-sm font-extrabold text-white/70 ring-1 ring-line hover:text-white" onClick={toggleFull}>
             ⛶ Fullscreen
           </button>
-          <div className="ml-auto text-sm font-bold text-white/70">
+          <div className={`ml-auto text-sm font-bold text-white/70 ${meta.party ? 'hidden' : ''}`}>
             {best != null ? `Best ${formatScore(meta, best)} ${MEDALS[medalFor(meta, best)] || ''}` : 'No best yet'}
             {nm && best != null ? <span className="text-white/40"> · {nm.text}</span> : null}
           </div>

@@ -778,7 +778,7 @@ export default function createGame(api) {
     fx.burst(cx, cy, { count: 26, colors: ['#ffffff', '#c9f3ff', '#7fdcff'], speed: 230, gravity: 0, drag: 0.9, life: 0.55, size: 3.5 });
     fx.burst(cx, cy, { count: 14, colors: [duckP.color, palette(duckP.color).light], speed: 170, gravity: 0, drag: 0.92, life: 0.8, size: 5, shape: 'square' });
     fx.ring(cx, cy, { color: '#ffffff', radius: 60, life: 0.45, width: 5 });
-    fx.text(clamp(cx, 70, W - 70), Math.max(POOL.y0 + 20, cy - 30), 'CHOMP!', { color: '#ffffff', size: 30, stroke: palette(sharkP.color).darker, life: 0.9 });
+    fx.text(clamp(cx, 70, W - 70), Math.max(POOL.y0 + 44, cy - 30), 'CHOMP!', { color: '#ffffff', size: 30, stroke: palette(sharkP.color).darker, life: 0.9, rise: 40 });
     fx.shake(8, 0.28);
     ripple(cx, cy, 10, 70, 0.8, 0.7);
     chompSound();
