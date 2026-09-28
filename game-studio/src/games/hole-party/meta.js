@@ -1,7 +1,7 @@
 export default {
   slug: 'hole-party',
   title: 'Hole Party',
-  tagline: 'Swallow the city. Then swallow your friends.',
+  tagline: 'Swallow the city. Then your friends.',
   description:
     'A 1 to 4 player party game on one screen: each player is a hole in a tiny city, swallowing cones, cars, trees and buses to grow, then gulping smaller rival holes. One button each, bots fill empty seats. Free, no download.',
   category: 'party',

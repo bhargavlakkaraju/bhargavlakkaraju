@@ -759,8 +759,6 @@ export default function createGame(api) {
   }
 
   function infect(ctx, sharkP, duckP) {
-    if (globalThis.__dbg) globalThis.__dbg.push('catch@' + Math.floor(ctx.time / 5) * 5); // DEBUG
-    if (typeof window !== 'undefined' && window.__hr) console.log('CATCH', api.totalTime.toFixed(2)); // DEBUG
     const s = sharkP.data;
     const d = duckP.data;
     const cx = (s.x + d.x) / 2;
@@ -893,7 +891,6 @@ export default function createGame(api) {
 
     // round end: every duck caught -> the original shark(s) win after a beat
     if (endT < 0 && !ducks(ctx).length) {
-      if (globalThis.__dbg) globalThis.__dbg.push('SHARKWIN@' + Math.floor(ctx.time / 5) * 5 + ' ' + ctx.twist.id); // DEBUG
       endT = 0.9;
       endWinners = originals.slice();
     }
@@ -956,10 +953,13 @@ export default function createGame(api) {
     }
   }
 
+  // sharks are long and slim: bump them with a smaller circle than the one that keeps them off the walls
+  const bodyR = (b) => (b.shark ? b.r * 0.72 : b.r);
+
   function collide(a, b, pa, pb) {
     const dx = b.x - a.x;
     const dy = b.y - a.y;
-    const rr = a.r + b.r;
+    const rr = bodyR(a) + bodyR(b);
     const d2 = dx * dx + dy * dy;
     if (d2 >= rr * rr) return;
     const d = Math.sqrt(d2) || 0.01;
@@ -984,8 +984,8 @@ export default function createGame(api) {
     if (-vrel > 60 && (a.bumpT ?? 0) <= 0 && (b.bumpT ?? 0) <= 0) {
       if (a.bumpT !== undefined) a.bumpT = 0.2;
       if (b.bumpT !== undefined) b.bumpT = 0.2;
-      const cx = a.x + nx * a.r;
-      const cy = a.y + ny * a.r;
+      const cx = a.x + nx * bodyR(a);
+      const cy = a.y + ny * bodyR(a);
       splash(cx, cy, 6);
       ripple(cx, cy, 4, 22, 0.4, 0.5);
       const ducky = pa && pb && pa.data === a && pb.data === b ? [pa, pb] : [];
@@ -1200,7 +1200,6 @@ export default function createGame(api) {
 
   function timeUp(ctx) {
     const left = ducks(ctx);
-    if (globalThis.__dbg) globalThis.__dbg.push('survivors=' + left.length + '/' + (ctx.active.length - originals.length) + ' ' + ctx.twist.id); // DEBUG
     return left.length ? left : originals.filter((p) => p.active);
   }
 
@@ -1378,15 +1377,16 @@ export default function createGame(api) {
   function drawStatus(g, ctx) {
     const n = ducks(ctx).length;
     const str = n === 1 && ctx.active.length > 2 ? 'LAST DUCK!' : `${n} duck${n === 1 ? '' : 's'} left`;
+    // sits on the deck just under the pool, clear of the corner buttons and the mute button
     const w = 150;
     const x = W / 2 - w / 2;
-    const y = H - 44;
-    draw.roundRect(g, x, y, w, 30, 15, 'rgba(10,6,24,0.62)');
-    draw.text(g, '🦆', x + 20, y + 16, { size: 15, shadow: false });
-    draw.text(g, str, x + w / 2 + 10, y + 16, { size: 14, color: n === 1 ? '#ffd23f' : '#ffffff', shadow: false });
+    const y = POOL.y1 + 17;
+    draw.roundRect(g, x, y, w, 26, 13, 'rgba(10,6,24,0.7)');
+    draw.text(g, '🦆', x + 20, y + 14, { size: 14, shadow: false });
+    draw.text(g, str, x + w / 2 + 10, y + 14, { size: 14, color: n === 1 ? '#ffd23f' : '#ffffff', shadow: false });
   }
 
-  const __party = createParty(api, { // DEBUG
+  return createParty(api, {
     roundsToWin: 3,
     roundTime: ROUND_TIME,
     lastStanding: false,
@@ -1407,12 +1407,6 @@ export default function createGame(api) {
     timeUp,
     idle,
   });
-  if (typeof window !== 'undefined' && window.__hr) { // DEBUG
-    const u = __party.update; const rd = __party.render; window.__logic = []; window.__rend = [];
-    __party.update = (dt) => { const a = window.__hr(); const ph0 = __party.party.phase; u(dt); const el = window.__hr() - a; window.__logic.push(el); if (el > 2) console.log('SPIKE', el.toFixed(1), 't', api.totalTime.toFixed(2), ph0, '->', __party.party.phase); };
-    __party.render = (g) => { const a = window.__hr(); rd(g); window.__rend.push(window.__hr() - a); };
-  }
-  return __party; // DEBUG
 }
 
 // ---------- cover art ----------

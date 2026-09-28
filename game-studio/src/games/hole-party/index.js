@@ -912,22 +912,16 @@ export default function createGame(api) {
       seed = (seed * 16807) % 2147483647;
       return (seed - 1) / 2147483646;
     };
-    const T = () => (window.__hr ? window.__hr() : 0); // DEBUG
-    const t0 = T(); // DEBUG
     const [gc, gg] = ground ? [ground, ground.getContext('2d')] : canvas2x();
-    const t1 = T(); // DEBUG
     gg.setTransform(2, 0, 0, 2, 0, 0);
     paintStreets(gg, rnd);
-    const t2 = T(); // DEBUG
     for (let bi = 0; bi < 4; bi++) paintBlock(gg, bi, themes[bi], rnd);
-    const t3 = T(); // DEBUG
     ground = gc;
     const [rc, rg] = roofs ? [roofs, roofs.getContext('2d')] : canvas2x();
     rg.setTransform(2, 0, 0, 2, 0, 0);
     rg.clearRect(0, 0, W, H);
     paintRoofs(rg, rnd);
     roofs = rc;
-    if (window.__hr) console.log('PAINT create', (t1 - t0).toFixed(1), 'streets', (t2 - t1).toFixed(1), 'blocks', (t3 - t2).toFixed(1), 'roofs', (T() - t3).toFixed(1)); // DEBUG
   }
 
   // ----- props -----
@@ -1212,10 +1206,8 @@ export default function createGame(api) {
 
   // ----- round setup -----
   function setup(ctx) {
-    const __a = typeof window !== 'undefined' && window.__hr ? window.__hr() : 0; // DEBUG
     themes = rng.shuffle(['park', 'parking', 'plaza', 'playground']);
     props = buildCity(ctx);
-    if (typeof window !== 'undefined' && window.__hr) console.log('BUILD', (window.__hr() - __a).toFixed(1), props.length); // DEBUG
     gulps = [];
     tick = -1;
     bgSeed = 1 + Math.floor(rng() * 1e6);
@@ -1361,7 +1353,6 @@ export default function createGame(api) {
   function swallow(ctx, bigP, smallP) {
     const big = bigP.data;
     const small = smallP.data;
-    if (globalThis.__dbg) globalThis.__dbg.push('eat@' + Math.floor(ctx.time / 5) * 5); // DEBUG
     gulps.push({ x: small.x, y: small.y, r: small.r, color: smallP.color, eater: big, t0: now() });
     ctx.eliminate(smallP, { x: small.x, y: small.y });
     big.area = Math.min(big.area + small.area * 0.85, Math.PI * MAX_R * MAX_R);
@@ -1463,7 +1454,8 @@ export default function createGame(api) {
               const cy = a.y + ny * a.r;
               fx.burst(cx, cy, { count: 10, colors: [A.color, Bp.color, '#ffffff'], speed: 160, gravity: 0, life: 0.3, size: 3, shape: 'spark' });
               fx.shake(3, 0.12);
-              sfx.play('hit');
+              if ((A.human || Bp.human) && !api.demo) sfx.play('hit');
+              else sfx.noise({ dur: 0.1, vol: 0.06, freq: 900, to: 200 });
             }
           }
           A.x = a.x;
@@ -1526,7 +1518,6 @@ export default function createGame(api) {
       }
     }
 
-    if (globalThis.__dbg && Math.floor(ctx.time / 10) !== Math.floor((ctx.time - dt) / 10)) globalThis.__dbg.push('t' + Math.floor(ctx.time / 10) * 10 + ' r=' + ctx.alive().map((p) => Math.round(p.data.r)).sort((a, b) => b - a).join('/') + ' props=' + Math.round(props.length / 10) * 10); // DEBUG
     // last five seconds tick
     const left = Math.ceil(ROUND_TIME - ctx.time);
     if (left <= 5 && left !== tick && left > 0) {
@@ -1744,7 +1735,6 @@ export default function createGame(api) {
     const alive = ctx.alive();
     if (!alive.length) return null;
     const top = Math.max(...alive.map((p) => p.data.area));
-    if (globalThis.__dbg) globalThis.__dbg.push('timeup alive=' + alive.length + ' props=' + Math.round(props.length / 10) * 10 + ' rmax=' + Math.round(Math.sqrt(top / Math.PI) / 5) * 5); // DEBUG
     return alive.filter((p) => p.data.area >= top * 0.99);
   }
 
@@ -1884,7 +1874,7 @@ export default function createGame(api) {
     g.fill();
   }
 
-  const __party = createParty(api, { // DEBUG
+  return createParty(api, {
     roundsToWin: 3,
     roundTime: ROUND_TIME,
     twists: [
@@ -1904,12 +1894,6 @@ export default function createGame(api) {
     timeUp,
     idle,
   });
-  if (typeof window !== 'undefined' && window.__hr) { // DEBUG
-    const u = __party.update; const rd = __party.render; window.__logic = []; window.__rend = [];
-    __party.update = (dt) => { const a = window.__hr(); const ph0 = __party.party.phase; u(dt); const el = window.__hr() - a; window.__logic.push(el); if (el > 2) console.log('SPIKE', el.toFixed(1), 't', api.totalTime.toFixed(2), ph0, '->', __party.party.phase); };
-    __party.render = (g) => { const a = window.__hr(); rd(g); window.__rend.push(window.__hr() - a); };
-  }
-  return __party; // DEBUG
 }
 
 // ---------- cover art ----------
@@ -1987,7 +1971,9 @@ export function cover(g, w, h) {
   ];
   for (const q of folks) {
     drawQ(q);
-    draw.text(g, '!', q.x, q.y - 12, { size: 13, color: '#fff', stroke: '#c62828', shadow: false });
+    // a drawn exclamation mark (covers carry no text)
+    draw.roundRect(g, q.x - 2.6, q.y - 22, 5.2, 10, 2.6, '#ffffff', '#c62828', 1.6);
+    draw.circle(g, q.x, q.y - 8.5, 2.4, '#ffffff', '#c62828', 1.6);
   }
   // props tipping over the pink rim, with a puff of dust
   for (const q of [P('bench', 162, 88, 2.4, 1, { c: '#c0874d', c2: '#8a5a30' }), P('tree', 70, 76, 0.4, 0.85), P('hydrant', 66, 150, 0.8, 1.2)]) {
