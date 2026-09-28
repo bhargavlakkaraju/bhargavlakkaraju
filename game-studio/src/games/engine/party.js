@@ -17,6 +17,7 @@
 //       render(g, ctx) {},        // draw the world (also drawn behind the lobby and cards)
 //       bot(p, dt, ctx) {},       // return true while this bot "holds" its button
 //       timeUp(ctx) {},           // optional: winners when roundTime runs out (player or array)
+//       idle(dt, ctx) {},         // optional, cosmetic only: runs in the lobby and between rounds
 //     });
 //   }
 //
@@ -115,6 +116,7 @@ export function createParty(api, spec) {
       if (!p || !p.alive) return;
       p.alive = false;
       p.down = false;
+      p.prev = false; // no phantom release on the next frame
       const x = opts.x ?? p.x;
       const y = opts.y ?? p.y;
       fx.burst(x, y, { count: 34, colors: [p.color, '#ffffff'], speed: 320, life: 0.7, gravity: 200, size: 5 });
@@ -158,16 +160,22 @@ export function createParty(api, spec) {
     return out;
   }
 
+  // The lobby counts as if P1 had joined: pressing PLAY with nobody seated seats P1.
+  const lobbyHumans = () => Math.max(1, seats.filter(Boolean).length);
+
   function botChoices() {
-    const empty = 4 - seats.filter(Boolean).length;
-    const min = Math.max(0, 2 - seats.filter(Boolean).length);
+    const h = lobbyHumans();
     const out = [];
-    for (let b = min; b <= empty; b++) out.push(b);
+    for (let b = Math.max(0, 2 - h); b <= 4 - h; b++) out.push(b);
     return out;
   }
 
   function currentBots() {
-    return participants().filter((p) => !p.human).length;
+    const h = lobbyHumans();
+    const empty = 4 - h;
+    let bots = botsWanted < 0 ? empty : Math.min(botsWanted, empty);
+    if (h + bots < 2) bots = Math.min(empty, 2 - h);
+    return bots;
   }
 
   function nextTwist() {
@@ -378,8 +386,9 @@ export function createParty(api, spec) {
     over = true;
     const humansIn = ctx.active.filter((p) => p.human);
     const humanWon = matchWinners.some((p) => p.human);
-    const top = matchWinners[0];
-    api.setScore(top ? top.crowns : 0);
+    // The score is the best human's crowns (a bot's win never becomes your score or best).
+    const pool = humansIn.length ? humansIn : matchWinners;
+    api.setScore(pool.length ? Math.max(...pool.map((p) => p.crowns)) : 0);
     api.gameOver({
       win: humansIn.length ? humanWon : null,
       delay: 200,
@@ -406,6 +415,9 @@ export function createParty(api, spec) {
       if (spec.idle) spec.idle(dt, ctx);
       return;
     }
+    // Cosmetics (smoke, splashes, debris) keep moving behind the cards and results.
+    // spec.idle must only touch cosmetic state.
+    if (phase !== 'play' && spec.idle) spec.idle(dt, ctx);
     if (phase === 'card') {
       if (phaseT > (api.demo ? 1.3 : 2.2)) setPhase('count');
       return;

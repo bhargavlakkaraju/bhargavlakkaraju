@@ -1,0 +1,48 @@
+export default {
+  slug: 'snow-sumo',
+  title: 'Snow Sumo',
+  tagline: 'Charge. Dash. Bonk them into the sea.',
+  description:
+    'A one-button sumo brawl on a shrinking ice floe for 1 to 4 players on one screen. Charge up, dash, and knock your friends into the freezing sea. Bots fill empty seats. Free, no download.',
+  category: 'party',
+  party: { min: 1, max: 4 },
+  tags: ['party', '2 player', '4 player', 'one-button', 'sumo', 'local multiplayer'],
+  emoji: '☃️',
+  colors: ['#2fd9ff', '#ff3d8b'],
+  bg: '#07172f',
+  width: 420,
+  height: 740,
+  startMode: 'immediate',
+  revive: false,
+  daily: false,
+  scoreLabel: 'Crowns',
+  controls: {
+    touch: 'Tap your corner of the screen to join, then press PLAY. In the match, hold your corner button to charge and let go to dash. Empty seats are filled by bots.',
+    mouse: 'Click a corner to join and click PLAY. Hold the mouse button on your corner to charge, release to dash. Bots take every empty seat.',
+    keyboard: 'Each player has one key: Z (bottom-left), M (bottom-right), P (top-right) and Q (top-left). Press your key in the lobby to join, Enter or Space to start. Hold your key to charge, let go to dash. Bots fill the empty seats.',
+  },
+  howTo: [
+    'Up to 4 friends share one screen. Tap your corner (or press Z, M, P or Q) to join; bots fill the empty seats.',
+    'You are a snowball on an ice floe. An arrow circles you while your button is up.',
+    'Hold to charge: the arrow stops, a power ring fills and you dig in so you are harder to shove.',
+    'Let go to dash along the arrow. Crash into rivals to send them flying.',
+    'Snowballs grow as they roll, and bigger means heavier. Every few seconds a ring of ice cracks and breaks away.',
+    'Slide into the sea and you are out. The last snowball on the ice wins the crown. First to 3 crowns takes the cup.',
+  ],
+  tips: [
+    'Watch the blue cracks: the tinted ring is about to break off, so get inside it before it goes.',
+    'Hit rivals toward the nearest edge, not toward the middle of the floe.',
+    'A full power dash slides a long way. If you miss, you might follow your target into the water.',
+    'Holding your button brakes you on the ice. Use a short charge to stop yourself sliding off.',
+    'Roll around early to grow a little bigger and heavier than everyone else.',
+  ],
+  faq: [
+    { q: 'Can I play Snow Sumo alone?', a: 'Yes. Press PLAY without joining any corner and you play the pink snowball against three bots. You can also choose how many bots join from the lobby.' },
+    { q: 'How do 2, 3 or 4 players share one device?', a: 'Each player owns one corner of the screen and uses only that button. On a keyboard the keys are Z, M, P and Q. It works on phones, tablets and laptops.' },
+    { q: 'Why do I get pushed so far?', a: 'Collisions are bouncy and mass depends on size. Small snowballs fly further, and anyone who is charging is heavier and harder to move.' },
+    { q: 'What are twist cards?', a: 'From the second round on, each round draws a random rule change, such as BLIZZARD wind, MELTDOWN, GIANTS, LIGHTS OUT or SWAP, so no two rounds play the same.' },
+  ],
+  about:
+    'Snow Sumo is a party game for up to four people on one phone, tablet or laptop, where everyone plays at the same time with a single button. Each player is a snowball with an arrow spinning around it: hold to charge a dash, let go to launch, and try to bump everyone else off a shrinking ice floe into the sea. Collisions are bouncy and weighted by size, snowballs grow as they roll, and the floe cracks and loses a ring of ice every few seconds, so every round ends in a frantic scramble for the middle. Play with friends or against bots that hunt whoever is closest to the edge, and let the twist cards stir up blizzards, meltdowns and swapped controls.',
+  released: '2026-09-28',
+};

@@ -18,7 +18,8 @@ const CY = (Y0 + Y1) / 2;
 const RIM = 8;
 
 // ---------- tuning ----------
-const TANK_R = 15; // collision radius at size 1
+const TANK_R = 16.5; // collision radius at size 1
+const ART = 1.1; // tank art scale (the art is drawn for a radius of 15)
 const SPIN = 3.1; // rad/s while the button is up (clockwise)
 const DRIVE = 120; // px/s while held
 const SHELL_SPEED = 300;
@@ -30,6 +31,7 @@ const ARM_DIST = 80; // a shell must travel this far (and bounce) before it can 
 const SHELL_LIFE = 7;
 const SUDDEN_AT = 30; // seconds of play before SUDDEN DEATH speeds everything up
 const ROUND_TIME = 50;
+const SLOWMO = 0.35; // time scale for a beat after each kill
 
 // Spawns per seat: P1 bottom-left, P2 bottom-right, P3 top-right, P4 top-left.
 const SPAWNS = [
@@ -316,7 +318,7 @@ function drawWreck(g, x, y, a, color, s) {
   g.restore();
 }
 
-function drawWall(g, w, t) {
+function drawWall(g, w) {
   const x = w.x0;
   const y = w.y0;
   const ww = w.x1 - w.x0;
@@ -338,7 +340,6 @@ function drawWall(g, w, t) {
     g.lineTo(x + 6, y + hh - 11);
     g.stroke();
   }
-  void t;
 }
 
 function paintFloor(c) {
@@ -565,18 +566,18 @@ export default function createGame(api) {
     const d = p.data;
     if (d.cd > 0 || liveShells(p.i) >= maxLive(ctx)) {
       if (p.human) sndDry(api.sfx);
-      fx.burst(p.x + Math.cos(d.a) * 20 * ctx.size, p.y + Math.sin(d.a) * 20 * ctx.size, { count: 3, color: 'rgba(200,200,220,0.6)', speed: 30, life: 0.3, gravity: 0, size: 3 });
+      fx.burst(p.x + Math.cos(d.a) * 24 * ctx.size, p.y + Math.sin(d.a) * 24 * ctx.size, { count: 3, color: 'rgba(200,200,220,0.6)', speed: 30, life: 0.3, gravity: 0, size: 3 });
       return;
     }
     d.cd = coolDown(ctx);
     d.recoil = 5;
     const dx = Math.cos(d.a);
     const dy = Math.sin(d.a);
-    const s = { x: p.x, y: p.y, dx, dy, owner: p.i, color: p.color, b: 0, trav: 0, age: 0, r: shellR(ctx), trail: [], dead: false };
-    const ok = moveShell(s, tankR(ctx) + 7 * ctx.size, ctx, true);
+    const s = { x: p.x, y: p.y, dx, dy, owner: p.i, color: p.color, b: 0, trav: 0, age: 0, r: shellR(ctx), trail: [], dead: false, armed: false };
+    const ok = moveShell(s, tankR(ctx) + 8.5 * ctx.size, ctx, true);
     s.trail.length = 0;
-    const tipX = p.x + dx * (tankR(ctx) + 7 * ctx.size);
-    const tipY = p.y + dy * (tankR(ctx) + 7 * ctx.size);
+    const tipX = p.x + dx * (tankR(ctx) + 8.5 * ctx.size);
+    const tipY = p.y + dy * (tankR(ctx) + 8.5 * ctx.size);
     flashes.push({ x: tipX, y: tipY, a: d.a, t: 0, color: p.color, s: ctx.size });
     fx.burst(tipX, tipY, { count: 7, colors: ['#fff6c8', '#ffd23f', p.color], speed: 180, life: 0.2, gravity: 0, size: 2.6, angle: d.a, spread: 0.9, shape: 'spark' });
     fx.burst(tipX, tipY, { count: 4, color: 'rgba(210,210,235,0.5)', speed: 40, life: 0.5, gravity: 0, drag: 0.93, size: 5, angle: d.a, spread: 1.4 });
@@ -606,12 +607,13 @@ export default function createGame(api) {
     c.beginPath();
     c.arc(x, y, r, 0, TAU);
     c.fill();
-    c.strokeStyle = 'rgba(8,6,14,0.4)';
-    c.lineWidth = 2;
+    c.strokeStyle = 'rgba(8,6,14,0.28)';
+    c.lineWidth = 2.5;
+    c.lineCap = 'round';
     c.beginPath();
-    for (let k = 0; k < 9; k++) {
-      const a = (k / 9) * TAU + Math.random() * 0.4;
-      const l = r * (0.9 + Math.random() * 0.6);
+    for (let k = 0; k < 7; k++) {
+      const a = (k / 7) * TAU + Math.random() * 0.5;
+      const l = r * (0.75 + Math.random() * 0.35);
       c.moveTo(x + Math.cos(a) * r * 0.35, y + Math.sin(a) * r * 0.35);
       c.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l);
     }
@@ -621,7 +623,7 @@ export default function createGame(api) {
   function paintTread(p, ctx) {
     const c = floorCtx();
     if (!c) return;
-    const s = ctx.size;
+    const s = ctx.size * ART;
     const a = p.data.a;
     const cs = Math.cos(a);
     const sn = Math.sin(a);
@@ -639,7 +641,6 @@ export default function createGame(api) {
 
   function killTank(p, s, ctx) {
     const self = s && s.owner === p.i;
-    if (globalThis.__ttLog) globalThis.__ttLog.push({ t: +ctx.time.toFixed(2), victim: p.i, owner: s && s.owner, b: s && s.b, trav: s && Math.round(s.trav), age: s && +s.age.toFixed(2), twist: ctx.twist.id, dirv: s && [s.dx.toFixed(2), s.dy.toFixed(2)], pos: [Math.round(p.x), Math.round(p.y)] });
     ctx.eliminate(p, { x: p.x, y: p.y });
     const x = p.x;
     const y = p.y;
@@ -648,20 +649,22 @@ export default function createGame(api) {
     fx.burst(x, y, { count: 14, colors: [draw.shade(p.color, -0.2), '#2a2e45', '#565d86'], speed: 360, life: 0.9, gravity: 0, drag: 0.92, size: 5, shape: 'square', shrink: false });
     fx.ring(x, y, { color: '#ffd23f', radius: 95 * ctx.size, life: 0.42, width: 9 });
     fx.shake(15, 0.42);
-    fx.flash('#fff1d6', 0.22);
+    fx.flash('#fff1d6', 0.16);
     sndBoom(api.sfx);
-    if (self) fx.text(x, y - 30, 'OOPS!', { color: '#ffffff', size: 26, life: 1.1, stroke: p.color });
-    else if (s) fx.text(x, y - 30, 'BOOM!', { color: '#ffd23f', size: 24, life: 0.9, stroke: 'rgba(0,0,0,0.5)' });
-    wrecks.push({ x, y, a: p.data.a, color: p.color, s: ctx.size, smoke: 0 });
+    const tx = clamp(x, X0 + 48, X1 - 48);
+    const ty = clamp(y - 32, Y0 + 20, Y1 - 20);
+    if (self) fx.text(tx, ty, 'OOPS!', { color: '#ffffff', size: 26, life: 1.1, stroke: p.color });
+    else if (s) fx.text(tx, ty, 'BOOM!', { color: '#ffd23f', size: 24, life: 0.9, stroke: 'rgba(0,0,0,0.5)' });
+    wrecks.push({ x, y, a: p.data.a, color: p.color, s: ctx.size * ART, smoke: 0 });
     const ang = s ? Math.atan2(s.dy, s.dx) : Math.random() * TAU;
-    debris.push({ x, y, vx: Math.cos(ang) * 120 + (Math.random() - 0.5) * 80, vy: Math.sin(ang) * 120 + (Math.random() - 0.5) * 80, z: 0, vz: 260, rot: p.data.a, vr: (Math.random() - 0.5) * 18, color: p.color, s: ctx.size });
+    debris.push({ x, y, vx: Math.cos(ang) * 120 + (Math.random() - 0.5) * 80, vy: Math.sin(ang) * 120 + (Math.random() - 0.5) * 80, z: 0, vz: 260, rot: p.data.a, vr: (Math.random() - 0.5) * 18, color: p.color, s: ctx.size * ART });
     paintScorch(x, y, 34 * ctx.size);
     slow = 0.28;
   }
 
   // ---------- update ----------
   function update(dt0, ctx) {
-    const dt = slow > 0 ? dt0 * 0.35 : dt0;
+    const dt = slow > 0 ? dt0 * SLOWMO : dt0;
     slow = Math.max(0, slow - dt0);
     const R = tankR(ctx);
     if (!sudden && ctx.time >= SUDDEN_AT && ctx.alive().length > 1) {
@@ -679,6 +682,8 @@ export default function createGame(api) {
       const d = p.data;
       d.recoil = Math.max(0, d.recoil - dt * 40);
       d.cd -= dt;
+      // fire first: the shell leaves along the angle the button was held at
+      if (p.release) fire(p, ctx);
       if (p.down) {
         const step = DRIVE * dt;
         const bx = p.x;
@@ -702,7 +707,6 @@ export default function createGame(api) {
         d.a += SPIN * dt;
         if (d.a > TAU) d.a -= TAU;
       }
-      if (p.release) fire(p, ctx);
     }
 
     // tanks shove each other apart
@@ -743,11 +747,17 @@ export default function createGame(api) {
         }
         for (const p of act) {
           if (!p.alive) continue;
-          if (p.i === s.owner && !(s.b >= 1 && s.trav >= ARM_DIST)) continue;
           const dx = p.x - s.x;
           const dy = p.y - s.y;
           const rr = R + s.r;
-          if (dx * dx + dy * dy < rr * rr) {
+          const inside = dx * dx + dy * dy < rr * rr;
+          // A shell can only hit its owner after it has bounced, travelled ARM_DIST and
+          // cleared the owner's hull (so point-blank wall shots never backfire).
+          if (p.i === s.owner && !s.armed) {
+            if (s.b >= 1 && s.trav >= ARM_DIST && !inside) s.armed = true;
+            continue;
+          }
+          if (inside) {
             s.dead = true;
             killTank(p, s, ctx);
             break;
@@ -808,8 +818,8 @@ export default function createGame(api) {
             b.vr = 0;
           }
         }
-        b.x = clamp(b.x, X0 + 6, X1 - 6);
-        b.y = clamp(b.y, Y0 + 6, Y1 - 6);
+        b.x = clamp(b.x, X0 + 14, X1 - 14);
+        b.y = clamp(b.y, Y0 + 14, Y1 - 14);
       }
     }
     for (const w of wrecks) {
@@ -907,7 +917,7 @@ export default function createGame(api) {
       const pts = shellPath(ctx, s, speed * 1.0);
       for (let k = 0; k + 5 < pts.length; k += 3) {
         // our own shell is harmless until it has bounced and travelled ARM_DIST
-        if (own && (s.b + k / 3 < 1 || s.trav + pts[k + 5] < ARM_DIST)) continue;
+        if (own && !s.armed && (s.b + k / 3 < 1 || s.trav + pts[k + 5] < ARM_DIST)) continue;
         const sd = segDist(p.x, p.y, pts[k], pts[k + 1], pts[k + 3], pts[k + 4]);
         if (sd.d < R + s.r + 7) {
           const t = (pts[k + 2] + (pts[k + 5] - pts[k + 2]) * sd.k) / speed;
@@ -984,8 +994,9 @@ export default function createGame(api) {
         if (!res || res.who === p) continue;
         if (res.b >= 2 && res.dist > 560) continue;
         // would it come back for us if the target dodges?
-        const home = traceShot(ctx, p.i, p.x, p.y, a, 0, true);
-        if (home && home.dist < res.dist + 260 && rng() < 0.75) continue;
+        // would it come back for us if the target dodges (or our aim is a hair off)?
+        const home = traceShot(ctx, p.i, p.x, p.y, a, 0, true) || traceShot(ctx, p.i, p.x, p.y, a - 0.07, 0, true) || traceShot(ctx, p.i, p.x, p.y, a + 0.07, 0, true);
+        if (home && rng() > b.reckless) continue;
         if (rng() < b.hesitate) {
           b.think = 0.2 + rng() * 0.25;
           return null;
@@ -1026,7 +1037,9 @@ export default function createGame(api) {
     return (rng() + rng() + rng() - 1.5) * 1.41;
   }
 
-  function bot(p, dt, ctx) {
+  function bot(p, dt0, ctx) {
+    // same clock as update(), which runs in slow motion for a moment after every kill
+    const dt = slow > 0 ? dt0 * SLOWMO : dt0;
     const d = p.data;
     const rng = ctx.rng;
     let b = d.bot;
@@ -1042,6 +1055,7 @@ export default function createGame(api) {
         sigma: 0.016 + rng() * 0.014,
         hesitate: 0.12 + rng() * 0.14,
         patience: 0.9 + rng() * 1.2,
+        reckless: 0.04 + rng() * 0.08,
       };
     }
     if (b.mode === 'hold') {
@@ -1049,7 +1063,7 @@ export default function createGame(api) {
       const blocked = b.kind === 'move' && d.blocked > 0.1;
       if (b.hold <= 0 || blocked) {
         // letting go fires: keep rolling a little longer if that shell would come home
-        if (b.kind === 'move' && !blocked && b.extend < 0.6 && d.cd <= 0 && liveShells(p.i) < maxLive(ctx) && traceShot(ctx, p.i, p.x, p.y, d.a, 0, true)) {
+        if (b.kind === 'move' && !blocked && b.extend < 1.1 && d.cd <= 0 && liveShells(p.i) < maxLive(ctx) && traceShot(ctx, p.i, p.x, p.y, d.a, 0, true)) {
           b.extend += dt;
           return true;
         }
@@ -1104,7 +1118,7 @@ export default function createGame(api) {
 
     for (const w of wrecks) drawWreck(g, w.x, w.y, w.a, w.color, w.s);
     for (const b of debris) if (b.z <= 0) drawTurret(g, b);
-    for (const w of walls) drawWall(g, w, T);
+    for (const w of walls) drawWall(g, w);
 
     // aim guides
     if (inPlay) {
@@ -1154,7 +1168,7 @@ export default function createGame(api) {
     for (const p of ctx.active) {
       if (!p.alive) continue;
       const d = p.data;
-      drawTank(g, p.x, p.y, d.a || 0, p.color, ctx.size, { recoil: d.recoil, tread: d.tread });
+      drawTank(g, p.x, p.y, d.a || 0, p.color, ctx.size * ART, { recoil: d.recoil, tread: d.tread });
       if (inPlay) drawAmmo(g, p, ctx);
     }
 
@@ -1184,7 +1198,7 @@ export default function createGame(api) {
     const n = maxLive(ctx);
     const live = liveShells(p.i);
     const cd = p.data.cd;
-    const y = p.y + 27 * ctx.size;
+    const y = p.y + 29 * ctx.size;
     const gap = n > 2 ? 7 : 9;
     for (let k = 0; k < n; k++) {
       const x = p.x + (k - (n - 1) / 2) * gap;
@@ -1253,8 +1267,8 @@ export function cover(g, w, h) {
   }
   g.stroke();
   // scorch
-  const sx = w * 0.7;
-  const sy = h * 0.34;
+  const sx = 160 * s;
+  const sy = 124 * s;
   const sg = g.createRadialGradient(sx, sy, 4, sx, sy, 70 * s);
   sg.addColorStop(0, 'rgba(8,6,14,0.8)');
   sg.addColorStop(1, 'rgba(8,6,14,0)');
@@ -1265,63 +1279,68 @@ export function cover(g, w, h) {
   // walls
   g.save();
   g.scale(s, s);
-  drawWall(g, { x0: 170, y0: 40, x1: 196, y1: 150 }, 0);
-  drawWall(g, { x0: 250, y0: 205, x1: 350, y1: 229 }, 0);
-  drawWall(g, { x0: 36, y0: 150, x1: 96, y1: 172 }, 0);
+  drawWall(g, { x0: 300, y0: 120, x1: 322, y1: 236 });
+  drawWall(g, { x0: 36, y0: 150, x1: 128, y1: 170 });
+  drawWall(g, { x0: 214, y0: 26, x1: 256, y1: 58 });
   g.restore();
-  // bank shot trail: from the pink tank, off the wall, into the blue tank
+  // bank shot: pink fires into the wall, the ricochet finds blue
   const P = (x, y) => [x * s, y * s];
-  const pts = [P(92, 245), P(250, 190), P(292, 110)];
+  const src = P(80, 250);
+  const hit = P(296, 170);
+  const ex = 160 * s;
+  const ey = 120 * s;
   g.lineCap = 'round';
-  g.setLineDash([2, 14 * s]);
-  g.strokeStyle = 'rgba(255,61,139,0.85)';
+  g.setLineDash([2, 13 * s]);
+  g.strokeStyle = 'rgba(255,61,139,0.9)';
   g.lineWidth = 6 * s;
   g.beginPath();
-  g.moveTo(pts[0][0], pts[0][1]);
-  g.lineTo(pts[1][0], pts[1][1]);
-  g.lineTo(pts[2][0], pts[2][1]);
+  g.moveTo(src[0] + 30 * s, src[1] - 11 * s);
+  g.lineTo(hit[0], hit[1]);
+  g.lineTo(ex + 22 * s, ey + 8 * s);
   g.stroke();
   g.setLineDash([]);
-  // bounce spark
-  g.fillStyle = '#ffffff';
-  for (let k = 0; k < 6; k++) {
-    const a = -Math.PI / 2 + (k - 2.5) * 0.35;
-    g.globalAlpha = 0.8;
-    g.fillRect(pts[1][0] + Math.cos(a) * 12 * s, pts[1][1] + Math.sin(a) * 12 * s - 6 * s, 3 * s, 3 * s);
+  // ricochet spark on the wall face
+  g.strokeStyle = '#ffffff';
+  g.lineWidth = 3 * s;
+  for (let k = 0; k < 5; k++) {
+    const a = Math.PI + (k - 2) * 0.42;
+    g.beginPath();
+    g.moveTo(hit[0] + Math.cos(a) * 8 * s, hit[1] + Math.sin(a) * 8 * s);
+    g.lineTo(hit[0] + Math.cos(a) * 20 * s, hit[1] + Math.sin(a) * 20 * s);
+    g.stroke();
   }
-  g.globalAlpha = 1;
+  draw.circle(g, hit[0] - 3 * s, hit[1], 6 * s, '#ffffff');
   // tanks
-  drawTank(g, 92 * s, 245 * s, Math.atan2(190 - 245, 250 - 92), '#ff3d8b', 2.1 * s, { recoil: 4 });
-  drawTank(g, 350 * s, 270 * s, -2.5, '#ffc93c', 2.1 * s, {});
-  drawTank(g, 72 * s, 75 * s, 0.6, '#7dff5a', 2.1 * s, { tread: 3 });
-  // shell in flight
-  const shx = 272 * s;
-  const shy = 148 * s;
-  draw.circle(g, shx, shy, 14 * s, 'rgba(255,61,139,0.3)');
-  draw.circle(g, shx, shy, 8 * s, '#ff3d8b');
-  draw.circle(g, shx - 2 * s, shy - 2 * s, 4 * s, '#ffffff');
-  // the blue tank going up in flames
-  const ex = 300 * s;
-  const ey = 92 * s;
-  drawTank(g, ex, ey, 2.4, '#2fd9ff', 2.1 * s, {});
-  const eg = g.createRadialGradient(ex, ey, 4, ex, ey, 80 * s);
+  drawTank(g, src[0], src[1], Math.atan2(170 - 250, 296 - 80), '#ff3d8b', 2.2 * s, { recoil: 4 });
+  drawTank(g, 368 * s, 262 * s, -2.55, '#ffc93c', 2.2 * s, {});
+  drawTank(g, 364 * s, 62 * s, 2.5, '#7dff5a', 2.2 * s, { tread: 3 });
+  // gold's shell heading for lime
+  const shx = 352 * s;
+  const shy = 150 * s;
+  for (let k = 5; k >= 1; k--) draw.circle(g, shx + k * 1.2 * s, shy + k * 13 * s, (7 - k) * s, `rgba(255,201,60,${0.55 - k * 0.09})`);
+  draw.circle(g, shx, shy, 13 * s, 'rgba(255,201,60,0.3)');
+  draw.circle(g, shx, shy, 7.5 * s, '#ffc93c');
+  draw.circle(g, shx - 2 * s, shy - 2 * s, 3.5 * s, '#ffffff');
+  // blue goes up in flames
+  drawTank(g, ex, ey, -0.4, '#2fd9ff', 2.2 * s, {});
+  const eg = g.createRadialGradient(ex, ey, 4, ex, ey, 84 * s);
   eg.addColorStop(0, 'rgba(255,250,210,0.95)');
-  eg.addColorStop(0.35, 'rgba(255,200,60,0.75)');
+  eg.addColorStop(0.35, 'rgba(255,200,60,0.78)');
   eg.addColorStop(0.7, 'rgba(255,90,40,0.35)');
   eg.addColorStop(1, 'rgba(255,60,40,0)');
   g.fillStyle = eg;
   g.beginPath();
-  g.arc(ex, ey, 80 * s, 0, TAU);
+  g.arc(ex, ey, 84 * s, 0, TAU);
   g.fill();
   g.strokeStyle = 'rgba(255,220,120,0.9)';
   g.lineWidth = 5 * s;
   g.beginPath();
-  g.arc(ex, ey, 62 * s, 0, TAU);
+  g.arc(ex, ey, 64 * s, 0, TAU);
   g.stroke();
   const cols = ['#ffd23f', '#ff8a3d', '#ffffff', '#2fd9ff', '#ff4d2e'];
   for (let k = 0; k < 22; k++) {
     const a = (k / 22) * TAU + (k % 3) * 0.2;
-    const r = (46 + ((k * 37) % 40)) * s;
+    const r = (48 + ((k * 37) % 40)) * s;
     g.fillStyle = cols[k % cols.length];
     g.save();
     g.translate(ex + Math.cos(a) * r, ey + Math.sin(a) * r);

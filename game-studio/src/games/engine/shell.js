@@ -50,6 +50,8 @@ export async function bootStandalone({ container, createGame, meta, platform, mo
   const mute = document.createElement('button');
   mute.className = 'ra-mute';
   mute.setAttribute('aria-label', 'Toggle sound');
+  // Party games use all four corners for player buttons: keep the mute out of P3's corner.
+  if (meta.party) mute.style.cssText = 'top:auto;right:auto;bottom:8px;left:50%;transform:translateX(-50%);opacity:.8';
   const syncMute = () => (mute.textContent = sfx.isMuted() ? '🔇' : '🔊');
   syncMute();
   mute.onclick = () => {

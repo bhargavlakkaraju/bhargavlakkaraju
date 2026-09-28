@@ -41,6 +41,10 @@
     "seed": 3,
     "start": 10
   },
+  "snow-sumo": {
+    "seed": 4,
+    "start": 3.5
+  },
   "solitaire": {
     "seed": 7,
     "start": 76.95,
@@ -54,6 +58,10 @@
     "seed": 7,
     "start": 11.6,
     "fit": "pad"
+  },
+  "tank-tango": {
+    "seed": 4,
+    "start": 3.5
   },
   "wordy": {
     "seed": 7,
