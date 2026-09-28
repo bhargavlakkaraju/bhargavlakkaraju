@@ -6,7 +6,8 @@ import { HeroCabinet, WelcomeBack, ChampionsTicker, ChampionsBoard, GameBrowser 
 import { SponsorStrip } from '@/components/Money';
 import { SearchBar } from '@/components/Search';
 import { IconArrow, IconPlay } from '@/components/Icons';
-import { GAMES, gameOfTheDay, dailyGames, getGame, publicMeta } from '@/lib/games';
+import { GAMES, gameOfTheDay, dailyGames, getGame, publicMeta, hasClip } from '@/lib/games';
+import { ClipStage, ClipVideo } from '@/components/GameTile';
 import { SITE, CATEGORIES } from '@/lib/site';
 import { HOME_FAQ, itemListLd, faqLd, ld } from '@/lib/seo';
 
@@ -30,13 +31,12 @@ function SectionHead({ title, sub, href, cta }) {
 }
 
 // Big feature card: image on top, bold caption underneath.
-function Feature({ href, img, kicker, title, text }) {
+function Feature({ href, slug, kicker, title, text }) {
   return (
     <Link href={href} className="group block">
       <div className="tile aspect-[16/9]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={img} alt="" className="h-full w-full object-cover" loading="eager" width={800} height={450} />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+        <ClipStage slug={slug} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         <span className="badge absolute left-3 top-3 bg-pink text-white">{kicker}</span>
       </div>
       <div className="mt-2.5 font-cond text-xl font-extrabold uppercase leading-tight text-white group-hover:text-pink sm:text-[22px]">{title}</div>
@@ -53,13 +53,17 @@ function Quick({ game, label }) {
       className="group flex min-h-0 flex-col overflow-hidden rounded-2xl bg-card p-2 ring-1 ring-line transition hover:bg-raised hover:ring-white/20"
     >
       <div className="relative min-h-[90px] flex-1 overflow-hidden rounded-xl">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={`/covers/${game.slug}.webp`}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
-          loading="lazy"
-        />
+        {hasClip(game.slug) ? (
+          <ClipVideo slug={game.slug} className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`/covers/${game.slug}.webp`}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
+        )}
         <span className="absolute right-2 top-2 rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-bold text-white backdrop-blur">{CATEGORIES[game.category]?.name}</span>
       </div>
       <div className="px-1.5 pb-1 pt-2.5">
@@ -143,10 +147,10 @@ export default function Home() {
         {/* Feature cards */}
         <section className="mt-5 sm:mt-7">
           <div className="rail rail-grid" style={{ '--cols': 3 }}>
-            <Feature href={`/games/${gotd.slug}`} img={`/covers/${gotd.slug}.webp`} kicker="Game of the day" title={gotd.title} text={gotd.tagline} />
+            <Feature href={`/games/${gotd.slug}`} slug={gotd.slug} kicker="Game of the day" title={gotd.title} text={gotd.tagline} />
             <Feature
               href="/daily"
-              img={`/covers/${dailyArt.slug}.webp`}
+              slug={dailyArt.slug}
               kicker="Daily arena"
               title="Same levels for everyone"
               text="New levels every day at midnight UTC. Keep your streak alive."
@@ -154,7 +158,7 @@ export default function Home() {
             {party.length ? (
               <Feature
                 href="/category/party"
-                img={`/covers/${party[0].slug}.webp`}
+                slug={party[0].slug}
                 kicker="Party pack"
                 title="4 players, 1 phone"
                 text="One button each, bots fill empty seats, and every round has a twist."
@@ -162,7 +166,7 @@ export default function Home() {
             ) : (
               <Feature
                 href={`/games/${challenge.slug}`}
-                img={`/covers/${challenge.slug}.webp`}
+                slug={challenge.slug}
                 kicker="Dare a friend"
                 title={`Beat my score in ${challenge.title}`}
                 text="Every run can be sent as a challenge link."

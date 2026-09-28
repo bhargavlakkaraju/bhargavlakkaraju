@@ -5,12 +5,16 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import GamePlayer from './GamePlayer';
-import GameTile from './GameTile';
+import GameTile, { ClipStage } from './GameTile';
 import { getPlayer, levelInfo } from '@/lib/player';
 import { GAMES } from '@/lib/games';
 
+// The home cabinet starts in attract mode: the game's gameplay clip loops until the
+// visitor clicks Play, and only then does the real game load (nothing runs, or pauses
+// itself, for visitors who just scroll past).
 export function HeroCabinet({ picks }) {
   const [slug, setSlug] = useState(picks[0].slug);
+  const [live, setLive] = useState(false);
   const current = picks.find((p) => p.slug === slug) || picks[0];
   return (
     <div>
@@ -25,7 +29,17 @@ export function HeroCabinet({ picks }) {
               Full screen ↗
             </Link>
           </div>
-          <GamePlayer key={slug} slug={slug} frameClass="hero-frame" compact />
+          {live ? (
+            <GamePlayer key={slug} slug={slug} frameClass="hero-frame" compact />
+          ) : (
+            <button type="button" onClick={() => setLive(true)} className="hero-frame group relative block w-full cursor-pointer" aria-label={`Play ${current.title} here`}>
+              <ClipStage slug={slug} align="center" phone="90%">
+                <span className="absolute inset-x-0 bottom-6 flex justify-center">
+                  <span className="btn-pink px-6 text-lg shadow-2xl transition group-hover:brightness-110">▶ Play {current.title} here</span>
+                </span>
+              </ClipStage>
+            </button>
+          )}
         </div>
       </div>
       <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto" role="tablist" aria-label="Switch game">

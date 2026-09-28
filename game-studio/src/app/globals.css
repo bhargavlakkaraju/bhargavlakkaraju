@@ -336,3 +336,25 @@ body {
     grid-auto-columns: minmax(28%, 1fr);
   }
 }
+
+/* Wide clip showcases: the background art drifts slowly behind the phone-framed clip. */
+.stage-drift {
+  animation: stage-drift 16s ease-in-out infinite alternate;
+  transform-origin: 30% 50%;
+}
+@keyframes stage-drift {
+  from {
+    transform: scale(1.04) translateX(0);
+  }
+  to {
+    transform: scale(1.14) translateX(-2%);
+  }
+}
+.tile:hover .stage-phone video {
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage-drift {
+    animation: none;
+  }
+}

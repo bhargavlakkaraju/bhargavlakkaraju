@@ -12,7 +12,7 @@ import { IconPlay } from './Icons';
 
 // Looping gameplay clip: plays only while on screen, poster first, never for players who
 // asked for reduced motion or data saving. The file downloads only when scrolled into view.
-function ClipVideo({ slug }) {
+export function ClipVideo({ slug, className = 'absolute inset-0 h-full w-full object-cover' }) {
   const ref = useRef(null);
   useEffect(() => {
     const v = ref.current;
@@ -36,11 +36,12 @@ function ClipVideo({ slug }) {
     );
     io.observe(v);
     return () => io.disconnect();
-  }, []);
+  }, [slug]);
   return (
     <video
+      key={slug}
       ref={ref}
-      className="absolute inset-0 h-full w-full object-cover"
+      className={className}
       poster={`/clips/${slug}.webp`}
       muted
       playsInline
@@ -53,6 +54,32 @@ function ClipVideo({ slug }) {
       <source src={`/clips/${slug}.webm`} type='video/webm; codecs="vp9"' />
       <source src={`/clips/${slug}.mp4`} type='video/mp4; codecs="avc1.64001f"' />
     </video>
+  );
+}
+
+/**
+ * Wide showcase for a tall gameplay clip: the game's art drifts slowly in the background
+ * and the 9:16 clip plays in a phone-shaped frame on top (a wide card never crops the clip
+ * into a blurry strip). Falls back to the plain cover when a game has no clip.
+ */
+export function ClipStage({ slug, align = 'right', phone = '88%', children = null }) {
+  const clip = hasClip(slug);
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={`/covers/${slug}.webp`} alt="" className={`absolute inset-0 h-full w-full object-cover ${clip ? 'stage-drift brightness-[0.55]' : ''}`} />
+      {clip && (
+        <div
+          className={`stage-phone absolute top-1/2 aspect-[9/16] -translate-y-1/2 overflow-hidden rounded-[14px] bg-black shadow-[0_18px_50px_rgba(0,0,0,0.6)] ring-2 ring-white/15 ${
+            align === 'center' ? 'left-1/2 -translate-x-1/2' : 'right-[7%]'
+          }`}
+          style={{ height: phone }}
+        >
+          <ClipVideo slug={slug} />
+        </div>
+      )}
+      {children}
+    </div>
   );
 }
 

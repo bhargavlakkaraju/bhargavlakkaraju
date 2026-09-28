@@ -95,6 +95,7 @@ export function mountGame(container, createGame, meta, options = {}) {
   let scorePop = 0;
   let destroyed = false;
   let runs = 0;
+  let touched = false; // has the player given any input yet? (auto-pause only then)
   // In demo mode nothing is persisted: a self-playing preview must never touch the
   // visitor's own saved stats, streaks or settings (reads still work).
   const demoMem = new Map();
@@ -230,6 +231,7 @@ export function mountGame(container, createGame, meta, options = {}) {
 
   function dispatch(ev) {
     if (destroyed || hostPaused) return false;
+    if (ev.type === 'down' || ev.type === 'keydown') touched = true;
     if (autoPaused) {
       if (ev.type === 'down' || ev.type === 'keydown') autoPaused = false;
       return true;
@@ -285,7 +287,9 @@ export function mountGame(container, createGame, meta, options = {}) {
   };
   const onContext = (e) => e.preventDefault();
   const onVisibility = () => {
-    if (document.hidden && state === 'playing') autoPaused = true;
+    // A game nobody has touched yet (an instant-start game on a page someone is just
+    // browsing) is not paused behind their back: there is nothing to protect.
+    if (document.hidden && state === 'playing' && touched) autoPaused = true;
   };
   function isVisibleInViewport() {
     const r = canvas.getBoundingClientRect();
@@ -343,8 +347,8 @@ export function mountGame(container, createGame, meta, options = {}) {
     g.restore();
     fx.renderScreen(g, W, H);
     if (game.hud !== false && state !== 'ready') drawHud();
-    if (state === 'ready' && tapToStart) drawReady();
     if (autoPaused || hostPaused) drawPaused();
+    else if (state === 'ready' && tapToStart) drawReady();
   }
 
   function drawHud() {
@@ -374,10 +378,12 @@ export function mountGame(container, createGame, meta, options = {}) {
   }
 
   function drawPaused() {
-    g.fillStyle = 'rgba(8,4,20,0.55)';
+    g.fillStyle = 'rgba(8,4,20,0.72)';
     g.fillRect(0, 0, W, H);
     if (autoPaused && !hostPaused) {
-      draw.text(g, 'PAUSED', W / 2, H / 2 - 20, { size: 44 });
+      const pw = Math.min(W - 60, 260);
+      draw.roundRect(g, W / 2 - pw / 2, H / 2 - 62, pw, 118, 24, 'rgba(8,4,20,0.9)', 'rgba(255,255,255,0.18)');
+      draw.text(g, 'PAUSED', W / 2, H / 2 - 18, { size: 44 });
       draw.text(g, 'tap to resume', W / 2, H / 2 + 26, { size: 20, weight: 600, color: 'rgba(255,255,255,0.8)' });
     }
   }
