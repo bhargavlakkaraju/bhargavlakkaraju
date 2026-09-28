@@ -1,0 +1,48 @@
+export default {
+  slug: 'tank-tango',
+  title: 'Tank Tango',
+  tagline: 'Spin. Drive. Let go to fire.',
+  description:
+    'A one-button tank brawl for 1 to 4 players on one screen. Hold to drive, let go to fire bouncing shells, and be the last tank rolling. Bots fill empty seats. Free, no download.',
+  category: 'party',
+  party: { min: 1, max: 4 },
+  tags: ['party', '2 player', '4 player', 'one-button', 'tanks', 'local multiplayer'],
+  emoji: '💥',
+  colors: ['#ff3d8b', '#2fd9ff'],
+  bg: '#0f1230',
+  width: 420,
+  height: 740,
+  startMode: 'immediate',
+  revive: false,
+  daily: false,
+  scoreLabel: 'Crowns',
+  controls: {
+    touch: 'Tap your corner of the screen to join, then press PLAY. In the match, hold your corner button to drive and let go to fire. Empty seats are filled by bots.',
+    mouse: 'Click a corner to join and click PLAY. Hold the mouse button on your corner to drive, release to fire. Bots take every empty seat.',
+    keyboard: 'Each player has one key: Z (bottom-left), M (bottom-right), P (top-right) and Q (top-left). Press your key in the lobby to join, Enter or Space to start. Hold your key to drive, let go to fire. Bots fill the empty seats.',
+  },
+  howTo: [
+    'Up to 4 friends share one screen. Tap your corner (or press Z, M, P or Q) to join; bots fill the empty seats.',
+    'Your tank spins on the spot while your button is up. Hold it to drive straight ahead.',
+    'Let go to fire a shell the way you are facing. You get 2 shells at a time.',
+    'Shells bounce off walls twice, and after a bounce they can hit you too.',
+    'One hit and you are out. The last tank rolling wins the crown. First to 3 crowns takes the cup.',
+    'From round 2 on, a TWIST card changes the rules: turbo, giants, lights out, ricochet, rapid fire and more.',
+  ],
+  tips: [
+    'A quick tap is a shot with almost no movement. Tap the moment your barrel lines up with a rival.',
+    'Bank shots are deadly: aim at a wall and let the bounce find a tank hiding behind cover.',
+    'Every drive ends in a shot, so pick a direction that is safe to fire in, never straight into a nearby wall.',
+    'Watch the ammo dots under your tank. With both shells in flight, pressing does nothing but move you.',
+    'After 30 seconds SUDDEN DEATH kicks in: shells fly faster and bounce once more. Stop hiding.',
+  ],
+  faq: [
+    { q: 'Can I play Tank Tango alone?', a: 'Yes. Press PLAY without joining any corner and you drive the pink tank against three bots. You can also set how many bots join from the lobby.' },
+    { q: 'How do 2, 3 or 4 players share one device?', a: 'Each player owns one corner of the screen and uses only that button. On a keyboard the keys are Z, M, P and Q. It works on phones, tablets and laptops.' },
+    { q: 'Why did my own shell blow me up?', a: 'Shells bounce off walls, and once a shell has bounced it can hit any tank, including the one that fired it. Avoid firing point blank into walls.' },
+    { q: 'What are twist cards?', a: 'From the second round on, each round draws a random rule change, such as TURBO, GIANTS, LIGHTS OUT, RICOCHET or RAPID FIRE, so no two rounds play the same.' },
+  ],
+  about:
+    'Tank Tango is a pass-and-play style party game where everyone plays at the same time on one screen. Each tank has a single button: while it is up, the tank turns in circles; hold it and the tank rolls forward; let go and it fires. That tiny control set turns every round into a frantic dance of timing, bank shots and panicked dodges, and it is easy enough for anyone to pick up in seconds. Play with up to three friends on a phone, tablet or laptop, or take on smart bots that line up ricochet shots and duck out of the way. Rounds last under a minute, a new twist card shakes up the rules every round, and the first tank to three crowns wins the cup.',
+  released: '2026-09-28',
+};
