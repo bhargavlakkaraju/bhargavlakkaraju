@@ -27,7 +27,7 @@ export default {
     'Each player guards one wall: P1 the bottom, P2 the right, P3 the top and P4 the left. The little arrow on your paddle shows which way it is sliding.',
     'Tap to turn your paddle around. Hold the button to slow it down, then let go to slide at full speed again.',
     'Every ball that gets into your goal costs a heart. Lose all three and your goal is walled off.',
-    'Balls speed up over time. A second ball joins after 10 seconds and a third one later, so nobody stays safe for long. Last paddle standing wins the round, first to 3 crowns wins the cup.',
+    'Balls speed up over time. A second ball joins after 8 seconds and a third one later, so nobody stays safe for long. Last paddle standing wins the round, first to 3 crowns wins the cup.',
   ],
   tips: [
     'Turn early. A tap reverses you instantly, so a paddle that is already moving toward the ball beats one that has to stop and turn.',

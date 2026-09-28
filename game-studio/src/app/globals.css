@@ -326,3 +326,13 @@ body {
 .feed-scroll::-webkit-scrollbar {
   display: none;
 }
+
+/* Tall video tiles need narrower rail columns on phones. */
+.rail.party-rail {
+  grid-auto-columns: minmax(44%, 1fr);
+}
+@media (min-width: 640px) {
+  .rail.party-rail {
+    grid-auto-columns: minmax(28%, 1fr);
+  }
+}

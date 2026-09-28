@@ -4,7 +4,7 @@
 // corners are solid blocks (the corner buttons sit on them). Your paddle slides along your
 // goal on its own: tap to reverse it, hold to slow it down for precision. Three lives each;
 // a ball in your goal costs one, and at zero your goal is walled off and you are out. Balls
-// speed up, a second ball joins after 10 seconds and a third one later. Last paddle standing
+// speed up, a second ball joins after 8 seconds and a third one later. Last paddle standing
 // takes the crown.
 import { createParty } from '../engine/party.js';
 

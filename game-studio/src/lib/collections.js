@@ -558,6 +558,71 @@ export const COLLECTIONS = [
     published: '2026-09-25',
   },
   {
+    slug: 'party-games-one-phone',
+    title: 'Party Games on One Phone: Free 2, 3 and 4 Player Games',
+    metaTitle: '2 to 4 Player Games on One Phone, Free',
+    description:
+      'Free party games for 2, 3 or 4 players on one phone, tablet or laptop: Tank Tango, Snow Sumo, Hole Party, Shark Attack, Rooftop Rush and Paddle Brawl. One button each, no download.',
+    answer:
+      'For 2 to 4 players on one phone, try the Retry Arcade party pack: Tank Tango, Snow Sumo, Hole Party, Shark Attack, Rooftop Rush and Paddle Brawl. Each player holds one corner of the screen as their only button, bots fill empty seats, and every round after the first draws a twist card. Free in the browser, no download.',
+    picks: [
+      {
+        game: 'tank-tango',
+        why: 'Your tank spins on the spot until you hold your corner to drive, and letting go fires a shell that bounces off walls twice. After a bounce your own shell can hit you, which is where most of the laughs come from. Last tank rolling wins the round.',
+      },
+      {
+        game: 'snow-sumo',
+        why: 'Hold to charge, let go to dash, and bonk your friends off an ice floe that cracks away every few seconds. Snowballs grow as they roll, so the biggest one is also the hardest to shove.',
+      },
+      {
+        game: 'hole-party',
+        why: 'Everyone is a hole in a tiny city. Glide over cones, cars and trees to grow, then swallow a rival hole once you are about 20% bigger. After 40 seconds the biggest hole wins the round.',
+      },
+      {
+        game: 'shark-attack',
+        why: 'One player starts as the shark and everyone else is a rubber duck. Every bite turns a duck into another shark, so the pool gets scarier by the second. Survive 35 seconds as a duck to share the crown.',
+      },
+      {
+        game: 'rooftop-rush',
+        why: 'A ninja race with one lane per player over the same rooftop course: tap to jump, hold to jump higher, tap again for one air jump. The camera follows the leader, so fall too far behind and you are out.',
+      },
+      {
+        game: 'paddle-brawl',
+        why: 'Four-way pong where each player guards one wall: tap to turn your paddle around, hold to slow it down. Three hearts each, and more balls join as the round goes on.',
+      },
+    ],
+    sections: [
+      {
+        h: 'How four people play on one phone',
+        p: [
+          'Lay the phone or tablet flat between you. Each player takes one corner of the screen, and that corner is their only button: hold it, tap it or let go, depending on the game. On a laptop the four players use the Z, M, P and Q keys, the keys in the same corners as the buttons on screen.',
+          'Players at the top of the screen read their corner upside down, facing them, so everyone can sit around the table.',
+        ],
+      },
+      {
+        h: 'Playing alone or with fewer friends',
+        p: [
+          'Every empty seat is filled by a bot, so one player gets three rivals and two players get two. Tap the bots button in the lobby to play with fewer. Matches are first to three crowns, and from round two each round draws a twist card such as Turbo, Giants, Lights Out or swapped controls.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: 'What are good 4 player games on one phone?',
+        a: 'Tank Tango, Snow Sumo, Hole Party, Shark Attack, Rooftop Rush and Paddle Brawl on Retry Arcade. Each player uses one corner of the screen as their button, and they are free in the browser with no download.',
+      },
+      {
+        q: 'Can I play these party games alone?',
+        a: 'Yes. Press Play without anyone else joining and bots take the empty seats.',
+      },
+      {
+        q: 'Do these games work on a laptop?',
+        a: 'Yes. On a keyboard the four players use Z, M, P and Q, and you can also click the corner buttons with a mouse.',
+      },
+    ],
+    published: '2026-09-28',
+  },
+  {
     slug: 'games-to-play-when-bored',
     title: 'Games to Play When Bored: Free One-Tap Browser Games',
     metaTitle: 'Games to Play When Bored: Free and Instant',

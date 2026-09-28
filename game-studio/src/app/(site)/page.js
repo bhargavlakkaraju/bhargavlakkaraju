@@ -74,7 +74,7 @@ function Quick({ game, label }) {
 }
 
 // Mobile "what will you play?" tiles, one per category.
-const CAT_ART = { arcade: 'stack-tower', puzzle: 'juicy-drop', classic: 'solitaire', word: 'wordy' };
+const CAT_ART = { arcade: 'stack-tower', puzzle: 'juicy-drop', classic: 'solitaire', word: 'wordy', party: 'tank-tango' };
 function CategoryTile({ id }) {
   const c = CATEGORIES[id];
   return (
@@ -88,13 +88,14 @@ function CategoryTile({ id }) {
           loading="lazy"
         />
       </div>
-      <div className="mt-2 text-center text-sm font-extrabold text-white">{c.name}</div>
+      <div className="mt-1.5 text-center text-xs font-extrabold text-white">{c.name}</div>
     </Link>
   );
 }
 
 export default function Home() {
   const gotd = gameOfTheDay();
+  const party = GAMES.filter((g) => g.category === 'party');
   const daily = dailyGames(new Date(), 4);
   const picks = [gotd, ...['stack-tower', 'juicy-drop', 'block-crush', 'color-rush'].map(getGame).filter((g) => g && g.slug !== gotd.slug)]
     .slice(0, 4)
@@ -150,23 +151,35 @@ export default function Home() {
               title="Same levels for everyone"
               text="New levels every day at midnight UTC. Keep your streak alive."
             />
-            <Feature
-              href={`/games/${challenge.slug}`}
-              img={`/covers/${challenge.slug}.webp`}
-              kicker="Dare a friend"
-              title={`Beat my score in ${challenge.title}`}
-              text="Every run can be sent as a challenge link."
-            />
+            {party.length ? (
+              <Feature
+                href="/category/party"
+                img={`/covers/${party[0].slug}.webp`}
+                kicker="Party pack"
+                title="4 players, 1 phone"
+                text="One button each, bots fill empty seats, and every round has a twist."
+              />
+            ) : (
+              <Feature
+                href={`/games/${challenge.slug}`}
+                img={`/covers/${challenge.slug}.webp`}
+                kicker="Dare a friend"
+                title={`Beat my score in ${challenge.title}`}
+                text="Every run can be sent as a challenge link."
+              />
+            )}
           </div>
         </section>
 
         {/* Phones: pick a kind of game */}
         <section className="mt-9 lg:hidden">
           <h2 className="h-section">What will you play?</h2>
-          <div className="mt-4 grid grid-cols-4 gap-2.5">
-            {Object.keys(CAT_ART).map((id) => (
-              <CategoryTile key={id} id={id} />
-            ))}
+          <div className="mt-4 grid grid-cols-5 gap-2">
+            {Object.keys(CAT_ART)
+              .filter((id) => CATEGORIES[id] && getGame(CAT_ART[id]))
+              .map((id) => (
+                <CategoryTile key={id} id={id} />
+              ))}
           </div>
         </section>
 
@@ -187,6 +200,18 @@ export default function Home() {
 
       <div className="mx-auto max-w-[1440px] px-4">
         <RecentlyPlayed />
+
+        {/* Party pack: the one-screen multiplayer games */}
+        {party.length > 0 && (
+          <section className="mt-12">
+            <SectionHead title="Party pack" sub="Up to 4 players on one phone. One button each, bots fill the empty seats and every round draws a twist." href="/category/party" cta="All party games" />
+            <div className="rail rail-grid party-rail" style={{ '--cols': Math.min(6, party.length) }}>
+              {party.map((g) => (
+                <GameCard key={g.slug} game={g} variant="tall" />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Everything, filterable */}
         <section id="games" className="mt-12 scroll-mt-20">
