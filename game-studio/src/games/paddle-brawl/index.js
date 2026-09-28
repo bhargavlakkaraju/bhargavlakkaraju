@@ -188,7 +188,7 @@ export default function createGame(api) {
         lives: LIVES,
         pop: [0, 0, 0],
         turn: 0,
-        bot: { think: 0, target: (side.lo + side.hi) / 2, err: 0, lastKey: '', down: false, sk: ctx.rng.range(0.7, 1.4), daze: 0 },
+        bot: { think: 0, target: (side.lo + side.hi) / 2, err: 0, lastKey: '', hold: false, last: false, sk: ctx.rng.range(0.7, 1.4), daze: 0 },
       };
       syncPlayer(p, ctx);
     }
@@ -526,6 +526,9 @@ export default function createGame(api) {
         if (S.balls.length < S.want) serve(ctx);
       }
     }
+    // Last paddle standing: freeze the balls for the moment before the crown, so a stray
+    // ball cannot take the winner's final heart and turn the round into a draw.
+    if (ctx.alive().length <= 1) return;
     const base = baseSpeed(ctx);
     for (let k = S.balls.length - 1; k >= 0; k--) {
       const b = S.balls[k];
@@ -658,8 +661,8 @@ export default function createGame(api) {
     const rng = ctx.rng;
     B.think -= dt;
     if (B.daze > 0) {
-      B.daze -= dt;
-      return B.down;
+      B.daze -= dt; // zoned out: the button stays as it was
+      return B.last;
     }
     if (B.think <= 0) {
       B.think = rng.range(0.09, 0.2) * B.sk;
@@ -691,17 +694,17 @@ export default function createGame(api) {
     }
     const delta = B.target - d.pos;
     const want = delta > 0 ? 1 : -1;
+    let out = false;
     if (Math.abs(delta) > 5 && want !== d.dir) {
-      // need to turn around: a press reverses (release first if we are holding)
-      if (B.down) return (B.down = false);
-      B.down = Math.abs(delta) < 40;
-      return true;
-    }
-    if (B.down) {
-      if (Math.abs(delta) > 44) return (B.down = false);
-      return true;
-    }
-    return false;
+      // need to turn around: only a fresh press reverses, so release first if we are down
+      if (!B.last) {
+        out = true;
+        B.hold = Math.abs(delta) < 40; // close to the spot: keep holding to creep there
+      }
+    } else if (B.last && B.hold && Math.abs(delta) <= 44) out = true;
+    if (!out) B.hold = false;
+    B.last = out;
+    return out;
   }
 
   // ---------- rendering ----------

@@ -18,6 +18,7 @@
 //       bot(p, dt, ctx) {},       // return true while this bot "holds" its button
 //       timeUp(ctx) {},           // optional: winners when roundTime runs out (player or array)
 //       idle(dt, ctx) {},         // optional, cosmetic only: runs in the lobby and between rounds
+//       lightRadius: 105,         // optional: LIGHTS OUT radius around each player
 //     });
 //   }
 //
@@ -84,6 +85,7 @@ export function createParty(api, spec) {
   let control = [0, 1, 2, 3]; // control[seat] = index of the player that seat's button drives
   let swapT = 0;
   let pendingEnd = -1;
+  let lastUp = null; // the last player standing when the round started to close
   let roundWinners = [];
   let matchWinners = [];
   let t = 0;
@@ -449,10 +451,14 @@ export function createParty(api, spec) {
       }
       if (lastStanding) {
         const alive = ctx.alive();
-        if (alive.length <= 1 && pendingEnd < 0) pendingEnd = 0.9;
+        if (alive.length <= 1 && pendingEnd < 0) {
+          pendingEnd = 0.9;
+          lastUp = alive[0] || null;
+        }
         if (pendingEnd >= 0) {
           pendingEnd -= dt;
-          if (pendingEnd < 0) ctx.endRound(ctx.alive()[0] || null);
+          // Being knocked out during the closing moment does not turn a win into a draw.
+          if (pendingEnd < 0) ctx.endRound(ctx.alive()[0] || lastUp);
         }
       }
       return;
@@ -503,7 +509,7 @@ export function createParty(api, spec) {
       dark.height = H;
     }
     const d = dark.getContext('2d');
-    const r = 105 * ctx.size;
+    const r = (spec.lightRadius || 105) * ctx.size;
     d.globalCompositeOperation = 'source-over';
     d.clearRect(0, 0, W, H);
     d.fillStyle = 'rgba(4,2,12,0.94)';

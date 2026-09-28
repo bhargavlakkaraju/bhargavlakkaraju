@@ -29,9 +29,17 @@
     "seed": 6,
     "start": 11.5
   },
+  "paddle-brawl": {
+    "seed": 7,
+    "start": 32.6
+  },
   "road-hopper": {
     "seed": 2,
     "start": 9
+  },
+  "rooftop-rush": {
+    "seed": 3,
+    "start": 109.2
   },
   "sky-flap": {
     "seed": 7,

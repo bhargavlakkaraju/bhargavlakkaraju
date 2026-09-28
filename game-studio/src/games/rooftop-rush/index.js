@@ -1492,10 +1492,12 @@ export default function createGame(api) {
     // race tracker between the bottom buttons
     const act = ctx.active;
     if (!act.length || !S.C) return;
+    // sits high in the band between the bottom buttons: party shells put a mute button
+    // at the bottom center
     const x0 = 120;
     const x1 = 290;
-    const y = 694;
-    D.roundRect(g, x0 - 14, y - 22, x1 - x0 + 44, 44, 16, 'rgba(255,255,255,0.05)', 'rgba(255,255,255,0.1)', 1.5);
+    const y = 664;
+    D.roundRect(g, x0 - 14, y - 16, x1 - x0 + 44, 32, 14, 'rgba(255,255,255,0.05)', 'rgba(255,255,255,0.1)', 1.5);
     D.roundRect(g, x0, y - 3, x1 - x0, 6, 3, 'rgba(255,255,255,0.16)');
     for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) {
       g.fillStyle = (i + j) % 2 ? '#15101f' : '#ffffff';
@@ -1510,9 +1512,9 @@ export default function createGame(api) {
       const d = p.data;
       if (!d || d.x == null) return;
       const x = x0 + (x1 - x0) * clamp(effX(d) / S.C.finish, 0, 1);
-      const yy = y + (k - (n - 1) / 2) * 5 + (p.alive ? Math.sin(t * 10 + p.i) * 1 : 0);
+      const yy = y + (k - (n - 1) / 2) * 4 + (p.alive ? Math.sin(t * 10 + p.i) * 1 : 0);
       g.globalAlpha = p.alive ? 1 : 0.35;
-      D.circle(g, x, yy, 6.5, p.color, '#10081f', 2);
+      D.circle(g, x, yy, 6, p.color, '#10081f', 2);
       g.globalAlpha = 1;
     });
   }
@@ -1531,6 +1533,7 @@ export default function createGame(api) {
 
   return createParty(api, {
     roundsToWin: 3,
+    lightRadius: 78, // narrow lanes: keep each runner's light inside their own lane
     twists: ['turbo', 'giants', 'tiny', 'swap', 'lights', 'wobble', MOON, PADS],
     setup,
     update,
