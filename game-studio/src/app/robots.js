@@ -27,7 +27,7 @@ export default function robots() {
   const disallow = ['/api/', '/studio', '/plus/thanks'];
   return {
     rules: [{ userAgent: '*', allow, disallow }, ...AI_BOTS.map((userAgent) => ({ userAgent, allow, disallow }))],
-    sitemap: `${SITE.url}/sitemap.xml`,
+    sitemap: [`${SITE.url}/sitemap.xml`, `${SITE.url}/video-sitemap.xml`],
     host: SITE.url,
   };
 }

@@ -3,7 +3,7 @@ import GameCard from '@/components/GameCard';
 import { TrackPageView } from '@/components/Widgets';
 import { gamesByCategory } from '@/lib/games';
 import { CATEGORIES } from '@/lib/site';
-import { CATEGORY_COPY, itemListLd, faqLd, breadcrumbLd, ld } from '@/lib/seo';
+import { CATEGORY_COPY, itemListLd, faqLd, breadcrumbLd, ld, metaDescription } from '@/lib/seo';
 
 export const dynamicParams = false;
 
@@ -16,7 +16,7 @@ export function generateMetadata({ params }) {
   if (!c) return {};
   return {
     title: `Free ${c.name} Games Online: Play Instantly`,
-    description: `${c.blurb} Play free ${c.name.toLowerCase()} games in your browser on phone or computer, no download.`,
+    description: metaDescription(`${c.blurb} Play free ${c.name.toLowerCase()} games in your browser on phone or computer, no download.`),
     alternates: { canonical: `/category/${params.cat}` },
   };
 }

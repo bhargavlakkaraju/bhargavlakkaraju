@@ -1,3 +1,4 @@
+import { metaDescription } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import GameCard from '@/components/GameCard';
@@ -28,7 +29,7 @@ export function generateMetadata({ params }) {
   const image = first ? `/og/${first.game}.jpg` : '/og/site.jpg';
   return {
     title: c.metaTitle,
-    description: c.description,
+    description: metaDescription(c.description),
     alternates: { canonical: `/best/${c.slug}` },
     openGraph: {
       type: 'article',

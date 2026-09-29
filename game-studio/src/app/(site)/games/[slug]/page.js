@@ -1,3 +1,4 @@
+import { metaDescription } from '@/lib/seo';
 import { notFound } from 'next/navigation';
 import GamePage from '@/components/GamePage';
 import { GAMES, getGame } from '@/lib/games';
@@ -15,7 +16,7 @@ export function generateMetadata({ params }) {
   const title = `${meta.title}: Play Free Online, No Download`;
   return {
     title,
-    description: meta.description,
+    description: metaDescription(meta.description),
     keywords: [meta.title, `${meta.title} online`, `${meta.title} free`, ...(meta.tags || []), 'free online game', 'no download'],
     alternates: { canonical: `/games/${meta.slug}` },
     openGraph: {

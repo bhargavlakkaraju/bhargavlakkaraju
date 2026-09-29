@@ -3,6 +3,15 @@ import { SITE, CATEGORIES } from './site';
 
 export const ld = (data) => ({ __html: JSON.stringify(data) });
 
+/** Meta descriptions Google shows in full: at most ~158 characters, cut at a word. */
+export function metaDescription(text, max = 158) {
+  const t = String(text || '').replace(/\s+/g, ' ').trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max - 1);
+  const at = cut.lastIndexOf(' ');
+  return `${(at > 80 ? cut.slice(0, at) : cut).replace(/[,.;:!?]+$/, '')}…`;
+}
+
 export function itemListLd(name, games, path) {
   return {
     '@context': 'https://schema.org',
@@ -52,7 +61,19 @@ export const HOME_FAQ = [
   ],
   [
     `What kinds of games are on ${SITE.name}?`,
-    'One-tap arcade games like Stack Tower, Sky Flap and Blade Spin, puzzle games like Block Crush, Juicy Drop, 2048 and Sudoku, classics like Solitaire and Snake, and Wordy, a daily five-letter word game.',
+    'One-tap arcade games like Stack Tower, Sky Flap and Blade Spin, puzzle games like Block Crush, Juicy Drop, 2048 and Sudoku, classics like Solitaire and Snake, Wordy, a daily five-letter word game, and party games for 1 to 4 players on one screen like Tank Tango and Snow Sumo.',
+  ],
+  [
+    `What is the ${SITE.name} play feed?`,
+    'A feed you swipe like short videos, except every card is a free game you can play in place. Tap to play, swipe up for the next game. It is built as a fun alternative to doom scrolling.',
+  ],
+  [
+    'Can several people play on one phone?',
+    'Yes. The party games (Tank Tango, Snow Sumo, Hole Party, Shark Attack, Rooftop Rush and Paddle Brawl) put 1 to 4 players on one phone, tablet or laptop, with one corner button each. Bots fill any empty seats.',
+  ],
+  [
+    `Who made ${SITE.name}?`,
+    `${SITE.name} was built by an AI coding agent (Claude, made by Anthropic) with one human directing: the game engine, every game and the website were written in about four days.`,
   ],
 ];
 

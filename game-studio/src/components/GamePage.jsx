@@ -4,13 +4,31 @@ import GameCard from './GameCard';
 import Leaderboard from './Leaderboard';
 import AdSlot from './AdSlot';
 import { EmbedCode, TrackPageView } from './Widgets';
-import { related, formatScore, MEDALS } from '@/lib/games';
+import { related, formatScore, MEDALS, hasClip } from '@/lib/games';
+import { ClipVideo } from './GameTile';
 import { SITE, CATEGORIES } from '@/lib/site';
 import { guidesFor } from '@/lib/guides';
 import { collectionsFor } from '@/lib/collections';
 
 function JsonLd({ meta }) {
   const url = `${SITE.url}/games/${meta.slug}`;
+  // The looping gameplay clip shown on the page, described so search engines can show a
+  // video thumbnail and AI assistants can cite a real preview.
+  const video = hasClip(meta.slug)
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'VideoObject',
+        '@id': `${url}#gameplay`,
+        name: `${meta.title} gameplay`,
+        description: `A 6 second gameplay loop of ${meta.title}, recorded by the game playing itself. ${meta.tagline}`,
+        thumbnailUrl: [`${SITE.url}/clips/${meta.slug}.webp`, `${SITE.url}/covers/${meta.slug}.jpg`],
+        contentUrl: `${SITE.url}/clips/${meta.slug}.mp4`,
+        uploadDate: `${meta.released || '2026-09-24'}T00:00:00Z`,
+        duration: 'PT6S',
+        isFamilyFriendly: true,
+        publisher: { '@id': `${SITE.url}/#org` },
+      }
+    : null;
   const data = [
     {
       '@context': 'https://schema.org',
@@ -23,7 +41,11 @@ function JsonLd({ meta }) {
       gamePlatform: ['Web browser', 'Mobile', 'Desktop'],
       applicationCategory: 'Game',
       operatingSystem: 'Any',
-      playMode: 'SinglePlayer',
+      playMode: meta.party ? ['SinglePlayer', 'MultiPlayer'] : 'SinglePlayer',
+      numberOfPlayers: { '@type': 'QuantitativeValue', minValue: 1, maxValue: meta.party ? 4 : 1 },
+      ...(meta.party ? { gameLocation: 'One shared screen (local multiplayer)' } : {}),
+      keywords: (meta.tags || []).join(', '),
+      ...(video ? { trailer: { '@id': video['@id'] } } : {}),
       isAccessibleForFree: true,
       inLanguage: 'en',
       datePublished: meta.released,
@@ -45,6 +67,7 @@ function JsonLd({ meta }) {
         { '@type': 'ListItem', position: 3, name: meta.title, item: url },
       ],
     },
+    ...(video ? [video] : []),
   ];
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />;
 }
@@ -135,8 +158,9 @@ export default function GamePage({ meta, challenge = null }) {
         <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
           <article className="prose-game card p-6 sm:p-8">
             <p className="!mt-0 text-base text-white/85">
-              <strong className="text-white">{meta.title}</strong> is a free {meta.category} browser game for phone, tablet and
-              computer. {meta.description}
+              <strong className="text-white">{meta.title}</strong> is a free{' '}
+              {meta.party ? 'party game for 1 to 4 players on one screen, played in the browser on a' : `${meta.category} browser game for`} phone, tablet
+              or computer. {meta.description}
             </p>
             <h2>How to play {meta.title}</h2>
             <ol>
@@ -205,6 +229,15 @@ export default function GamePage({ meta, challenge = null }) {
             </div>
           </article>
           <aside className="space-y-4">
+            {hasClip(meta.slug) && (
+              <div className="card p-5">
+                <h2 className="font-display text-lg font-bold">🎬 {meta.title} gameplay</h2>
+                <p className="mb-3 mt-1 text-sm text-white/60">6 seconds of the game playing itself.</p>
+                <div className="relative mx-auto aspect-[9/16] w-full max-w-[260px] overflow-hidden rounded-2xl bg-black ring-1 ring-white/10">
+                  <ClipVideo slug={meta.slug} />
+                </div>
+              </div>
+            )}
             <AdSlot slot="gameBelow" style={{ minHeight: 250 }} />
             <div className="card p-5">
               <div className="font-display text-lg font-bold">🧩 Put {meta.title} on your site</div>

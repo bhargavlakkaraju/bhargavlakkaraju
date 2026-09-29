@@ -1,3 +1,4 @@
+import { metaDescription } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import GamePlayer from '@/components/GamePlayer';
@@ -17,7 +18,7 @@ export function generateMetadata({ params }) {
   if (!g) return {};
   return {
     title: g.title,
-    description: g.description,
+    description: metaDescription(g.description),
     alternates: { canonical: `/guides/${g.slug}` },
     openGraph: { type: 'article', title: g.title, description: g.description, images: [{ url: `/og/${g.game}.jpg`, width: 1200, height: 630 }] },
   };

@@ -1,3 +1,4 @@
+import { metaDescription } from '@/lib/seo';
 import Script from 'next/script';
 import { Analytics } from '@vercel/analytics/react';
 import './globals.css';
@@ -9,7 +10,7 @@ export const metadata = {
     default: `${SITE.name}: Free Online Games, No Download`,
     template: `%s | ${SITE.name}`,
   },
-  description: SITE.description,
+  description: metaDescription(SITE.description),
   applicationName: SITE.name,
   keywords: ['free online games', 'browser games', 'no download games', 'play games online', 'daily challenge games', 'hyper casual games', 'puzzle games', 'arcade games'],
   openGraph: {
