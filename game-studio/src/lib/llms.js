@@ -39,6 +39,7 @@ export function llmsIndex() {
     '## Key pages',
     '',
     `- [Play feed](${url('/play')}): swipe through every game like a short-video feed and play in place`,
+    `- [Built by AI](${url('/built-by-ai')}): how an AI coding agent built the engine, every game and this site in 4 days`,
     `- [Daily Challenges](${url('/daily')}): today's seeded levels, reset at midnight UTC`,
     `- [Leaderboards](${url('/leaderboards')}): today, daily and all-time boards for every game`,
     `- [Embed and license our games](${url('/developers')}): free iframe embeds and licensing`,

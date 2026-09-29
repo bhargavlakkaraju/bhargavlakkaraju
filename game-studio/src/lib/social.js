@@ -93,12 +93,12 @@ function gameMedia(slug) {
 
 // Build one post: shared fields plus per-platform text. `x` must fit 280 chars with the
 // link counted as 23 (X shortens every URL to 23 characters).
-function post({ day, kind, slug = null, when, platforms, campaign, url, media, copy }) {
+function post({ day, kind, slug = null, when, platforms, campaign, url, media, copy, tags: tagsFor = null, thread = null }) {
   const id = `${day.slice(5).replace('-', '')}-${kind}${slug ? `-${slug}` : ''}`.slice(0, 40);
   const lk = links(url, campaign, id);
   const text = {};
   for (const p of platforms) {
-    const tags = BRAND.hashtags[p] || [];
+    const tags = (tagsFor && tagsFor[p]) || BRAND.hashtags[p] || [];
     const c = copy[p] || copy.default;
     if (p === 'x' || p === 'threads' || p === 'facebook') {
       const tagStr = tags.length ? ` ${tags.slice(0, p === 'facebook' ? 0 : 2).join(' ')}` : '';
@@ -113,7 +113,84 @@ function post({ day, kind, slug = null, when, platforms, campaign, url, media, c
       text[p] = `${copy.caption || c}\n\nPlay free: link in bio (retryarcade.com)\n\n${tags.join(' ')}`;
     }
   }
-  return { id, kind, game: slug, postAfter: when, expiresAt: at(utcDayString(new Date(Date.parse(`${day}T00:00:00Z`) + DAY_MS)), 0), platforms, text, media, links: lk };
+  const out = { id, kind, game: slug, postAfter: when, expiresAt: at(utcDayString(new Date(Date.parse(`${day}T00:00:00Z`) + DAY_MS)), 0), platforms, text, media, links: lk };
+  // Optional X thread: post thread.x[0] as the first post, then each next one as a reply to the previous.
+  if (thread && thread.x) out.thread = { x: thread.x.map((t, i) => (i === thread.x.length - 1 ? `${t} ${lk.x}` : t)) };
+  return out;
+}
+
+
+// ---------------------------------------------------------------- launch series
+// Two weeks of "built by AI" story posts, one a day, starting LAUNCH_START (UTC day).
+// Every claim is true and comes from the repository history. Change the start date with
+// the LAUNCH_START environment variable (YYYY-MM-DD) if the launch moves.
+const LAUNCH_START = process.env.LAUNCH_START || '2026-09-29';
+const AI_TAGS = { x: ['#buildinpublic', '#AI'], threads: ['#buildinpublic'], linkedin: ['#AI', '#gamedev', '#buildinpublic'] };
+const LAUNCH_MEDIA = [
+  {
+    type: 'video',
+    url: `${SITE.url}/social/launch-trailer.mp4`,
+    poster: `${SITE.url}/og/site.jpg`,
+    width: 720,
+    height: 1280,
+    use: 'Launch trailer (vertical): X, Threads, Reels, TikTok, Shorts, LinkedIn',
+    alt: 'Montage of Retry Arcade games playing themselves, ending on retryarcade.com',
+  },
+  { type: 'image', url: `${SITE.url}/og/site.jpg`, width: 1200, height: 630, use: 'Link card', alt: 'Retry Arcade: Scroll less. Play more.' },
+];
+const LAUNCH = [
+  {
+    path: '/built-by-ai',
+    media: 'launch',
+    x: 'We gave an AI one brief: build games people would rather play than doom scroll. 4 days later: 21 original games, a game engine written from scratch and the whole site. Every line of code by AI. One human said ship it.',
+    linkedin:
+      'We ran an experiment: could an AI coding agent build a real game studio?\n\nThe brief: fun, instant games people pick over doom scrolling.\n\n4 days later:\n- 21 original browser games, 6 of them for 1 to 4 players on one phone\n- a game engine written from scratch, zero dependencies\n- the website, SEO, analytics and daily social posts\n- trailers recorded by the games playing themselves\n\nEvery line of code was written by AI. One human set the direction and approved releases. Try it and tell us what the AI got right, and wrong.',
+    thread: [
+      'We gave an AI one brief: build games people would rather play than doom scroll.\n\n4 days later, 21 games are live. Every line of code written by AI. A thread on how it went 🧵',
+      'Day 1: it wrote a tiny game engine from scratch (no frameworks, zero dependencies) and a first game. Then it split into parallel helper agents that built 14 more.',
+      'Day 2: the website. Instant play, daily challenges, leaderboards, streaks, share cards, SEO. Then the domain went live.',
+      'Day 3: it could not film its own games, so it taught every game to play itself and recorded the trailers. That is where these clips come from.',
+      'Day 4: a party pack. 6 games for 1 to 4 players on one phone, one button each, bots in empty seats, and a random twist card every round.',
+      'The human part: picking the goal, giving feedback on screenshots, buying the domain and saying "ship it".\n\nEverything is free, no download. Judge the AI yourself:',
+    ],
+  },
+  { path: '/games/tank-tango', game: 'tank-tango', x: 'The AI could not film its own games, so it taught every one of them to play itself, then recorded the trailers. This is Tank Tango, played entirely by its own bots.' },
+  {
+    path: '/games/color-rush',
+    game: 'color-rush',
+    x: 'Bug report, from the AI to itself: one gate in Color Rush could never be passed when it spun one way. It proved it by brute force, then fixed it. Human players had been stuck on it too.',
+  },
+  { path: '/category/party', game: 'snow-sumo', x: 'The AI ran three helper agents in parallel, each building and play-testing its own games. Six party games came out of it: 4 players, 1 phone, one button each.' },
+  { path: '/play', x: 'Zero dependencies. The AI wrote a 2,300 line game engine from scratch instead of pulling in a framework, so every game starts in about a second on a phone.' },
+  { path: '/games/stack-tower', game: 'stack-tower', x: 'Can you beat a game an AI designed? Stack Tower: tap to drop, perfect drops grow your block back. Reply with your score.' },
+  { path: '/built-by-ai', x: 'One week since an AI built Retry Arcade. What should it build next? Reply with a game idea and we will hand the best one to the AI.' },
+  { path: '/games/snow-sumo', game: 'snow-sumo', x: 'Party games the AI invented: every round draws a twist card. Turbo. Giants. Lights out. Swapped controls. The bots do not mind. Your friends will.' },
+  { path: '/play', x: 'The AI built a swipe feed, but for games. Same thumb, same swipe, except every card is something you play. Scroll less, play more.' },
+  { path: '/built-by-ai', media: 'launch', x: 'How big is an arcade built by AI? About 26,000 lines of game code, 21 games, 21 trailers and one tiny engine. Built in 4 days.' },
+  { path: '/games/hole-party', game: 'hole-party', x: 'Hole Party: swallow a tiny city, then swallow your friends. Built by AI, including the bots you play against.' },
+  { path: '/play', x: 'The AI even writes the daily posts: every morning it generates a feed with the game of the day and fresh clips. This post came from it.' },
+  { path: '/games/shark-attack', game: 'shark-attack', x: 'Shark Attack: one shark, too many ducks, and every bite makes another shark. 1 to 4 players on one phone, designed by AI.' },
+  { path: '/built-by-ai', media: 'launch', x: 'Two weeks ago an AI built a game studio in 4 days. Everything is still free, no download. If you like it, send it to one friend. That is the whole marketing plan.' },
+];
+
+function launchPost(day) {
+  const n = Math.round((Date.parse(`${day}T00:00:00Z`) - Date.parse(`${LAUNCH_START}T00:00:00Z`)) / DAY_MS);
+  const item = LAUNCH[n];
+  if (!item) return null;
+  const media = item.media === 'launch' || !item.game ? LAUNCH_MEDIA : gameMedia(item.game);
+  return post({
+    day,
+    kind: 'launch',
+    slug: item.game || `day${n + 1}`,
+    when: at(day, 14, 30),
+    platforms: n === 0 ? ['x', 'threads', 'linkedin'] : ['x', 'threads'],
+    campaign: 'launch',
+    url: `${SITE.url}${item.path}`,
+    media,
+    tags: AI_TAGS,
+    copy: { default: item.x, linkedin: item.linkedin },
+    thread: item.thread ? { x: item.thread } : null,
+  });
 }
 
 /**
@@ -144,6 +221,10 @@ export function buildFeed({ date = new Date(), champions = [] } = {}) {
       },
     }),
   );
+
+  // 1a. Launch series (first two weeks): the build story, the priority post of the day.
+  const lp = launchPost(day);
+  if (lp) posts.push(lp);
 
   // 1b. Party pack: one party game a day, in the evening when friends are together.
   const partyGames = GAMES.filter((g) => g.party);

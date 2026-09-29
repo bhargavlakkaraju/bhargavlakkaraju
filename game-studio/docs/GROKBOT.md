@@ -43,7 +43,12 @@ Every day at 00:30, 09:30, 12:30, 16:30 and 20:30 UTC:
      type "video". For X, Threads, Facebook and LinkedIn prefer the video too; if video
      upload fails use the first image. Always set the provided `alt` text.
    - Respect `rules.maxPostsPerDay` and `rules.minMinutesBetweenPosts`. When over a
-     limit, keep this priority: gotd, party, champ, daily, gold, tip, list, brands, build.
+     limit, keep this priority: launch, gotd, party, champ, daily, gold, tip, list, brands, build.
+   - If a post has `thread.x`, publish it on X as a thread: `thread.x[0]` first (with the
+     media), then each next entry as a reply to the previous one. Use the thread instead of
+     `text.x` for that post.
+   - Posts of kind `launch` (the first two weeks) are the build story; post them from our own
+     account and never tag accounts that are not part of the story.
 3. Right after publishing, POST https://retryarcade.com/api/social/report with header
    Authorization: Bearer <SOCIAL_REPORT_TOKEN> and body
    {"id": "<post id>", "platform": "<platform>", "url": "<public post URL>",

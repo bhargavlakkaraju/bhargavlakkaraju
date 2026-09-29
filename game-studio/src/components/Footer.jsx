@@ -73,6 +73,11 @@ export default function Footer() {
               </Link>
             </li>
             <li>
+              <Link href="/built-by-ai" className="hover:text-white">
+                🤖 Built by AI in 4 days
+              </Link>
+            </li>
+            <li>
               <Link href="/instead-of-scrolling" className="hover:text-white">
                 📵 Instead of doom scrolling
               </Link>

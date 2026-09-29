@@ -67,12 +67,27 @@ Preview) and keep a list of what you set. At the end, redeploy production once
    with the same Google account and use "Import from Google Search Console" for
    retryarcade.com.
 
-5. **Email forwarding for hello@retryarcade.com.** At https://improvmx.com enter
-   `retryarcade.com` and forward `hello` (and `*` catch-all) to bhargav@hooplaindia.com.
-   Add the DNS records ImprovMX shows in Vercel -> Domains -> retryarcade.com -> DNS
-   Records (normally MX `mx1.improvmx.com` priority 10, MX `mx2.improvmx.com`
-   priority 20, and TXT `v=spf1 include:spf.improvmx.com ~all`; use exactly what
-   ImprovMX shows). Wait until ImprovMX shows the domain as active and send a test email.
+5. **Email on Google Workspace: hello@retryarcade.com** (uses the Workspace you already have).
+   a. https://admin.google.com -> Account -> Domains -> Manage domains -> **Add a domain** ->
+      `retryarcade.com` -> **Secondary domain** -> Add domain & start verification. (A
+      secondary domain is free. Only new users cost a license, and we do not need one.)
+   b. Google shows a TXT record (`google-site-verification=...`). In Vercel -> Domains ->
+      retryarcade.com -> DNS Records -> Add: type **TXT**, name `@`, value = that string.
+      Back in Google Admin click **Verify** (retry for a few minutes if needed).
+   c. Add the mail records in the same Vercel DNS screen:
+      - MX, name `@`, value `smtp.google.com`, priority `1`
+      - TXT, name `@`, value `v=spf1 include:_spf.google.com ~all`
+      - TXT, name `_dmarc`, value `v=DMARC1; p=none; rua=mailto:hello@retryarcade.com`
+      Then in Admin -> Google Workspace -> Gmail -> **Setup** -> activate Gmail for the domain.
+   d. Admin -> Directory -> Users -> Bhargav -> **Add alternate email** -> `hello` @
+      `retryarcade.com` (free, lands in the existing inbox). Optionally also `team@` and
+      `press@`. For the social accounts it is cleaner to create a free **Google Group**
+      `hello@retryarcade.com` with yourself as the member, so sign-up emails can be shared.
+   e. DKIM (inbox deliverability): Admin -> Apps -> Google Workspace -> Gmail -> Authenticate
+      email -> select retryarcade.com -> Generate new record (2048 bit) -> add the TXT it shows
+      in Vercel (name `google._domainkey`) -> Start authentication.
+   f. Send a test email to hello@retryarcade.com from another address.
+   (No Workspace? The free fallback is https://improvmx.com forwarding with its MX and SPF records.)
 
 6. **Social profiles.** Use https://github.com/bhargavlakkaraju/bhargavlakkaraju/blob/claude/vibrant-fermi-8m1anm/game-studio/docs/SOCIAL_KIT.md
    for handles, bios and which image goes where (images are at

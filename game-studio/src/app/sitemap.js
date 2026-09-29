@@ -22,6 +22,7 @@ export default function sitemap() {
     page('/daily', 0.9, 'daily', today),
     page('/play', 0.9, 'daily', today),
     page('/instead-of-scrolling', 0.7, 'monthly'),
+    page('/built-by-ai', 0.7, 'monthly'),
     page('/leaderboards', 0.6, 'daily', today),
     ...GAMES.map((g) => page(`/games/${g.slug}`, 0.9, 'weekly', newest(g.updated || g.released || CONTENT_UPDATED, CONTENT_UPDATED))),
     ...Object.keys(CATEGORIES).map((c) => page(`/category/${c}`, 0.7)),
