@@ -28,20 +28,12 @@ Preview) and keep a list of what you set. At the end, redeploy production once
 1b. **Vercel Web Analytics: DONE.** Enabled and collecting since 2026-09-29 (readable through
    the Vercel connector's count_pageviews, called without teamId).
 
-1c. **Google Analytics 4 (property and tag are DONE, 4 admin clicks left).** Property
-   `Retry Arcade` (properties/556324696, Measurement ID `G-DY8ZTFERWD`) exists, the variable
-   is set and the tag is live on every page. The API access we have is read-only, so these
-   need the GA4 web UI (https://analytics.google.com, property Retry Arcade -> Admin):
-   - **Data retention:** Data collection and modification -> Data retention -> Event data
-     retention -> **14 months** -> Save (the default of 2 months deletes history too soon).
-   - **Custom dimensions:** Data display -> Custom definitions -> Create custom dimension,
-     scope Event: `Game` = parameter `game_name`, and `Share method` = parameter `method`.
-     Then Custom metrics -> Create: `Play seconds` = parameter `play_seconds`, unit Seconds.
-   - **Key events:** Data display -> Events -> mark as key event: `game_start`,
-     `share_click`, `feed_play` (they appear in the list once they have fired at least once;
-     or use Key events -> New key event and type the name).
-   - **Search Console link:** Product links -> Search Console links -> Link ->
-     choose `retryarcade.com` (the Domain property) -> web stream `retryarcade.com` -> Submit.
+1c. **Google Analytics 4: DONE.** Property `Retry Arcade` (properties/556324696, Measurement
+   ID `G-DY8ZTFERWD`) is live on every page. Verified through Ryze on 2026-09-30: event data
+   retention 14 months; key events `game_start`, `share_click`, `feed_play` (no default value);
+   custom dimensions `Game` (`game_name`) and `Share method` (`method`); custom metric
+   `Play seconds` (`play_seconds`, seconds). The Search Console link (Admin -> Product links ->
+   Search Console links) cannot be read through the API, so check it in the GA4 UI.
 
 2. **Google AdSense.** Go to https://adsense.google.com and start with my Google account.
    Website: `retryarcade.com`. Country: India. Stop for me to accept the terms. When the
