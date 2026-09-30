@@ -32,8 +32,8 @@ Preview) and keep a list of what you set. At the end, redeploy production once
    ID `G-DY8ZTFERWD`) is live on every page. Verified through Ryze on 2026-09-30: event data
    retention 14 months; key events `game_start`, `share_click`, `feed_play` (no default value);
    custom dimensions `Game` (`game_name`) and `Share method` (`method`); custom metric
-   `Play seconds` (`play_seconds`, seconds). The Search Console link (Admin -> Product links ->
-   Search Console links) cannot be read through the API, so check it in the GA4 UI.
+   `Play seconds` (`play_seconds`, seconds). Search Console link: the Domain property
+   `retryarcade.com` is linked to the Retry Arcade web stream (15861432973), 2026-09-30.
 
 2. **Google AdSense.** Go to https://adsense.google.com and start with my Google account.
    Website: `retryarcade.com`. Country: India. Stop for me to accept the terms. When the
@@ -55,11 +55,10 @@ Preview) and keep a list of what you set. At the end, redeploy production once
    Do not create Popunder, Social Bar or Direct Link units (they hurt the site).
    Payout details: stop and let me enter them.
 
-4. **Bing Webmaster Tools.** (Google Search Console is DONE: the Domain property
-   `retryarcade.com` is verified and both `sitemap.xml` and `video-sitemap.xml` are
-   submitted.) At https://www.bing.com/webmasters sign in with the same Google account and use
-   "Import from Google Search Console" for retryarcade.com. Bing also powers ChatGPT search
-   and Copilot answers, so this matters for AI answers too.
+4. **Search Console + Bing Webmaster Tools: DONE.** The Google Search Console Domain property
+   `retryarcade.com` is verified with `sitemap.xml` and `video-sitemap.xml` submitted, and the
+   site was imported into Bing Webmaster Tools from Search Console on 2026-09-30 (Bing also
+   feeds ChatGPT search and Copilot answers). IndexNow pings Bing on every sitemap change.
 
 5. **Email on Google Workspace: hello@retryarcade.com** (uses the Workspace you already have).
    a. https://admin.google.com -> Account -> Domains -> Manage domains -> **Add a domain** ->
