@@ -60,27 +60,15 @@ Preview) and keep a list of what you set. At the end, redeploy production once
    site was imported into Bing Webmaster Tools from Search Console on 2026-09-30 (Bing also
    feeds ChatGPT search and Copilot answers). IndexNow pings Bing on every sitemap change.
 
-5. **Email on Google Workspace: hello@retryarcade.com** (uses the Workspace you already have).
-   a. https://admin.google.com -> Account -> Domains -> Manage domains -> **Add a domain** ->
-      `retryarcade.com` -> **Secondary domain** -> Add domain & start verification. (A
-      secondary domain is free. Only new users cost a license, and we do not need one.)
-   b. Google shows a TXT record (`google-site-verification=...`). In Vercel -> Domains ->
-      retryarcade.com -> DNS Records -> Add: type **TXT**, name `@`, value = that string.
-      Back in Google Admin click **Verify** (retry for a few minutes if needed).
-   c. Add the mail records in the same Vercel DNS screen:
-      - MX, name `@`, value `smtp.google.com`, priority `1`
-      - TXT, name `@`, value `v=spf1 include:_spf.google.com ~all`
-      - TXT, name `_dmarc`, value `v=DMARC1; p=none; rua=mailto:hello@retryarcade.com`
-      Then in Admin -> Google Workspace -> Gmail -> **Setup** -> activate Gmail for the domain.
-   d. Admin -> Directory -> Users -> Bhargav -> **Add alternate email** -> `hello` @
-      `retryarcade.com` (free, lands in the existing inbox). Optionally also `team@` and
-      `press@`. For the social accounts it is cleaner to create a free **Google Group**
-      `hello@retryarcade.com` with yourself as the member, so sign-up emails can be shared.
-   e. DKIM (inbox deliverability): Admin -> Apps -> Google Workspace -> Gmail -> Authenticate
-      email -> select retryarcade.com -> Generate new record (2048 bit) -> add the TXT it shows
-      in Vercel (name `google._domainkey`) -> Start authentication.
-   f. Send a test email to hello@retryarcade.com from another address.
-   (No Workspace? The free fallback is https://improvmx.com forwarding with its MX and SPF records.)
+5. **Email on Google Workspace: hello@retryarcade.com: DONE (DNS verified 2026-09-30).**
+   Live public records: MX `smtp.google.com` (priority 1), SPF `v=spf1 include:_spf.google.com
+   ~all`, DMARC `v=DMARC1; p=none; rua=mailto:hello@retryarcade.com`, the Google site
+   verification TXT and a DKIM key at `google._domainkey` (DKIM can only be generated once the
+   domain is added to Workspace). A test mail from the Workspace account to hello@ did not
+   bounce. Gmail files mail you send to your own alias under Sent only, so the final proof is
+   one mail from an outside address (for example a personal Gmail) landing in the inbox.
+   Optional: Gmail -> Settings -> Accounts -> Send mail as -> add hello@retryarcade.com to
+   reply from it. After a few weeks of clean DMARC reports, tighten DMARC to `p=quarantine`.
 
 6. **Social profiles.** Use https://github.com/bhargavlakkaraju/bhargavlakkaraju/blob/claude/vibrant-fermi-8m1anm/game-studio/docs/SOCIAL_KIT.md
    for handles, bios and which image goes where (images are at
