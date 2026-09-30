@@ -1,6 +1,7 @@
 export default {
   slug: 'road-hopper',
   title: 'Road Hopper',
+  seoTitle: 'Road Hopper: Chicken Crossing Road Game, Free',
   tagline: 'Hop across. Don’t get squashed.',
   description: 'Hop a chunky chick across busy roads, rushing rivers and railway tracks. Tap to hop, swipe to dodge, go as far as you can. Free online game.',
   category: 'arcade',

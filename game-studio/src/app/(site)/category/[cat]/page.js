@@ -14,9 +14,12 @@ export function generateStaticParams() {
 export function generateMetadata({ params }) {
   const c = CATEGORIES[params.cat];
   if (!c) return {};
+  const copy = CATEGORY_COPY[params.cat];
   return {
-    title: `Free ${c.name} Games Online: Play Instantly`,
-    description: metaDescription(`${c.blurb} Play free ${c.name.toLowerCase()} games in your browser on phone or computer, no download.`),
+    title: copy?.metaTitle || `Free ${c.name} Games Online: Play Instantly`,
+    description: metaDescription(
+      copy?.metaDescription || `${c.blurb} Play free ${c.name.toLowerCase()} games in your browser on phone or computer, no download.`,
+    ),
     alternates: { canonical: `/category/${params.cat}` },
   };
 }
@@ -34,7 +37,7 @@ export default function CategoryPage({ params }) {
       <script type="application/ld+json" dangerouslySetInnerHTML={ld(breadcrumbLd([['Games', '/'], [`${c.name} games`, path]]))} />
       {copy && <script type="application/ld+json" dangerouslySetInnerHTML={ld(faqLd(copy.faq))} />}
       <h1 className="font-cond text-5xl font-extrabold uppercase leading-[0.95] sm:text-6xl">
-        {c.emoji} Free {c.name} Games
+        {c.emoji} {copy?.h1 || `Free ${c.name} Games`}
       </h1>
       <p className="mt-2 max-w-3xl text-white/70">{copy ? copy.intro : c.blurb}</p>
       <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">

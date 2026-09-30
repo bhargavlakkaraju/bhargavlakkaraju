@@ -1,6 +1,7 @@
 export default {
   slug: 'tank-tango',
   title: 'Tank Tango',
+  seoTitle: 'Tank Tango: 2-4 Player Tank Game, Free Online',
   tagline: 'Spin. Drive. Let go to fire.',
   description:
     'A one-button tank brawl for 1 to 4 players on one screen. Hold to drive, let go to fire bouncing shells, and be the last tank rolling. Bots fill empty seats. Free, no download.',

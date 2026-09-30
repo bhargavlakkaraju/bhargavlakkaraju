@@ -1,6 +1,7 @@
 export default {
   slug: 'wordy',
   title: 'Wordy',
+  seoTitle: 'Wordy: Free Word Guessing Game, Daily and Unlimited',
   tagline: 'Five letters. Six tries. One word.',
   description: 'Play Wordy, a free online word guessing game: find the hidden 5-letter word in 6 tries. New daily word puzzle plus unlimited words in your browser.',
   category: 'word',

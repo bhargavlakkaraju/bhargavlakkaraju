@@ -1,6 +1,7 @@
 export default {
   slug: 'rooftop-rush',
   title: 'Rooftop Rush',
+  seoTitle: 'Rooftop Rush: 2-4 Player Ninja Race, Free Online',
   tagline: 'One button. Four ninjas. Mind the gap.',
   description:
     'A 1 to 4 player ninja race across night-city rooftops on one screen. Everyone gets a lane and one button: tap to jump, hold to jump higher, tap again for a double jump. Bots fill empty seats. Free, instant, no download.',

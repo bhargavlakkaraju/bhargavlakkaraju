@@ -1,6 +1,7 @@
 export default {
   slug: 'juicy-drop',
   title: 'Juicy Drop',
+  seoTitle: 'Juicy Drop: Watermelon Fruit Merge Game, Free',
   tagline: 'Drop, match, merge. Grow a giant.',
   description: 'Drop cute fruit into the jar and merge matching pairs into bigger ones, all the way to a watermelon. A free physics puzzle to play online in your browser.',
   category: 'puzzle',

@@ -1,6 +1,7 @@
 export default {
   slug: 'zig-zag',
   title: 'Zig Zag',
+  seoTitle: 'Zig Zag: Free Zigzag Ball Game, No Download',
   tagline: 'Tap to turn. Don’t fall off.',
   description: 'Roll a ball along a narrow zig zag path that crumbles behind you. Tap to turn, grab gems and chase your best. Free online game, no download.',
   category: 'arcade',

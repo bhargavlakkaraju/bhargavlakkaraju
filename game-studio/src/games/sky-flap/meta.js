@@ -1,6 +1,7 @@
 export default {
   slug: 'sky-flap',
   title: 'Sky Flap',
+  seoTitle: 'Sky Flap: One Tap Flying Bird Game, Free Online',
   tagline: 'Tap to flap. Thread the neon.',
   description: 'Tap to flap a round little bird through glowing neon pillars. A free one-tap flying game you can play online in any browser, no download needed.',
   category: 'arcade',

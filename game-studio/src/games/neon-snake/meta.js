@@ -1,6 +1,7 @@
 export default {
   slug: 'neon-snake',
   title: 'Neon Snake',
+  seoTitle: 'Neon Snake: Free Snake Game Online, No Download',
   tagline: 'Swipe. Glow. Grow. Don’t bite yourself.',
   description: 'Steer a glowing snake around a neon grid, chain quick bites for combos and grab golden orbs before they fade. Free classic snake to play online in your browser.',
   category: 'classic',

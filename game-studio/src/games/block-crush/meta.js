@@ -1,6 +1,7 @@
 export default {
   slug: 'block-crush',
   title: 'Block Crush',
+  seoTitle: 'Block Crush: Free Block Puzzle Game, No Download',
   tagline: 'Drop. Clear. Combo. Repeat.',
   description: 'Play Block Crush, a free block puzzle game online. Drag jewel blocks onto the 8x8 grid, clear rows and columns, and chain huge combos. No download.',
   category: 'puzzle',

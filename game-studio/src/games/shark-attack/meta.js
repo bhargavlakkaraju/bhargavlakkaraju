@@ -1,6 +1,7 @@
 export default {
   slug: 'shark-attack',
   title: 'Shark Attack',
+  seoTitle: 'Shark Attack: 2-4 Player Shark Game, Free Online',
   tagline: 'One shark. Too many ducks. For now.',
   description:
     'A 1 to 4 player party game on one screen: one player starts as the shark, everyone else is a rubber duck, and every bite turns a duck into another shark. One button each, bots fill empty seats. Free, no download.',

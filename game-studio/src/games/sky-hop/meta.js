@@ -1,6 +1,7 @@
 export default {
   slug: 'sky-hop',
   title: 'Sky Hop',
+  seoTitle: 'Sky Hop: Free Jumping Game Online, No Download',
   tagline: 'Bounce higher. Never look down.',
   description: 'Bounce from island to island and climb into the sky. Steer left and right, ride springs and dodge crumbling ledges. Free online game, no download.',
   category: 'arcade',

@@ -1,6 +1,7 @@
 export default {
   slug: 'brick-barrage',
   title: 'Brick Barrage',
+  seoTitle: 'Brick Barrage: Brick Breaker Game, Free Online',
   tagline: 'Aim. Unleash the volley. Break it all.',
   description: 'Aim, fire a volley of bouncing balls and smash numbered bricks before the wall reaches you. A free, satisfying ball shooter you play online in your browser.',
   category: 'arcade',

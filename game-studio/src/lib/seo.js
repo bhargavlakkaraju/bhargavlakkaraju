@@ -114,6 +114,11 @@ export const CATEGORY_COPY = {
     ],
   },
   party: {
+    // "2 player games" and "games for 2 players" are the big searches for this page.
+    metaTitle: '2 Player Games: Free 2, 3 and 4 Player Games on One Screen',
+    metaDescription:
+      'Free 2 player games, plus 3 and 4 player games, on one phone, tablet or laptop: tanks, sumo, pong, a ninja race and more. One button each, bots fill empty seats. No download.',
+    h1: 'Free 2, 3 and 4 Player Games',
     intro:
       'Free party games for 1 to 4 players on one phone, tablet or laptop. Every player grabs a corner of the screen and plays with one button, so anyone can join in seconds. Playing alone? Bots fill every empty seat.',
     more: [
@@ -122,6 +127,7 @@ export const CATEGORY_COPY = {
     ],
     faq: [
       ['Can I play these party games alone?', 'Yes. Press Play without joining any other seats and three bots take the empty corners. Tap the bots button in the lobby to play with fewer.'],
+      ['What are good 2 player games to play on one phone?', 'Tank Tango and Snow Sumo are quick 2 player duels, Paddle Brawl is four-way pong and Rooftop Rush is a rooftop race. All of them also work for 3 or 4 players, and bots fill the empty corners.'],
       ['How do 4 people play on one phone?', 'Lay the phone flat in the middle. Each player takes one corner and holds or taps the button in that corner. Players at the top read their corner upside down, facing them.'],
     ],
   },

@@ -9,6 +9,7 @@ const formatScore = (v) => {
 export default {
   slug: 'sudoku',
   title: 'Sudoku',
+  seoTitle: 'Sudoku: Play Sudoku Online Free, No Download',
   tagline: 'Fill the grid. One true solution.',
   description: 'Play Sudoku online free. Fresh puzzles with one unique solution in Easy, Medium and Hard, with notes, hints and a daily challenge. No download needed.',
   category: 'puzzle',

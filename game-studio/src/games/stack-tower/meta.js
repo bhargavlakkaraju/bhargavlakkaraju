@@ -1,6 +1,7 @@
 export default {
   slug: 'stack-tower',
   title: 'Stack Tower',
+  seoTitle: 'Stack Tower: Free Stack Game Online, No Download',
   tagline: 'Tap. Stack. Don’t miss.',
   description: 'Drop sliding blocks to build the tallest tower you can. Nail perfect stacks to grow your blocks back. Free, instant, no download.',
   category: 'arcade',

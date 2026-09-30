@@ -1,6 +1,7 @@
 export default {
   slug: 'solitaire',
   title: 'Solitaire',
+  seoTitle: 'Solitaire: Free Klondike Solitaire, No Download',
   tagline: 'The classic card game, dealt to win.',
   description: 'Play Klondike Solitaire online free in your browser. Classic draw 1 or draw 3 card game with winnable deals, unlimited undo, hints and a daily deal.',
   category: 'classic',

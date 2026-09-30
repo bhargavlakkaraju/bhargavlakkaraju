@@ -1,6 +1,7 @@
 export default {
   slug: 'merge-2048',
   title: '2048',
+  seoTitle: '2048 Game: Play Free Online, No Download',
   tagline: 'Slide. Merge. Reach 2048.',
   description: 'Play 2048 online for free. Swipe or use arrow keys to slide and merge number tiles, reach the 2048 tile, then keep going for a record. No download.',
   category: 'puzzle',

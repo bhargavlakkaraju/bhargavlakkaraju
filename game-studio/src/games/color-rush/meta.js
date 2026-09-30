@@ -1,6 +1,7 @@
 export default {
   slug: 'color-rush',
   title: 'Color Rush',
+  seoTitle: 'Color Rush: Tap Color Matching Game, Free Online',
   tagline: 'Only your color lets you through.',
   description: 'Tap to hop a glowing ball up through spinning color gates, passing only where the color matches yours. A free online reflex game that runs in any browser.',
   category: 'arcade',

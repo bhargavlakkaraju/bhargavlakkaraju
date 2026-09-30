@@ -1,6 +1,7 @@
 export default {
   slug: 'paddle-brawl',
   title: 'Paddle Brawl',
+  seoTitle: 'Paddle Brawl: 2-4 Player Pong Game, Free Online',
   tagline: 'Four walls. Four paddles. One button each.',
   description:
     'Four-way pong for 1 to 4 players on one screen. Everyone defends a wall of a neon court with one button: tap to turn your paddle around, hold to slow it down. Three lives each, bots fill empty seats. Free, instant, no download.',

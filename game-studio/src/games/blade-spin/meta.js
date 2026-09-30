@@ -1,6 +1,7 @@
 export default {
   slug: 'blade-spin',
   title: 'Blade Spin',
+  seoTitle: 'Blade Spin: Knife Throwing Game, Free Online',
   tagline: 'Throw true. Never touch steel.',
   description: 'Throw blades into a spinning wooden target without hitting the ones already stuck. Beat boss logs and slice apples in this free online browser game.',
   category: 'arcade',

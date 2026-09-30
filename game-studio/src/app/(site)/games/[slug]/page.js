@@ -13,7 +13,9 @@ export function generateStaticParams() {
 export function generateMetadata({ params }) {
   const meta = getGame(params.slug);
   if (!meta) return {};
-  const title = `${meta.title}: Play Free Online, No Download`;
+  // seoTitle leads with the generic term people search for ("snake game"), picked from
+  // Keyword Planner volumes; games without one fall back to the brand-name pattern.
+  const title = meta.seoTitle || `${meta.title}: Play Free Online, No Download`;
   return {
     title,
     description: metaDescription(meta.description),

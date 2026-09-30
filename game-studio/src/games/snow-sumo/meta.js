@@ -1,6 +1,7 @@
 export default {
   slug: 'snow-sumo',
   title: 'Snow Sumo',
+  seoTitle: 'Snow Sumo: 2-4 Player Sumo Game, Free Online',
   tagline: 'Charge. Dash. Bonk them into the sea.',
   description:
     'A one-button sumo brawl on a shrinking ice floe for 1 to 4 players on one screen. Charge up, dash, and knock your friends into the freezing sea. Bots fill empty seats. Free, no download.',
