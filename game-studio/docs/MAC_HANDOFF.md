@@ -25,9 +25,8 @@ Preview) and keep a list of what you set. At the end, redeploy production once
 1. **Vercel production branch.** Vercel -> retryarcade -> Settings -> Environments ->
    Production -> Branch Tracking: set the branch to `claude/vibrant-fermi-8m1anm` and save.
 
-1b. **Vercel Web Analytics (1 click).** Vercel -> retryarcade -> Analytics tab -> Enable
-   (Web Analytics, the free tier is enough). The site already ships the tracking code, so it
-   starts collecting on the next production deploy. No environment variable needed.
+1b. **Vercel Web Analytics: DONE.** Enabled and collecting since 2026-09-29 (readable through
+   the Vercel connector's count_pageviews, called without teamId).
 
 1c. **Google Analytics 4 (property and tag are DONE, 4 admin clicks left).** Property
    `Retry Arcade` (properties/556324696, Measurement ID `G-DY8ZTFERWD`) exists, the variable
