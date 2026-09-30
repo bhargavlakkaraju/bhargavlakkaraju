@@ -29,14 +29,20 @@ Preview) and keep a list of what you set. At the end, redeploy production once
    (Web Analytics, the free tier is enough). The site already ships the tracking code, so it
    starts collecting on the next production deploy. No environment variable needed.
 
-1c. **Google Analytics 4.** Go to https://analytics.google.com with my Google account.
-   Admin -> Create -> Property: name `Retry Arcade`, time zone India, currency INR, business
-   size Small, objectives "Get baseline reports". Stop for me to accept the terms. Then
-   create a **Web** data stream for `https://retryarcade.com` (stream name `retryarcade.com`,
-   keep Enhanced measurement on). Copy the Measurement ID (`G-` followed by letters and
-   digits) and set `NEXT_PUBLIC_GA4_ID=G-...`. The site already loads GA4 and mirrors every
-   game event to it when that variable is set. Later, after task 4, link GA4 to Search
-   Console (GA4 Admin -> Product links -> Search Console links).
+1c. **Google Analytics 4 (property and tag are DONE, 4 admin clicks left).** Property
+   `Retry Arcade` (properties/556324696, Measurement ID `G-DY8ZTFERWD`) exists, the variable
+   is set and the tag is live on every page. The API access we have is read-only, so these
+   need the GA4 web UI (https://analytics.google.com, property Retry Arcade -> Admin):
+   - **Data retention:** Data collection and modification -> Data retention -> Event data
+     retention -> **14 months** -> Save (the default of 2 months deletes history too soon).
+   - **Custom dimensions:** Data display -> Custom definitions -> Create custom dimension,
+     scope Event: `Game` = parameter `game_name`, and `Share method` = parameter `method`.
+     Then Custom metrics -> Create: `Play seconds` = parameter `play_seconds`, unit Seconds.
+   - **Key events:** Data display -> Events -> mark as key event: `game_start`,
+     `share_click`, `feed_play` (they appear in the list once they have fired at least once;
+     or use Key events -> New key event and type the name).
+   - **Search Console link:** Product links -> Search Console links -> Link ->
+     choose `retryarcade.com` (the Domain property) -> web stream `retryarcade.com` -> Submit.
 
 2. **Google AdSense.** Go to https://adsense.google.com and start with my Google account.
    Website: `retryarcade.com`. Country: India. Stop for me to accept the terms. When the
@@ -58,14 +64,11 @@ Preview) and keep a list of what you set. At the end, redeploy production once
    Do not create Popunder, Social Bar or Direct Link units (they hurt the site).
    Payout details: stop and let me enter them.
 
-4. **Google Search Console + Bing.** At https://search.google.com/search-console add a
-   **Domain** property `retryarcade.com`. Copy the TXT verification value
-   (`google-site-verification=...`), then in Vercel -> Domains -> retryarcade.com -> DNS
-   Records add a TXT record: name `@`, value = that string. Back in Search Console click
-   Verify (retry for a few minutes if DNS is still propagating). Then Sitemaps -> submit
-   `https://retryarcade.com/sitemap.xml`. Then at https://www.bing.com/webmasters sign in
-   with the same Google account and use "Import from Google Search Console" for
-   retryarcade.com.
+4. **Bing Webmaster Tools.** (Google Search Console is DONE: the Domain property
+   `retryarcade.com` is verified and both `sitemap.xml` and `video-sitemap.xml` are
+   submitted.) At https://www.bing.com/webmasters sign in with the same Google account and use
+   "Import from Google Search Console" for retryarcade.com. Bing also powers ChatGPT search
+   and Copilot answers, so this matters for AI answers too.
 
 5. **Email on Google Workspace: hello@retryarcade.com** (uses the Workspace you already have).
    a. https://admin.google.com -> Account -> Domains -> Manage domains -> **Add a domain** ->

@@ -104,7 +104,16 @@ export function track(name, props = {}) {
   if (props.c) e.c = props.c;
   queue.push(e);
   try {
-    if (ANALYTICS.ga4 && window.gtag) window.gtag('event', name, props);
+    // GA4 records page views itself (including in-app navigation), so mirroring page_view
+    // would count twice. Params get readable names so they can be registered as custom
+    // dimensions in GA4 (game_name, method) and summed (play_seconds).
+    if (ANALYTICS.ga4 && window.gtag && name !== 'page_view') {
+      const ga = {};
+      if (props.g) ga.game_name = props.g;
+      if (props.d != null) ga.play_seconds = props.d;
+      if (props.c) ga.method = props.c;
+      window.gtag('event', name, ga);
+    }
     if (ANALYTICS.plausibleDomain && window.plausible) window.plausible(name, { props });
   } catch {
     /* ignore */
