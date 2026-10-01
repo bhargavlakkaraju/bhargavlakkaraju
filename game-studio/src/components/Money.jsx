@@ -38,6 +38,8 @@ export function SponsorStrip({ className = '' }) {
 const INTERESTS = [
   ['sponsor-daily', 'Sponsor the Daily Arena'],
   ['branded-game', 'A branded game for my campaign'],
+  ['playable-ads', 'Playable ads for my app or brand'],
+  ['contest-game', 'A contest or event game with prizes'],
   ['display', 'Display ads on game pages'],
   ['newsletter', 'Newsletter sponsorship'],
   ['licensing', 'License games for my platform'],

@@ -43,6 +43,7 @@ export function llmsIndex() {
     `- [Daily Challenges](${url('/daily')}): today's seeded levels, reset at midnight UTC`,
     `- [Leaderboards](${url('/leaderboards')}): today, daily and all-time boards for every game`,
     `- [Embed and license our games](${url('/developers')}): free iframe embeds and licensing`,
+    `- [Games for brands](${url('/brands')}): branded HTML5 games, contest games and playable ads for marketing campaigns, from $1,500, with a live demo`,
     `- [Advertise](${url('/advertise')}): sponsorships and branded games`,
     `- [Press kit](${url('/press')}): facts, logos and screenshots`,
     `- [Full text for LLMs](${url('/llms-full.txt')}): every game's rules, controls, tips and FAQ`,

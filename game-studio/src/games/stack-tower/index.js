@@ -14,8 +14,31 @@ function blockColors(hue) {
   };
 }
 
-function drawBlock(g, x, y, w, hue, alpha = 1) {
-  const c = blockColors(hue);
+// Branded edition (api.brand): blocks cycle through the brand colors and carry its logo.
+function hexRgb(hex) {
+  const h = String(hex || '').replace('#', '');
+  const v = h.length === 3 ? h.replace(/./g, '$&$&') : h.padEnd(6, '0').slice(0, 6);
+  const n = parseInt(v, 16) || 0;
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+// k > 0 mixes toward white, k < 0 toward black.
+function shade(hex, k) {
+  const t = k > 0 ? 255 : 0;
+  const a = Math.abs(k);
+  const [r, g, b] = hexRgb(hex).map((c) => Math.round(c + (t - c) * a));
+  return `rgb(${r},${g},${b})`;
+}
+function luma(hex) {
+  const [r, g, b] = hexRgb(hex);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+// Very dark brand colors are lifted a little so blocks stay visible on the dark sky.
+function brandColors(hex) {
+  const lift = luma(hex) < 0.22 ? 0.3 : 0;
+  return { front: shade(hex, lift), top: shade(hex, lift + 0.32 * (1 - lift)), side: shade(hex, lift ? -0.1 : -0.3) };
+}
+
+function drawBlock(g, x, y, w, c, alpha = 1, mark = null) {
   const d = DEPTH;
   const dy = d * 0.6;
   g.globalAlpha = alpha;
@@ -43,14 +66,44 @@ function drawBlock(g, x, y, w, hue, alpha = 1) {
   // subtle highlight line
   g.fillStyle = 'rgba(255,255,255,0.18)';
   g.fillRect(x, y, w, 3);
+  if (mark) drawMark(g, x, y, w, mark);
   g.globalAlpha = 1;
 }
 
-function drawSky(g, W, H, level, t) {
+// The brand logo (or name) printed on a block's front face, clipped to the block.
+function drawMark(g, x, y, w, mark) {
+  const pad = 5;
+  g.save();
+  g.beginPath();
+  g.rect(x, y, w, BH);
+  g.clip();
+  const img = mark.logo;
+  if (img && img.naturalWidth) {
+    const lh = BH - pad * 2;
+    const lw = Math.min(lh * (img.naturalWidth / img.naturalHeight), 140);
+    const lhh = lw / (img.naturalWidth / img.naturalHeight);
+    if (w > lw + pad * 2) g.drawImage(img, x + (w - lw) / 2, y + (BH - lhh) / 2, lw, lhh);
+  } else if (mark.name) {
+    g.font = mark.font;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillStyle = mark.ink;
+    if (w > g.measureText(mark.name).width + pad * 2) g.fillText(mark.name, x + w / 2, y + BH / 2 + 1);
+  }
+  g.restore();
+}
+
+function drawSky(g, W, H, level, t, brand = null) {
   const h1 = 250 + level * 2.2;
   const grad = g.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, `hsl(${h1 % 360}, 55%, ${Math.max(8, 22 - level * 0.12)}%)`);
-  grad.addColorStop(1, `hsl(${(h1 + 40) % 360}, 60%, ${Math.max(14, 34 - level * 0.12)}%)`);
+  if (brand) {
+    const dim = Math.min(0.2, level * 0.004);
+    grad.addColorStop(0, shade(brand.colors[0], -0.78 - dim));
+    grad.addColorStop(1, shade(brand.colors[1] || brand.colors[0], -0.55 - dim));
+  } else {
+    grad.addColorStop(0, `hsl(${h1 % 360}, 55%, ${Math.max(8, 22 - level * 0.12)}%)`);
+    grad.addColorStop(1, `hsl(${(h1 + 40) % 360}, 60%, ${Math.max(14, 34 - level * 0.12)}%)`);
+  }
   g.fillStyle = grad;
   g.fillRect(0, 0, W, H);
   // stars fade in as you climb
@@ -72,6 +125,15 @@ export default function createGame(api) {
   const W = api.width;
   const H = api.height;
   const baseY = H - 150; // screen y of the base block top at camera 0
+  const brand = api.brand && api.brand.colors && api.brand.colors.length ? api.brand : null;
+  // In a branded edition "hue" is the floor index, mapped onto the brand colors.
+  const colorsFor = (hue) => (brand ? brandColors(brand.colors[((hue % brand.colors.length) + brand.colors.length) % brand.colors.length]) : blockColors(hue));
+  const markFor = (hue) => {
+    if (!brand) return null;
+    const hex = brand.colors[((hue % brand.colors.length) + brand.colors.length) % brand.colors.length];
+    return { logo: brand.logo || null, name: brand.name || '', font: api.font(15, 800), ink: luma(hex) > 0.62 ? 'rgba(20,12,40,0.78)' : 'rgba(255,255,255,0.92)' };
+  };
+  const block = (g, x, y, w, hue, alpha = 1) => drawBlock(g, x, y, w, colorsFor(hue), alpha, markFor(hue));
 
   let blocks; // {x, w, hue}
   let moving; // {x, w, dir, speed, hue}
@@ -148,13 +210,13 @@ export default function createGame(api) {
       x: fromLeft ? -top.w * 0.6 : W - top.w * 0.4,
       dir: fromLeft ? 1 : -1,
       speed,
-      hue: hue0 + level * 9,
+      hue: brand ? level : hue0 + level * 9,
     };
   }
 
   function reset() {
     hue0 = api.rng.int(0, 360);
-    blocks = [{ x: (W - START_W) / 2 - DEPTH / 2, w: START_W, hue: hue0 }];
+    blocks = [{ x: (W - START_W) / 2 - DEPTH / 2, w: START_W, hue: brand ? 0 : hue0 }];
     falling = [];
     pulses = [];
     cam = 0;
@@ -212,7 +274,7 @@ export default function createGame(api) {
       pulses.push({ x, w, level, age: 0 });
       api.sfx.combo(combo);
       api.fx.text(x + w / 2, y - 30, combo >= 2 ? `PERFECT ×${combo}` : 'PERFECT!', { color: '#ffd23f', size: 30 });
-      api.fx.burst(x + w / 2, y, { count: 18 + combo * 4, colors: ['#fff', '#ffd23f', blockColors(moving.hue).top], speed: 260, spread: Math.PI, angle: -Math.PI / 2, size: 4, gravity: 600 });
+      api.fx.burst(x + w / 2, y, { count: 18 + combo * 4, colors: ['#fff', '#ffd23f', colorsFor(moving.hue).top], speed: 260, spread: Math.PI, angle: -Math.PI / 2, size: 4, gravity: 600 });
       api.haptic(20);
     } else {
       combo = 0;
@@ -222,7 +284,7 @@ export default function createGame(api) {
       falling.push({ x: cutX, y, w: cutW, vy: -60, vx: diff > 0 ? 90 : -90, rot: 0, vr: diff > 0 ? 3 : -3, hue: moving.hue });
       api.sfx.play('place');
       api.fx.shake(4, 0.12);
-      api.fx.burst(diff > 0 ? right : left, y + BH / 2, { count: 10, color: blockColors(moving.hue).front, speed: 180, size: 3.5 });
+      api.fx.burst(diff > 0 ? right : left, y + BH / 2, { count: 10, color: colorsFor(moving.hue).front, speed: 180, size: 3.5 });
       if (overlap < 14) api.fx.text(placed.x + placed.w / 2, y - 26, 'PHEW!', { color: '#22d3ee', size: 24 });
       api.haptic(10);
     }
@@ -285,7 +347,7 @@ export default function createGame(api) {
     },
     render(g) {
       const level = blocks.length;
-      drawSky(g, W, H, level, t);
+      drawSky(g, W, H, level, t, brand);
       // ground pedestal
       const gy = levelY(0) + BH;
       if (gy < H) {
@@ -299,7 +361,7 @@ export default function createGame(api) {
         const y = levelY(i);
         if (y > H + BH || y < -BH * 2) continue;
         const b = blocks[i];
-        drawBlock(g, b.x, y, b.w, b.hue);
+        block(g, b.x, y, b.w, b.hue);
       }
       // perfect pulses
       for (const p of pulses) {
@@ -314,14 +376,14 @@ export default function createGame(api) {
         const y = levelY(blocks.length);
         g.fillStyle = 'rgba(255,255,255,0.05)';
         g.fillRect(moving.x, y + BH, moving.w, 4);
-        drawBlock(g, moving.x, y, moving.w, moving.hue);
+        block(g, moving.x, y, moving.w, moving.hue);
       }
       // falling pieces
       for (const f of falling) {
         g.save();
         g.translate(f.x + f.w / 2, f.y + BH / 2);
         g.rotate(f.rot);
-        drawBlock(g, -f.w / 2, -BH / 2, f.w, f.hue);
+        block(g, -f.w / 2, -BH / 2, f.w, f.hue);
         g.restore();
       }
     },
@@ -355,7 +417,7 @@ export function cover(g, w, h) {
     g.save();
     g.translate(x, y);
     g.scale(s * 1.4, s * 1.4);
-    drawBlock(g, 0, 0, bw / (s * 1.4), 320 + i * 12);
+    drawBlock(g, 0, 0, bw / (s * 1.4), blockColors(320 + i * 12));
     g.restore();
   }
   // moving block
@@ -363,7 +425,7 @@ export function cover(g, w, h) {
   g.save();
   g.translate(w * 0.62, baseY - widths.length * bh - bh * 1.2);
   g.scale(s * 1.4, s * 1.4);
-  drawBlock(g, 0, 0, mw / (s * 1.4), 320 + widths.length * 12);
+  drawBlock(g, 0, 0, mw / (s * 1.4), blockColors(320 + widths.length * 12));
   g.restore();
   g.restore();
   // motion lines

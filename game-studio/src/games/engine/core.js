@@ -36,14 +36,16 @@ export function mountGame(container, createGame, meta, options = {}) {
   // demo: the game plays itself (attract mode / recorded preview clips). It starts at once,
   // asks the game's optional demo(dt) autopilot for moves every frame, never saves scores,
   // stays silent and restarts itself after a game over. seed makes runs reproducible.
-  const { mode = 'classic', target = null, onEvent = () => {}, platform = null, autoFocus = true, demo = false, seed = null } = options;
+  // brand: { name, colors: ['#hex', ...], logo: HTMLImageElement | null } for branded editions
+  // (the /brands live demo). Games that support it restyle themselves; bests are kept apart.
+  const { mode = 'classic', target = null, onEvent = () => {}, platform = null, autoFocus = true, demo = false, seed = null, brand = null } = options;
   const W = meta.width;
   const H = meta.height;
   const slug = meta.slug;
   const lowerIsBetter = !!meta.lowerIsBetter;
   const tapToStart = meta.startMode !== 'immediate';
   const daily = mode === 'daily';
-  const bestKey = daily ? `best:${slug}:daily:${todayKey()}` : `best:${slug}`;
+  const bestKey = daily ? `best:${slug}:daily:${todayKey()}` : `best:${slug}${brand ? ':brand' : ''}`;
 
   // ---------- canvas ----------
   const canvas = document.createElement('canvas');
@@ -116,6 +118,7 @@ export function mountGame(container, createGame, meta, options = {}) {
     mode,
     daily,
     demo,
+    brand,
     target,
     rng,
     sfx: demo ? SILENT_SFX : sfx,

@@ -36,6 +36,7 @@ const ALLOWED = new Set([
   'lb_submit',
   'install_prompt',
   'lead',
+  'brand_demo_play',
   'plus_click',
   'plus_activated',
   'support_click',

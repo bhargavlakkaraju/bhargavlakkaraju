@@ -22,6 +22,8 @@ const PACKAGES = [
     title: 'Branded game',
     body: `We reskin one of our ${GAMES.length} games in your colors, logo and products (or build a new one), host it here, and give you an embed for your own site, QR codes, events and social campaigns. Players spend minutes with your brand, not seconds.`,
     best: 'Product launches, trade shows, retail and FMCG campaigns',
+    href: '/brands',
+    cta: 'See games for brands and try the live demo',
   },
   {
     emoji: '🖼️',
@@ -64,6 +66,11 @@ export default function Advertise() {
             <h2 className="mt-2 font-display text-2xl font-bold">{p.title}</h2>
             <p className="mt-2 text-white/70">{p.body}</p>
             <p className="mt-3 text-sm font-bold text-aqua">Best for: {p.best}</p>
+            {p.href && (
+              <Link href={p.href} className="mt-2 inline-block text-sm font-bold text-pink underline">
+                {p.cta} →
+              </Link>
+            )}
           </div>
         ))}
       </div>

@@ -93,6 +93,11 @@ export default function Footer() {
               </Link>
             </li>
             <li>
+              <Link href="/brands" className="hover:text-white">
+                🎯 Games for brands
+              </Link>
+            </li>
+            <li>
               <Link href="/advertise" className="hover:text-white">
                 Advertise & sponsor
               </Link>

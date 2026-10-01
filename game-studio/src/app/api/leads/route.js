@@ -7,7 +7,7 @@ import { SITE } from '@/lib/site';
 export const dynamic = 'force-dynamic';
 
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,24}$/;
-const INTERESTS = new Set(['sponsor-daily', 'branded-game', 'display', 'newsletter', 'licensing', 'other']);
+const INTERESTS = new Set(['sponsor-daily', 'branded-game', 'playable-ads', 'contest-game', 'display', 'newsletter', 'licensing', 'other']);
 const clip = (v, n) => String(v || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n);
 
 export async function POST(req) {

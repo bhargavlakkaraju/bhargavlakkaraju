@@ -32,6 +32,7 @@ export default function sitemap() {
     ...GUIDES.filter((g) => getGame(g.game)).map((g) => page(`/guides/${g.slug}`, 0.7, 'monthly', g.updated || g.published || CONTENT_UPDATED)),
     page('/about', 0.4, 'monthly'),
     page('/press', 0.4, 'monthly'),
+    page('/brands', 0.6, 'monthly'),
     page('/advertise', 0.4, 'monthly'),
     ...(MONEY.plusLink ? [page('/plus', 0.3, 'monthly')] : []),
     page('/developers', 0.4, 'monthly'),

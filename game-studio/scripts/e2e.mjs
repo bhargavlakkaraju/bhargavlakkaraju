@@ -141,6 +141,17 @@ async function newPage(opts = {}) {
   }
   await page.goto(`${BASE}/guides/how-to-win-2048`);
   check(await page.locator('canvas.ra-canvas').waitFor({ timeout: 10000 }).then(() => true, () => false), 'guide page embeds its game');
+  // Games for brands: the live demo mounts a branded Stack Tower and restyles it on input
+  {
+    const before = errors.length;
+    await page.goto(`${BASE}/brands`);
+    const canvas = page.locator('#demo canvas.ra-canvas');
+    const mounted = await canvas.waitFor({ timeout: 10000 }).then(() => true, () => false);
+    await page.locator('#demo input').first().fill('Test Brand');
+    await page.waitForTimeout(700);
+    const remounted = (await page.locator('#demo canvas.ra-canvas').count()) === 1;
+    check(mounted && remounted && errors.length === before, `brands page demo plays ${errors.slice(before).join(' | ')}`);
+  }
   await ctx.close();
 }
 
