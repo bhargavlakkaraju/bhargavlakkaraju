@@ -36,7 +36,18 @@
         cover(og, w, h);
         return off;
       }
+      const loadImg = (src) => new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+      // Brand art from scripts/brand/logo-assets.py: mascot icon and the Candy 3D lockup.
+      const [MASCOT, LOCKUP] = await Promise.all([loadImg('../public/brand/mascot-icon.png'), loadImg('../public/brand/logo-lockup.png')]);
       function logo(x, y, s) {
+        if (MASCOT) {
+          g.save();
+          g.shadowColor = 'rgba(0,0,0,0.45)';
+          g.shadowBlur = s * 0.25;
+          g.drawImage(MASCOT, x, y, s, s);
+          g.restore();
+          return;
+        }
         g.save();
         g.translate(x, y);
         const grad = g.createLinearGradient(0, 0, s, s);
@@ -104,14 +115,16 @@
         fade.addColorStop(1, 'rgba(11,6,24,0)');
         g.fillStyle = fade;
         g.fillRect(0, 0, 760, 630);
-        logo(64, 70, 84);
-        g.fillStyle = '#fff';
-        g.font = `700 54px ${FONT}`;
-        g.textBaseline = 'middle';
-        g.fillText('Retry', 168, 114);
-        const w1 = g.measureText('Retry').width;
-        g.fillStyle = '#ff3d7f';
-        g.fillText('Arcade', 168 + w1, 114);
+        if (LOCKUP) {
+          const lh = 196, lw = (lh * LOCKUP.width) / LOCKUP.height;
+          g.save();
+          g.shadowColor = 'rgba(255,61,139,0.35)';
+          g.shadowBlur = 30;
+          g.drawImage(LOCKUP, 46, 22, lw, lh);
+          g.restore();
+        } else {
+          logo(64, 70, 84);
+        }
         g.textBaseline = 'alphabetic';
         g.fillStyle = '#fff';
         g.font = `700 92px ${FONT}`;

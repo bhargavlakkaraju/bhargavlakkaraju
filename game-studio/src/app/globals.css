@@ -358,3 +358,19 @@ body {
     animation: none;
   }
 }
+
+/* Candy 3D logo wordmark (see Logo in components/Header.jsx). */
+.logo-retry {
+  color: #ffd23f;
+  letter-spacing: 0.16em;
+  margin-bottom: 1px;
+  filter: drop-shadow(0 1px 0 #8a3a00);
+}
+.logo-arcade {
+  background: linear-gradient(180deg, #ff6fb5 0%, #ff3d8b 46%, #ff8f3a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 0.01em;
+  filter: drop-shadow(0 2px 0 #6b1fb0) drop-shadow(0 1px 0 #2a0b4f);
+}

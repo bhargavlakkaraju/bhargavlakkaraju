@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Retry Arcade logo concepts, with ARCADE as the hero word.
 
-Writes public/brand/logo-concepts/<name>.svg with every letter converted to outlines (no
+Writes marketing/brand/logo-concepts/<name>.svg with every letter converted to outlines (no
 font needed to open them anywhere), four directions:
 
   stacked   RETRY above a huge extruded ARCADE (Barlow Condensed)
@@ -22,7 +22,7 @@ import pathops
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 FONTS = os.path.join(ROOT, 'public', 'fonts')
-OUT = os.path.join(ROOT, 'public', 'brand', 'logo-concepts')
+OUT = os.path.join(ROOT, 'marketing', 'brand', 'logo-concepts')
 os.makedirs(OUT, exist_ok=True)
 
 PINK, SUN, AQUA, LIME, PURPLE, INK = '#ff3d8b', '#ffd23f', '#22d3ee', '#a3e635', '#9b5cff', '#0a0a0c'

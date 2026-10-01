@@ -3,7 +3,7 @@
 //   public/covers/<slug>.webp|.jpg  800x600 card thumbnails (webp on site, jpg for OG/portals)
 //   public/og/<slug>.jpg      1200x630 social cards (title + tagline)
 //   public/og/site.jpg        1200x630 site social card
-//   public/icons/*            PWA / favicon icons
+//   (app icons and favicons: scripts/brand/logo-assets.py)
 // Usage: node scripts/thumbnails.mjs [slug ...]
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -43,10 +43,7 @@ for (const slug of slugs) {
 }
 const showcase = ['stack-tower', 'juicy-drop', 'block-crush', 'blade-spin', 'color-rush', 'merge-2048', 'road-hopper', 'sky-flap'].filter((s) => all.includes(s));
 await render(`kind=site&games=${showcase.slice(0, 6).join(',')}&count=${all.length}`, 'public/og/site.jpg');
-await render('kind=icon&size=512', 'public/icons/icon-512.png');
-await render('kind=icon&size=192', 'public/icons/icon-192.png');
-await render('kind=icon&size=180', 'src/app/apple-icon.png');
-await render('kind=icon&size=64', 'src/app/icon.png');
+// App icons and favicons come from the mascot logo art: python scripts/brand/logo-assets.py
 
 await browser.close();
 server.kill();

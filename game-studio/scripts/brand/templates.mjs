@@ -1,6 +1,6 @@
 // HTML templates for every brand / social asset. Each returns { W, H, html, ... } for render.mjs.
 import path from 'node:path';
-import { C, CATEGORY_LABEL, ROOT, arrowSvg, backdrop, coverCard, esc, fileUrl, hexA, mark, page, wordmark } from './lib.mjs';
+import { C, CATEGORY_LABEL, ROOT, MASCOT_URL, arrowSvg, backdrop, coverCard, esc, fileUrl, hexA, lockup, mark, page, wordmark } from './lib.mjs';
 
 // The 6 covers used on banners (bright, varied, instantly readable at small sizes).
 export const SHOWCASE = ['stack-tower', 'juicy-drop', 'block-crush', 'blade-spin', 'color-rush', 'sky-flap'];
@@ -9,7 +9,9 @@ export const STORIES = ['stack-tower', 'juicy-drop', 'block-crush', 'blade-spin'
 
 const fmt = (n) => Number(n).toLocaleString('en-US');
 const TAGLINE_HTML = (extra = '') => `<span class="neon"${extra}>JUST ONE </span><span class="grad glow-drop">MORE TRY.</span>`;
-const SUBLINE = '15 free games · no download';
+// Game count for copy on the assets; render.mjs sets it from the registry.
+let GAME_COUNT = 24;
+export const setGameCount = (n) => { GAME_COUNT = n; };
 
 // ---------------------------------------------------------------- logos
 export function logoMark(S) {
@@ -29,8 +31,10 @@ export function logoWordmark({ dark }) {
 }
 
 export function avatar(S) {
-  const body = `<div class="abs" data-paint="avatar" style="inset:0;background:linear-gradient(135deg, ${C.pink}, ${C.grape})"></div>
-    <div class="abs" style="inset:0;filter:drop-shadow(0 ${Math.round(S * 0.012)}px ${Math.round(S * 0.03)}px rgba(60,0,70,.35))">${arrowSvg({ scale: 1.02 })}</div>`;
+  // The mascot tile fills the frame and survives a circle crop: the icon is scaled so its
+  // rounded square runs past the circle, shifted down so the antenna ball stays inside.
+  const body = `<div class="abs" style="inset:0;background:linear-gradient(180deg,#f0158f,#5b0c9c)"></div>
+    <img src="${MASCOT_URL}" alt="" style="position:absolute;left:50%;top:53%;width:${Math.round(S * 1.1)}px;height:${Math.round(S * 1.1)}px;transform:translate(-50%,-50%)">`;
   return { W: S, H: S, html: page(S, S, body) };
 }
 
@@ -53,7 +57,7 @@ function headline(fs, { twoLines = false, align = 'left' } = {}) {
     : TAGLINE_HTML();
   return `<div class="arcade" style="font-size:${fs}px;line-height:${twoLines ? 1.02 : 1};text-align:${align};white-space:nowrap">${inner}</div>`;
 }
-function subline(fs, { align = 'left', text = SUBLINE } = {}) {
+function subline(fs, { align = 'left', text = `${GAME_COUNT} free games · no download` } = {}) {
   return `<div class="display" style="font-weight:600;font-size:${fs}px;line-height:1.1;color:rgba(255,255,255,.8);text-align:${align};white-space:nowrap">${esc(text)}</div>`;
 }
 
@@ -227,7 +231,7 @@ export async function carousel(ctx, n) {
     }
     inner = `<div class="abs arcade" style="left:64px;top:170px;width:952px;line-height:1.04">
         <div style="font-size:74px" class="neon">WE BUILT</div>
-        <div style="font-size:116px"><span class="grad glow-drop">15 FREE GAMES</span></div>
+        <div style="font-size:116px"><span class="grad glow-drop">${G.length} FREE GAMES</span></div>
         <div style="font-size:74px" class="neon">YOU CAN PLAY</div>
         <div style="font-size:74px" class="neon">IN 1 SECOND.</div>
       </div>
@@ -348,7 +352,7 @@ export async function xLaunch(ctx) {
     <div class="abs" style="left:0;top:0;width:760px;height:${H}px;background:linear-gradient(90deg, ${C.ink} 62%, rgba(11,6,24,0))"></div>
     <div class="abs" style="left:64px;top:64px">${wordmark(62, 36)}</div>
     <div class="abs arcade" style="left:64px;top:190px;line-height:1.04">
-      <div class="neon" style="font-size:74px">15 FREE GAMES.</div>
+      <div class="neon" style="font-size:74px">${ctx.games.length} FREE GAMES.</div>
       <div style="font-size:74px"><span class="grad glow-drop">PLAY IN 1 SEC.</span></div>
     </div>
     <div class="abs display" style="left:66px;top:376px;font-weight:600;font-size:34px;color:rgba(255,255,255,.85)">No download. No sign-up. Just one more try.</div>

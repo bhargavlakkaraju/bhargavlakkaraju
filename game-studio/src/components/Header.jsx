@@ -5,18 +5,25 @@ import { SearchButton } from './Search';
 import { IconSearch, IconDice, IconPlay } from './Icons';
 import { SITE } from '@/lib/site';
 
+// The Candy 3D logo: mascot icon + "RETRY" stacked over a big candy "ARCADE" (styles in
+// globals.css). Built from text so it stays sharp at any size; the full illustrated lockup
+// (public/brand/logo-lockup.webp) is used where there is room for it.
 export function Logo({ size = 'md' }) {
   const big = size === 'lg';
   return (
     <span className="inline-flex items-center gap-2">
-      <span
-        className={`grid place-items-center rounded-[10px] bg-gradient-to-br from-pink to-grape font-black text-white transition-transform duration-300 group-hover:rotate-[-20deg] ${big ? 'h-12 w-12 text-2xl' : 'h-8 w-8 text-base'}`}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/brand/mascot-icon-112.webp"
+        alt=""
         aria-hidden
-      >
-        ↻
-      </span>
-      <span className={`font-arcade leading-none tracking-tight text-white ${big ? 'text-2xl' : 'text-[16px] sm:text-[17px]'}`}>
-        RETRY<span className="text-pink">ARCADE</span>
+        width={big ? 48 : 36}
+        height={big ? 48 : 36}
+        className={`shrink-0 drop-shadow-[0_2px_8px_rgba(255,61,139,0.35)] transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105 ${big ? 'h-12 w-12' : 'h-9 w-9'}`}
+      />
+      <span className="flex flex-col font-display font-bold leading-none">
+        <span className={`logo-retry ${big ? 'text-[15px]' : 'text-[11px]'}`}>RETRY</span>
+        <span className={`logo-arcade ${big ? 'text-[30px]' : 'text-[21px]'}`}>ARCADE</span>
       </span>
     </span>
   );

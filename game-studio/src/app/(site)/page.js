@@ -120,13 +120,24 @@ export default function Home() {
       <div className="mx-auto max-w-[1440px] px-4">
         {/* Intro: what this is, in one line, with the two main actions */}
         <section className="flex flex-wrap items-end justify-between gap-4 pt-5 sm:pt-8">
-          <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-5">
+            {/* Full Candy 3D logo with the mascot; on phones the header logo is enough. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/logo-lockup.webp"
+              alt={`${SITE.name} logo`}
+              width={829}
+              height={635}
+              className="hidden h-[150px] w-auto shrink-0 drop-shadow-[0_10px_30px_rgba(255,61,139,0.25)] md:block"
+            />
+            <div className="min-w-0">
             <h1 className="font-cond text-[2.35rem] font-extrabold uppercase leading-[0.92] text-white sm:text-6xl">
               Scroll less. <span className="text-pink">Play more.</span>
             </h1>
             <p className="mt-2 max-w-xl text-[15px] text-mute sm:text-base">
               Swap the endless scroll for {GAMES.length} free games that start in one tap. Swipe through them like a feed, play solo or with friends on one phone. No downloads, no sign-ups.
             </p>
+            </div>
           </div>
           <div className="flex w-full gap-2 sm:w-auto">
             <Link href="/daily" className="btn-ghost hidden sm:inline-flex">

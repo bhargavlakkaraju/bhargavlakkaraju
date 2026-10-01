@@ -87,16 +87,33 @@ export function arrowSvg({ color = '#fff', scale = 1 } = {}) {
 }
 
 // Rounded-square app mark: pink -> grape gradient, white retry arrow.
-export function mark(size, { glow = true, radius = 0.26, arrowScale = 1 } = {}) {
-  const shadow = glow ? `box-shadow:0 0 ${Math.round(size * 0.45)}px rgba(255,61,127,.35);` : '';
-  return `<div class="mark" data-paint="mark" style="width:${size}px;height:${size}px;border-radius:${Math.round(size * radius)}px;${shadow}">
-    <div class="mark-shine" style="border-radius:${Math.round(size * radius)}px"></div>${arrowSvg({ scale: arrowScale })}</div>`;
+// Brand art from scripts/brand/logo-assets.py (Candy 3D logo + mascot, Higgsfield originals).
+export const MASCOT_URL = fileUrl(path.join(ROOT, 'public/brand/mascot-icon.png'));
+export const MASCOT_FULL_URL = fileUrl(path.join(ROOT, 'public/brand/mascot-icon-full.png'));
+export const LOCKUP_URL = fileUrl(path.join(ROOT, 'public/brand/logo-lockup.png'));
+
+// The mascot app icon (rounded square, transparent corners).
+export function mark(size, { glow = true } = {}) {
+  const shadow = glow ? `filter:drop-shadow(0 0 ${Math.round(size * 0.16)}px rgba(255,61,139,.45));` : '';
+  return `<img class="mark" src="${MASCOT_URL}" alt="" style="display:block;flex:none;width:${size}px;height:${size}px;${shadow}">`;
 }
 
-// Mark + "RETRY" (white) "ARCADE" (pink) in Bungee, exactly like the site header (no space, color split).
+// Mascot icon + the Candy 3D wordmark: small yellow "RETRY" stacked over a big candy "ARCADE",
+// in Fredoka, exactly like the site header logo (components/Header.jsx + globals.css).
 export function wordmark(markSize, fontSize, { gap = Math.round(markSize * 0.24), glow = true, textGlow = false } = {}) {
-  const tg = textGlow ? 'text-shadow:0 0 18px rgba(255,61,127,.45),0 0 42px rgba(139,92,246,.3);' : '';
-  return `<div class="wordmark" style="display:inline-flex;align-items:center;gap:${gap}px">${mark(markSize, { glow })}<span class="arcade" style="font-size:${fontSize}px;line-height:1;white-space:nowrap;letter-spacing:-0.01em;color:#fff;${tg}">RETRY<span style="color:${C.pink}">ARCADE</span></span></div>`;
+  const r = Math.round(fontSize * 0.46);
+  const a = Math.round(fontSize * 1.02);
+  const px = (n) => Math.max(1, Math.round(n));
+  const glowFx = textGlow ? ' drop-shadow(0 0 18px rgba(255,61,139,.45))' : '';
+  return `<div class="wordmark" style="display:inline-flex;align-items:center;gap:${gap}px">${mark(markSize, { glow })}<span class="display" style="display:inline-flex;flex-direction:column;font-weight:700;line-height:.92;white-space:nowrap">`
+    + `<span style="font-size:${r}px;color:#ffd23f;letter-spacing:.16em;filter:drop-shadow(0 ${px(r * 0.07)}px 0 #8a3a00)">RETRY</span>`
+    + `<span style="font-size:${a}px;letter-spacing:.01em;background:linear-gradient(180deg,#ff6fb5 0%,#ff3d8b 46%,#ff8f3a 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 ${px(a * 0.07)}px 0 #6b1fb0) drop-shadow(0 ${px(a * 0.03)}px 0 #2a0b4f)${glowFx}">ARCADE</span></span></div>`;
+}
+
+// The full illustrated lockup (wordmark + mascot), for large hero placements.
+export function lockup(height, { glow = true } = {}) {
+  const shadow = glow ? `filter:drop-shadow(0 ${Math.round(height * 0.04)}px ${Math.round(height * 0.12)}px rgba(255,61,139,.35));` : '';
+  return `<img src="${LOCKUP_URL}" alt="" style="display:block;height:${height}px;width:auto;${shadow}">`;
 }
 
 // Neon synthwave backdrop, same recipe as the site's .neon-backdrop (stars, blurred sun, perspective grid floor).

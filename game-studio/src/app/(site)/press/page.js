@@ -10,6 +10,8 @@ export const metadata = {
 };
 
 const ASSETS = [
+  ['logo-lockup.png', 'Full logo with the mascot, transparent (PNG)'],
+  ['mascot-icon.png', 'Mascot icon, transparent (PNG, 1024 px)'],
   ['logo-mark-1024.png', 'App icon / logo mark (PNG, 1024 px)'],
   ['logo-wordmark.png', 'Logo with wordmark, transparent (PNG)'],
   ['logo-wordmark-dark.png', 'Logo with wordmark on dark (PNG)'],

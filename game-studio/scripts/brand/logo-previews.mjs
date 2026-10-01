@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// Renders public/brand/logo-concepts/*.svg into PNG previews (dark and light) plus one
-// contact sheet: public/brand/logo-concepts/preview-<name>.png and sheet.png.
+// Renders marketing/brand/logo-concepts/*.svg into PNG previews (dark and light) plus one
+// contact sheet: marketing/brand/logo-concepts/preview-<name>.png and sheet.png.
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
-const DIR = path.join(ROOT, 'public', 'brand', 'logo-concepts');
+const DIR = path.join(ROOT, 'marketing', 'brand', 'logo-concepts');
 const names = fs.readdirSync(DIR).filter((f) => f.endsWith('.svg') && !f.endsWith('-light.svg')).map((f) => f.slice(0, -4));
 const light = (n) => (fs.existsSync(path.join(DIR, `${n}-light.svg`)) ? `${n}-light` : n);
 const uri = (n) => `data:image/svg+xml;base64,${fs.readFileSync(path.join(DIR, `${n}.svg`)).toString('base64')}`;

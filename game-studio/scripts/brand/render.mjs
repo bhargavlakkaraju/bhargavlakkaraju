@@ -61,6 +61,7 @@ async function art(slug, w, h) {
   return url;
 }
 const ctx = { games, bySlug, art, DOMAIN };
+T.setGameCount(games.length);
 
 // ---------- screenshot ----------
 async function shot(rel, spec) {
