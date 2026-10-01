@@ -43,9 +43,11 @@ Preview) and keep a list of what you set. At the end, redeploy production once
    in the ad slots and `NEXT_PUBLIC_ADS_PROVIDER=none` keeps in-game ad breaks off.
    Still to do in AdSense: Sites -> retryarcade.com -> verify with "AdSense code snippet"
    (or ads.txt), tick "I've placed the code", Verify, then Request review (takes days to
-   weeks). Also AdSense -> Privacy & messaging -> European regulations -> create and publish
-   the free Google consent message: the site already sends Consent Mode v2 defaults (EU/EEA,
-   UK and Swiss visitors start as "denied") and this banner is how they grant consent.
+   weeks). The Google consent message (Privacy & messaging -> European regulations) is
+   published (2026-10-01): it is the banner EU/EEA, UK and Swiss visitors use to grant
+   consent, on top of the Consent Mode v2 defaults the site sends (they start as "denied").
+   The code snippet is a plain <script async> in <head> (a next/script loader made the first
+   verification attempt fail).
    After approval, tell the cloud session: it turns on Auto ads or real ad units (switching
    `NEXT_PUBLIC_DISPLAY_NETWORK` to `adsense`) and redeploys.
 
