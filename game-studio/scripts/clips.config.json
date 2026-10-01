@@ -37,6 +37,10 @@
     "seed": 7,
     "start": 32.6
   },
+  "reflex-duel": {
+    "seed": 7,
+    "start": 1.0
+  },
   "road-hopper": {
     "seed": 2,
     "start": 9
@@ -44,6 +48,10 @@
   "rooftop-rush": {
     "seed": 3,
     "start": 109.2
+  },
+  "rope-rumble": {
+    "seed": 8,
+    "start": 23.5
   },
   "shark-attack": {
     "seed": 5,
