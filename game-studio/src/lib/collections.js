@@ -562,10 +562,22 @@ export const COLLECTIONS = [
     title: 'Party Games on One Phone: Free 2, 3 and 4 Player Games',
     metaTitle: '2 to 4 Player Games on One Phone, Free',
     description:
-      'Free party games for 2, 3 or 4 players on one phone, tablet or laptop: Tank Tango, Snow Sumo, Hole Party, Shark Attack, Rooftop Rush and Paddle Brawl. One button each, no download.',
+      'Free party games for 2, 3 or 4 players on one phone, tablet or laptop: tug of war, air hockey, a reaction time duel, tanks, sumo, pong and more. One button each, no download.',
     answer:
-      'For 2 to 4 players on one phone, try the Retry Arcade party pack: Tank Tango, Snow Sumo, Hole Party, Shark Attack, Rooftop Rush and Paddle Brawl. Each player holds one corner of the screen as their only button, bots fill empty seats, and every round after the first draws a twist card. Free in the browser, no download.',
+      'For 2 to 4 players on one phone, try the Retry Arcade party pack: Rope Rumble (tug of war), Puck Panic (air hockey), Reflex Duel (a reaction time showdown), Tank Tango, Snow Sumo, Hole Party, Shark Attack, Rooftop Rush and Paddle Brawl. Each player holds one corner of the screen as their only button, bots fill empty seats, and every round after the first draws a twist card. Free in the browser, no download.',
     picks: [
+      {
+        game: 'rope-rumble',
+        why: 'A tug of war where up to four ropes meet at one ring in a mud pit. Tap to heave, and tap when the closing circle hits the green for a power pull worth three heaves. Mash and you run out of stamina and slip; hold to dig in. Drag the ring over your own chalk line to win the round.',
+      },
+      {
+        game: 'puck-panic',
+        why: 'Air hockey with one button: hold it and your mallet charges the puck, let go and it glides back to guard your goal. Two players get the classic top against bottom table, three or four add side goals. Three lives each, and extra pucks drop in as the round goes on.',
+      },
+      {
+        game: 'reflex-duel',
+        why: 'A western showdown and a reaction time test in one. Wait for DRAW!, then tap first; tap too soon and you are out for the round. Every round shows each player\'s reaction time in milliseconds, and the game keeps your personal best.',
+      },
       {
         game: 'tank-tango',
         why: 'Your tank spins on the spot until you hold your corner to drive, and letting go fires a shell that bounces off walls twice. After a bounce your own shell can hit you, which is where most of the laughs come from. Last tank rolling wins the round.',
@@ -609,7 +621,7 @@ export const COLLECTIONS = [
     faq: [
       {
         q: 'What are good 4 player games on one phone?',
-        a: 'Tank Tango, Snow Sumo, Hole Party, Shark Attack, Rooftop Rush and Paddle Brawl on Retry Arcade. Each player uses one corner of the screen as their button, and they are free in the browser with no download.',
+        a: 'Rope Rumble (tug of war), Puck Panic (air hockey), Reflex Duel, Tank Tango, Snow Sumo, Hole Party, Shark Attack, Rooftop Rush and Paddle Brawl on Retry Arcade. Each player uses one corner of the screen as their button, and they are free in the browser with no download.',
       },
       {
         q: 'Can I play these party games alone?',

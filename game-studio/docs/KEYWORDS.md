@@ -31,6 +31,9 @@ the longer, more specific phrases and our own game names.
 | /games/snow-sumo | sumo game (1.9K) | |
 | /games/zig-zag | zig zag game (1.6K) | |
 | /games/sky-flap | (one tap flying bird) | flappy bird (450K) is a brand, lives on /best/games-like-flappy-bird |
+| /games/reflex-duel | reaction time test (165K) | reaction test (27.1K), reaction game (2.4K); "quick draw game" (823K) is Google's drawing game, not ours |
+| /games/rope-rumble | tug of war (60.5K) | tug of war game (14.8K) |
+| /games/puck-panic | air hockey (33.1K) | air hockey game (3.6K), air hockey 2 player (390) |
 | / and /play | free online games (823K) | browser games (60.5K), fun games to play (40.5K), no download games (22.2K), games to play when bored (12.1K) |
 | /instead-of-scrolling | doom scrolling (33.1K, mostly informational) | |
 | /built-by-ai | ai generated games (880) | games made by ai (110) |
@@ -41,6 +44,7 @@ Blast, Hole.io, Knife Hit, Doodle Jump) in our game titles. They belong only on 
 
 ## Ideas this data suggests
 
+- Built 2026-10-01 from this data: Reflex Duel, Rope Rumble and Puck Panic (rows above).
 - The party pack sits on the biggest demand we can realistically win: "2 player games" and
   "games for 2 players" together are over 550K searches a month. More 2 player games (air
   hockey, tug of war, reaction duel, 2 player quiz) are the best next builds for search.

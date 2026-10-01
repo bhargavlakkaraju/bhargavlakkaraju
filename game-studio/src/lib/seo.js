@@ -135,7 +135,7 @@ export const CATEGORY_COPY = {
     ],
     faq: [
       ['Can I play these party games alone?', 'Yes. Press Play without joining any other seats and three bots take the empty corners. Tap the bots button in the lobby to play with fewer.'],
-      ['What are good 2 player games to play on one phone?', 'Tank Tango and Snow Sumo are quick 2 player duels, Paddle Brawl is four-way pong and Rooftop Rush is a rooftop race. All of them also work for 3 or 4 players, and bots fill the empty corners.'],
+      ['What are good 2 player games to play on one phone?', 'Puck Panic is air hockey, Rope Rumble is a tug of war, Reflex Duel is a reaction time showdown, and Tank Tango and Snow Sumo are quick duels. All of them also work for 3 or 4 players, and bots fill the empty corners.'],
       ['How do 4 people play on one phone?', 'Lay the phone flat in the middle. Each player takes one corner and holds or taps the button in that corner. Players at the top read their corner upside down, facing them.'],
     ],
   },
