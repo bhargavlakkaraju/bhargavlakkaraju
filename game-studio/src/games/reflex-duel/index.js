@@ -36,10 +36,10 @@ const DECOY_COLORS = ['#b48cff', '#ff6b6b', '#ff9f43', GOLD];
 
 // Bot gunslingers: human-like reaction times (ms), each with a temper.
 const KINDS = {
-  ace: { name: 'THE ACE', base: 216, off: -20, sd: 24, slow: 0.04, fs: 0.02, bite: 0.06 },
-  jumpy: { name: 'JUMPY', base: 236, off: -6, sd: 46, slow: 0.06, fs: 0.13, bite: 0.34 },
-  steady: { name: 'STEADY', base: 258, off: 12, sd: 26, slow: 0.05, fs: 0.02, bite: 0.08 },
-  sleepy: { name: 'SLEEPY', base: 298, off: 42, sd: 42, slow: 0.16, fs: 0.01, bite: 0.1 },
+  ace: { name: 'THE ACE', base: 216, off: -8, sd: 24, slow: 0.04, fs: 0.02, bite: 0.06 },
+  jumpy: { name: 'JUMPY', base: 236, off: 6, sd: 46, slow: 0.06, fs: 0.13, bite: 0.34 },
+  steady: { name: 'STEADY', base: 258, off: 22, sd: 26, slow: 0.05, fs: 0.02, bite: 0.08 },
+  sleepy: { name: 'SLEEPY', base: 298, off: 45, sd: 42, slow: 0.16, fs: 0.01, bite: 0.1 },
 };
 
 const TWISTS = [
@@ -258,11 +258,13 @@ export default function createGame(api) {
         }
       }
     }
-    return n >= 2 ? sum / n : 262;
+    return n >= 2 ? sum / n : api.demo ? 240 : 262;
   }
 
+  // Bots lean toward the humans' own match average (a fair fight for slow and fast hands
+  // alike) but never leave a realistic human range.
   function planMs(kind, ref, rng) {
-    const mean = clamp(0.5 * kind.base + 0.5 * (ref + kind.off), 192, 345);
+    const mean = clamp(0.15 * kind.base + 0.85 * (ref + kind.off), 192, 345);
     let ms = mean + gauss(rng) * kind.sd;
     if (rng.chance(kind.slow)) ms += rng.range(90, 200);
     return Math.round(Math.max(162, ms));
@@ -1241,7 +1243,8 @@ export default function createGame(api) {
       return;
     }
     if (tw === 'silent') {
-      if (S.winner) draw.text(g, 'DRAW!', W / 2, SIG_Y, { size: 36, color: GOLD, stroke: '#2a0a12', alpha: Math.min(1, S.volleyAge * 4) });
+      const k = Math.min(1, S.volleyAge * 5);
+      if (S.winner && k > 0.1) draw.text(g, 'DRAW!', W / 2, SIG_Y, { size: 40 * api.ease.outBack(k), color: GOLD, stroke: '#2a0a12', strokeWidth: 6, shadow: false });
     } else if (S.sigStamp) bigDraw(g, S.sigAge, GOLD, 'DRAW!', T);
     if (tw === 'split' && S.sigStamp) {
       const el = nowMs() - S.sigStamp;

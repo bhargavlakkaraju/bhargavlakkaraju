@@ -41,6 +41,8 @@ const PUCK_DRAG = 0.12; // the air table: almost no friction
 const SERVE_T = 0.85;
 const REACH_PAST = 56; // a mallet may chase this far past the middle of the table
 const TRAIL = 16;
+const RUSH_T = 38; // late in the round the air jets kick in: pucks never slow down
+const RUSH_FLOOR = 300;
 
 const MULTI = { id: 'multipuck', name: 'MULTI PUCK', desc: 'Two pucks from the first second', emoji: '🥏' };
 const ICE = { id: 'ice', name: 'ICE TABLE', desc: 'Mallets slide and overshoot', emoji: '🧊' };
@@ -272,14 +274,19 @@ export default function createGame(api) {
   }
 
   // ---------- mallets ----------
+  // The puck a held button chases: the nearest one, preferring pucks out in front of the
+  // mallet (a charge goes out from your goal, it does not smash the puck behind you).
   function nearestPuck(p, d) {
+    const sl = SLOTS[d.slot];
+    const depM = (p.x - sl.gx) * sl.nx + (p.y - sl.gy) * sl.ny;
     let best = null;
     let bd = Infinity;
     let cur = null;
     let cd = Infinity;
     for (const b of S.pucks) {
       if (b.dead) continue;
-      const dd = Math.hypot(b.x - p.x, b.y - p.y) + (b.serve > 0 ? 400 : 0);
+      const depB = (b.x - sl.gx) * sl.nx + (b.y - sl.gy) * sl.ny;
+      const dd = Math.hypot(b.x - p.x, b.y - p.y) + (b.serve > 0 ? 400 : 0) + (depB < depM - 4 ? 260 : 0);
       if (b.id === d.tgt) {
         cur = b;
         cd = dd;
@@ -589,7 +596,6 @@ export default function createGame(api) {
     }
     b.slowT = 0;
     d.hitT = 0;
-    b.dbg = { down: p.down, charge: d.charge, mv: Math.hypot(d.vx, d.vy), dep: (p.x - SLOTS[d.slot].gx) * SLOTS[d.slot].nx + (p.y - SLOTS[d.slot].gy) * SLOTS[d.slot].ny, pdep: (b.x - SLOTS[d.slot].gx) * SLOTS[d.slot].nx + (b.y - SLOTS[d.slot].gy) * SLOTS[d.slot].ny, vin: b.vx * SLOTS[d.slot].nx + b.vy * SLOTS[d.slot].ny, t: ctx.time, rel: vn };
     const impact = -vn;
     if (impact < 50 || b.fxCool > 0) return;
     b.fxCool = 0.06;
@@ -766,7 +772,6 @@ export default function createGame(api) {
     if (by && by.i === p.i && ctx.time - b.touchT > 1.5) by = null;
     const tx = clamp(gx + sl.nx * 96, 74, W - 74);
     const ty = clamp(gy + sl.ny * 96, Y0 + 40, Y1 - 40);
-    if (globalThis.__ppDebug && by && by.i === p.i) globalThis.__ppDebug.push({ ...b.dbg, now: ctx.time, per: S.persona[p.i].name });
     if (by && by.i === p.i) ctx.fx.text(tx, ty, 'OWN GOAL!', { color: '#ffffff', size: 28, life: 1.1, stroke: p.color });
     else ctx.fx.text(tx, ty, 'GOAL!', { color: by ? by.color : '#ffffff', size: 34, life: 1.1, stroke: 'rgba(3,22,26,0.8)' });
     if (by && by.i !== p.i) by.score += 1;
@@ -782,19 +787,19 @@ export default function createGame(api) {
 
   // ---------- update ----------
   function update(dt, ctx) {
-    if (globalThis.__ppDebug) globalThis.__ppCtx = { ctx, S };
     S.twist = ctx.twist.id;
     if (S.sndT > 0) S.sndT -= dt;
     if (S.wordT > 0) S.wordT -= dt;
-    // the table heats up: a second puck at 20 s (a third in MULTI PUCK), RUSH at 40 s
+    // the table heats up: a second puck at 20 s, then RUSH at 38 s brings a third and fast air
     let want = S.twist === 'multipuck' ? 2 : 1;
     if (ctx.time > 20) want += 1;
+    if (ctx.time > RUSH_T) want = 3;
     if (want > S.want) {
       for (let k = S.want; k < want; k++) S.serves.push({ t: 0.1 + (k - S.want) * 0.4 });
       ctx.fx.text(CX, CY - 70, '+1 PUCK!', { color: '#ffd23f', size: 34, life: 1.3, rise: 40, stroke: 'rgba(3,22,26,0.8)' });
       S.want = want;
     }
-    if (!S.rush && ctx.time > 40) {
+    if (!S.rush && ctx.time > RUSH_T) {
       S.rush = true;
       ctx.fx.text(CX, CY + 70, 'RUSH!', { color: TABLE.rail, size: 36, life: 1.3, rise: 30, stroke: 'rgba(3,22,26,0.8)' });
       ctx.fx.flash(TABLE.railGlow, 0.18);
@@ -874,7 +879,7 @@ export default function createGame(api) {
     }
     if (S.pucks.some((b) => b.dead)) S.pucks = S.pucks.filter((b) => !b.dead);
 
-    const floor = S.rush ? 250 : 0;
+    const floor = S.rush ? RUSH_FLOOR : 0;
     for (const b of S.pucks) {
       if (b.fxCool > 0) b.fxCool -= dt;
       if (b.serve > 0) {
@@ -1007,14 +1012,18 @@ export default function createGame(api) {
       }
     }
     if (!best) return false;
-    const b = best;
+    // the most urgent puck slipped behind us: get home (the glide curls around it)
+    if ((best.x - sl.gx) * sl.nx + (best.y - sl.gy) * sl.ny < depM - 8) return false;
+    // judge the puck our mallet would actually chase
+    const b = nearestPuck(p, d);
+    if (!b || b.serve > 0) return false;
     const depB = (b.x - sl.gx) * sl.nx + (b.y - sl.gy) * sl.ny;
     const latB = (b.x - sl.gx) * sl.tx + (b.y - sl.gy) * sl.ty;
     const vin = b.vx * sl.nx + b.vy * sl.ny;
     const vt = b.vx * sl.tx + b.vy * sl.ty;
     const sp = Math.hypot(b.vx, b.vy);
     const inZone = depB < md * per.zone;
-    // the puck slipped behind us: get home (the glide curls around it)
+    // only pucks behind us are left to chase: stay home rather than knock one in
     if (depB < depM - 8) return false;
     if (rng.chance(per.eager)) return true; // impatience
     if (vin < -50) {
