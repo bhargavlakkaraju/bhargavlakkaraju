@@ -94,9 +94,34 @@ Preview) and keep a list of what you set. At the end, redeploy production once
    `NEXT_PUBLIC_SOCIAL_YOUTUBE`, `NEXT_PUBLIC_SOCIAL_LINKEDIN`,
    `NEXT_PUBLIC_SOCIAL_FACEBOOK` (full profile URLs), and `NEXT_PUBLIC_TWITTER=@handle`.
 
-7. Redeploy production once (see above) and give me a summary: which tasks are done, every
-   environment variable you set (names only for anything secret), and anything still
-   waiting on me or on a review.
+7. **GameDistribution (second income: our games on thousands of other sites, 33% of their ad
+   revenue).** Background and every field explained:
+   https://github.com/bhargavlakkaraju/retryarcade/blob/main/docs/GAMEDISTRIBUTION.md
+   - Get the bundle `retryarcade-gamedistribution.zip`. If I have it in Downloads, use that.
+     Otherwise build it in a terminal: `git clone https://github.com/bhargavlakkaraju/retryarcade`,
+     then in that folder `npm ci`, `npx playwright install chromium` and `npm run gd:bundle`;
+     the zip lands in `dist/portals/`. Unzip it and read its `UPLOAD-GUIDE.md`: it lists the
+     24 games, and `gamedistribution.csv` holds every form field per game.
+   - Go to https://developer.gamedistribution.com/ and register as a **Developer** (not
+     Publisher) with bhargav@hooplaindia.com. Stop for me on the email confirmation code, any
+     CAPTCHA or 2FA, and before accepting the developer terms (I want to read the native apps
+     sentence first). Stop and let me enter the payment, bank, VAT and tax details myself.
+   - Upload one game end to end first: Stack Tower (GD title "Stack Tower Sky"). Create the
+     game with the CSV's `gd_title`, paste `description` and `instructions`, pick `genres` and
+     `tags`, set mobile yes, portrait, 720 x 1280, English, "No blood", and "Kids friendly"
+     where the CSV says yes. Upload `games/stack-tower.zip` on the Upload tab and the five
+     images from `assets/stack-tower/` into the matching size slots. If the file picker does
+     not let you attach files, stop and tell me exactly which file goes where so I can drop
+     it in. Switch the rewarded ads flag on (only for rows where `rewarded_ads` is yes). Open
+     the game in GD's test iframe from the upload page, press PLAY and watch the preroll ad to
+     the end (that activates the SDK). Then request activation (submit for review).
+   - If that worked, do the other 23 games the same way, one CSV row each.
+   - Write down the game id GD shows for every game (32 hex characters, also part of the game
+     URL `https://html5.gamedistribution.com/<id>/`). No Vercel variable is needed for GD.
+
+8. Redeploy production once (see above) and give me a summary: which tasks are done, every
+   environment variable you set (names only for anything secret), the GameDistribution game
+   ids per game, and anything still waiting on me or on a review.
 
 ---
 
@@ -104,4 +129,7 @@ Preview) and keep a list of what you set. At the end, redeploy production once
 
 Tell the cloud session "accounts are set up". It will check the live site for the
 AdSense tag, `ads.txt`, the Adsterra banners, the verification record and the social
-links, and switch the display network to AdSense once AdSense approves the site.
+links, and switch the display network to AdSense once AdSense approves the site. Paste the
+GameDistribution game ids too: the cloud session can store them in
+`scripts/portals/gamedistribution-ids.json` and rebuild (optional, the builds already read the
+id from the GD URL), and it will act on GD's review feedback.
