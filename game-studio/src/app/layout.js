@@ -95,6 +95,18 @@ export default function RootLayout({ children }) {
             denied (Google sends cookieless pings only) until a consent banner grants it. Must run before
             gtag and AdSense load. Everyone else is unaffected. */}
         <script dangerouslySetInnerHTML={{ __html: CONSENT_DEFAULTS }} />
+        {/* AdSense code snippet as a plain async tag in the server HTML: the AdSense crawler
+            verifies the site by finding exactly this tag in the page source (a next/script
+            loader only injects it client side). */}
+        {ADS.client && (
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADS.client}`}
+            crossOrigin="anonymous"
+            data-ad-frequency-hint="45s"
+            {...(ADS.test ? { 'data-adbreak-test': 'on' } : {})}
+          />
+        )}
         <link rel="preload" href="/fonts/Fredoka-700.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/Nunito-700.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="alternate" type="text/plain" title="LLM summary" href="/llms.txt" />
@@ -102,17 +114,6 @@ export default function RootLayout({ children }) {
       </head>
       <body className="min-h-screen">
         {children}
-        {ADS.client && (
-          <Script
-            id="adsense"
-            async
-            strategy="afterInteractive"
-            crossOrigin="anonymous"
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADS.client}`}
-            data-ad-frequency-hint="45s"
-            {...(ADS.test ? { 'data-adbreak-test': 'on' } : {})}
-          />
-        )}
         {ANALYTICS.ga4 && (
           <>
             <Script src={`https://www.googletagmanager.com/gtag/js?id=${ANALYTICS.ga4}`} strategy="afterInteractive" />
