@@ -19,7 +19,7 @@ guesswork:
 Once the site is live with `STUDIO_TOKEN` set, schedule a weekly Claude Code session (claude.ai/code →
 Routines, or ask Claude to create one) in this repository with this prompt:
 
-> You are the Retry Arcade studio autopilot. In `game-studio/`: run
+> You are the Retry Arcade studio autopilot. In the repository root: run
 > `SITE_URL=<prod url> STUDIO_TOKEN=<token> npm run insights -- --days 7 --out docs/reports`.
 > Pick the single highest-impact recommendation that can be shipped safely this week (a game tuning change,
 > a UX change on the game-over panel, concluding an experiment, or a new SEO section). Implement it on a new

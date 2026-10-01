@@ -22,8 +22,12 @@ After each task, add the value you got as a Vercel environment variable
 Preview) and keep a list of what you set. At the end, redeploy production once
 (Deployments -> latest production deployment -> ... -> Redeploy) and report back.
 
-1. **Vercel production branch.** Vercel -> retryarcade -> Settings -> Environments ->
-   Production -> Branch Tracking: set the branch to `claude/vibrant-fermi-8m1anm` and save.
+1. **Vercel Git connection.** The code now lives in its own private repository,
+   https://github.com/bhargavlakkaraju/retryarcade (branch `main`). Vercel -> retryarcade -> Settings ->
+   Git: disconnect `bhargavlakkaraju/bhargavlakkaraju` and connect `bhargavlakkaraju/retryarcade` (if it
+   is not listed, use "Adjust GitHub App Permissions" to give Vercel access to it). Then Settings ->
+   Environments -> Production -> Branch Tracking: `main`. The cloud session sets Root Directory back to the
+   repository root itself.
 
 1b. **Vercel Web Analytics: DONE.** Enabled and collecting since 2026-09-29 (readable through
    the Vercel connector's count_pageviews, called without teamId).
@@ -78,7 +82,7 @@ Preview) and keep a list of what you set. At the end, redeploy production once
    Optional: Gmail -> Settings -> Accounts -> Send mail as -> add hello@retryarcade.com to
    reply from it. After a few weeks of clean DMARC reports, tighten DMARC to `p=quarantine`.
 
-6. **Social profiles.** Use https://github.com/bhargavlakkaraju/bhargavlakkaraju/blob/claude/vibrant-fermi-8m1anm/game-studio/docs/SOCIAL_KIT.md
+6. **Social profiles.** Use https://github.com/bhargavlakkaraju/retryarcade/blob/main/docs/SOCIAL_KIT.md
    for handles, bios and which image goes where (images are at
    https://retryarcade.com/brand/avatar-1080.png, /brand/banner-x-1500x500.jpg,
    /brand/banner-linkedin-1584x396.jpg, /brand/banner-linkedin-company-1128x191.jpg,

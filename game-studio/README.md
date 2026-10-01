@@ -36,8 +36,9 @@ Docs: [Business plan](docs/BUSINESS_PLAN.md) · [Marketing playbook](docs/MARKET
 
 ## Quick start
 
+Repository: https://github.com/bhargavlakkaraju/retryarcade (the `main` branch deploys https://retryarcade.com).
+
 ```bash
-cd game-studio
 npm install
 npm run dev            # http://localhost:3000   (generates the game registry first)
 npm run harness        # http://localhost:5173/harness/?game=stack-tower  (single game, no Next.js)
@@ -79,7 +80,7 @@ hash counters + HyperLogLogs, so costs stay near zero at scale.
 
 ## Deploy (Vercel)
 
-1. Import the GitHub repo in Vercel and set **Root Directory = `game-studio`** (the repo root holds another app).
+1. Import the GitHub repo in Vercel (Root Directory: the repository root; production branch: `main`).
 2. Add the Upstash Redis integration (Vercel Marketplace), which sets `KV_REST_API_URL` / `KV_REST_API_TOKEN`.
 3. Set `NEXT_PUBLIC_SITE_URL` (e.g. `https://retryarcade.com`) and a long random `STUDIO_TOKEN`.
 4. Deploy, add the domain, submit `https://<domain>/sitemap.xml` to Google Search Console.
