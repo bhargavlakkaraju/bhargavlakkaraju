@@ -37,6 +37,10 @@
     "seed": 7,
     "start": 32.6
   },
+  "puck-panic": {
+    "seed": 3,
+    "start": 11.5
+  },
   "reflex-duel": {
     "seed": 7,
     "start": 1.0
