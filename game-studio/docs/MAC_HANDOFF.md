@@ -35,7 +35,7 @@ Preview) and keep a list of what you set. At the end, redeploy production once
    `Play seconds` (`play_seconds`, seconds). Search Console link: the Domain property
    `retryarcade.com` is linked to the Retry Arcade web stream (15861432973), 2026-09-30.
 
-2. **Google AdSense: site connected 2026-10-01, waiting for review.** Publisher ID
+2. **Google AdSense: site verified 2026-10-01 (code snippet), review requested.** Publisher ID
    `ca-pub-8054463057159999` is set in Vercel (production) as `NEXT_PUBLIC_ADSENSE_CLIENT`,
    so every page loads the AdSense code snippet and the `google-adsense-account` meta tag, and
    https://retryarcade.com/ads.txt carries `google.com, pub-8054463057159999, DIRECT,
