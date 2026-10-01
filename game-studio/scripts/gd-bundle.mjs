@@ -70,6 +70,10 @@ const lines = table.map(
   (r, i) =>
     `| ${i + 1} | ${r.gd_title} | games/${r.slug}.zip | ${r.kb} KB | ${r.genres} | ${r.rewarded_ads.startsWith('yes') ? 'on' : 'off'} | ${r.players} |`,
 );
+const renamed = table.filter((r) => r.gd_title !== r.site_title);
+const renamedNote = renamed.length
+  ? `${renamed.length} GD titles differ from the website title because GD already lists a game with the plain name: ${renamed.map((r) => `${r.site_title} is "${r.gd_title}"`).join(', ')}. Use the GD title in the form: the build shows it on the start screen.`
+  : '';
 const guide = `# Retry Arcade on GameDistribution: upload guide
 
 ${table.length} games, ready to upload. Built ${new Date().toISOString().slice(0, 10)}.
@@ -120,11 +124,7 @@ ${table.length} games, ready to upload. Built ${new Date().toISOString().slice(0
 | --- | --- | --- | --- | --- | --- | --- |
 ${lines.join('\n')}
 
-Seven GD titles differ from the website title because GD already lists a game with the plain
-name: ${table
-  .filter((r) => r.gd_title !== r.site_title)
-  .map((r) => `${r.site_title} is "${r.gd_title}"`)
-  .join(', ')}.
+${renamedNote}
 
 ## How the builds behave (what GD QA checks)
 
