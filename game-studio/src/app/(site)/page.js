@@ -6,7 +6,7 @@ import { HeroCabinet, WelcomeBack, ChampionsTicker, ChampionsBoard, GameBrowser 
 import { SponsorStrip } from '@/components/Money';
 import { SearchBar } from '@/components/Search';
 import { IconArrow, IconPlay } from '@/components/Icons';
-import { GAMES, gameOfTheDay, dailyGames, getGame, publicMeta, hasClip } from '@/lib/games';
+import { GAMES, gameOfTheDay, dailyGames, getGame, cardMeta, hasClip } from '@/lib/games';
 import { ClipStage, ClipVideo } from '@/components/GameTile';
 import { SITE, CATEGORIES } from '@/lib/site';
 import { HOME_FAQ, itemListLd, faqLd, ld } from '@/lib/seo';
@@ -189,7 +189,7 @@ export default function Home() {
 
         {/* Desktop: play right here + quick access */}
         <section id="play" className="mt-10 hidden scroll-mt-20 gap-5 lg:grid lg:grid-cols-[1.15fr_1fr]">
-          <HeroCabinet picks={picks} />
+          <HeroCabinet picks={picks.map(cardMeta)} />
           <div className="grid grid-cols-2 grid-rows-3 gap-3 xl:grid-cols-3 xl:grid-rows-2">
             {quick.map((g, i) => (
               <Quick key={g.slug} game={g} label={i === 0 ? 'Today' : null} />
@@ -220,7 +220,7 @@ export default function Home() {
         {/* Everything, filterable */}
         <section id="games" className="mt-12 scroll-mt-20">
           <SectionHead title="All games" sub="Tap a category to filter. Every game is free and works on any screen." href="/best" cta="Best of lists" />
-          <GameBrowser games={GAMES.map(publicMeta)} cats={Object.entries(CATEGORIES).map(([id, c]) => ({ id, name: c.name, emoji: c.emoji }))} />
+          <GameBrowser games={GAMES.map(cardMeta)} cats={Object.entries(CATEGORIES).map(([id, c]) => ({ id, name: c.name, emoji: c.emoji }))} />
         </section>
 
         {/* Daily arena */}

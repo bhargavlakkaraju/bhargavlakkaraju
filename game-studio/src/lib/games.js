@@ -83,6 +83,12 @@ export function medalFor(meta, score) {
 export const MEDALS = ['', '🥉', '🥈', '🥇'];
 
 /** Serializable subset of meta for client components (functions stripped). */
+/** Only what a game card renders, so pages do not embed every game's full copy in their payload. */
+export function cardMeta(meta) {
+  const { slug, title, tagline, category, emoji, colors, party } = meta;
+  return { slug, title, tagline, category, emoji, colors, ...(party ? { party } : {}) };
+}
+
 export function publicMeta(meta) {
   const out = {};
   for (const k in meta) if (typeof meta[k] !== 'function') out[k] = meta[k];

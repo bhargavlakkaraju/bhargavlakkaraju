@@ -4,6 +4,9 @@ import { Analytics } from '@vercel/analytics/react';
 import './globals.css';
 import { SITE, ADS, ANALYTICS, SOCIAL, VERIFY } from '@/lib/site';
 
+const CONSENT_REGIONS = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB', 'CH'];
+const CONSENT_DEFAULTS = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500,region:${JSON.stringify(CONSENT_REGIONS)}});`;
+
 export const metadata = {
   metadataBase: new URL(SITE.url),
   title: {
@@ -22,6 +25,8 @@ export const metadata = {
   },
   twitter: { card: 'summary_large_image', site: SITE.twitter },
   alternates: { canonical: '/' },
+  // Let Google show big image and video previews (needed for Google Discover).
+  robots: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1, 'max-video-preview': -1 },
   appleWebApp: { capable: true, title: SITE.name, statusBarStyle: 'black-translucent' },
   formatDetection: { telephone: false },
   verification: {
@@ -86,6 +91,10 @@ export default function RootLayout({ children }) {
             <script src="https://ezoicanalytics.com/analytics.js" />
           </>
         )}
+        {/* Google Consent Mode v2: EU, EEA, UK and Swiss visitors start with ad and analytics storage
+            denied (Google sends cookieless pings only) until a consent banner grants it. Must run before
+            gtag and AdSense load. Everyone else is unaffected. */}
+        <script dangerouslySetInnerHTML={{ __html: CONSENT_DEFAULTS }} />
         <link rel="preload" href="/fonts/Fredoka-700.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/Nunito-700.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="alternate" type="text/plain" title="LLM summary" href="/llms.txt" />

@@ -10,16 +10,35 @@ import { getGame, formatScore, MEDALS, hasClip } from '@/lib/games';
 import { CATEGORIES } from '@/lib/site';
 import { IconPlay } from './Icons';
 
-// Looping gameplay clip: plays only while on screen, poster first, never for players who
-// asked for reduced motion or data saving. The file downloads only when scrolled into view.
+// Looping gameplay clip: plays only while on screen, never for players who asked for
+// reduced motion or data saving. Until a tile comes near the viewport it is just its
+// poster image (lazy-loaded), so a page with dozens of tiles creates only a handful of
+// <video> elements and downloads only the posters people can see.
 export function ClipVideo({ slug, className = 'absolute inset-0 h-full w-full object-cover' }) {
-  const ref = useRef(null);
+  const posterRef = useRef(null);
+  const videoRef = useRef(null);
+  const [near, setNear] = useState(false);
   useEffect(() => {
-    const v = ref.current;
-    if (!v || typeof IntersectionObserver === 'undefined') return undefined;
+    const el = posterRef.current;
+    if (near || !el || typeof IntersectionObserver === 'undefined') return undefined;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const save = navigator.connection && navigator.connection.saveData;
     if (reduce || save) return undefined;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          setNear(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: '200px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [near, slug]);
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!near || !v || typeof IntersectionObserver === 'undefined') return undefined;
     v.muted = true;
     v.defaultMuted = true;
     const io = new IntersectionObserver(
@@ -36,11 +55,15 @@ export function ClipVideo({ slug, className = 'absolute inset-0 h-full w-full ob
     );
     io.observe(v);
     return () => io.disconnect();
-  }, [slug]);
+  }, [near, slug]);
+  if (!near) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img ref={posterRef} src={`/clips/${slug}.webp`} alt="" aria-hidden className={className} loading="lazy" decoding="async" />;
+  }
   return (
     <video
       key={slug}
-      ref={ref}
+      ref={videoRef}
       className={className}
       poster={`/clips/${slug}.webp`}
       muted
