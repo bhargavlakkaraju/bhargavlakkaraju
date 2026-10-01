@@ -6,9 +6,18 @@
 //   gamedistribution  GameDistribution SDK (reaches 1000s of partner sites); needs a game id per game
 //   generic           no SDK: itch.io, Newgrounds, Game Jolt, your own CDN
 //
-// Output: dist/portals/<portal>/<slug>/ (index.html + engine + game + font) and a .zip of each.
+// Output: dist/portals/<portal>/<slug>/ (index.html + engine + game + font) and a .zip of each
+// (index.html at the root of the zip, as the portals require).
 // Usage: node scripts/export-portal.mjs [--portal crazygames|poki|gamedistribution|generic|all] [slug ...]
-//        GameDistribution ids: GD_GAME_IDS='{"stack-tower":"<id>"}' node scripts/export-portal.mjs --portal gamedistribution
+//
+// GameDistribution game ids (32-character hex, from the GD developer dashboard), two ways:
+//   1. Fill scripts/portals/gamedistribution-ids.json ({"stack-tower": "<id>", ...}) and
+//      rebuild with: npm run gd:build. GD_GAME_IDS='{"slug":"<id>"}' overrides single entries.
+//   2. Leave them empty: on GD the build reads the id from its own URL
+//      (https://html5.gamedistribution.com/<id>/), see gameDistributionAdapter in platform.js.
+// GD builds also get a start screen (the preroll runs on its Play button), an ad request on
+// every Play again (the GD SDK enforces its own minimum gap between ads), a rotate-your-device
+// hint on phones held sideways, and the GD title from scripts/portals/gamedistribution-listing.mjs.
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -25,7 +34,31 @@ if (pi >= 0) {
 const PORTALS = portalArg === 'all' ? ['crazygames', 'poki', 'gamedistribution', 'generic'] : [portalArg];
 const gamesDir = path.join(root, 'src/games');
 const slugs = args.length ? args : fs.readdirSync(gamesDir).filter((d) => d !== 'engine' && fs.existsSync(path.join(gamesDir, d, 'index.js')));
-const gdIds = JSON.parse(process.env.GD_GAME_IDS || '{}');
+const GD_ID = /^[0-9a-f]{32}$/i;
+function readGdIds() {
+  const file = path.join(root, 'scripts/portals/gamedistribution-ids.json');
+  let ids = {};
+  try {
+    ids = JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (e) {
+    if (fs.existsSync(file)) console.warn(`warning: could not parse ${path.relative(root, file)}: ${e.message}`);
+  }
+  try {
+    Object.assign(ids, JSON.parse(process.env.GD_GAME_IDS || '{}'));
+  } catch (e) {
+    console.warn(`warning: GD_GAME_IDS is not valid JSON: ${e.message}`);
+  }
+  const out = {};
+  for (const [slug, id] of Object.entries(ids)) {
+    if (!id) continue;
+    if (GD_ID.test(String(id).trim())) out[slug] = String(id).trim().toLowerCase();
+    else console.warn(`warning: ignoring GameDistribution id for ${slug}: expected 32 hex characters`);
+  }
+  return out;
+}
+const gdIds = readGdIds();
+const { LISTING: gdListing } = await import(pathToFileURL(path.join(root, 'scripts/portals/gamedistribution-listing.mjs')).href);
+const esc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const hasZip = (() => {
   try {
     execFileSync('zip', ['-v'], { stdio: 'ignore' });
@@ -46,15 +79,22 @@ function copyDir(src, dst) {
 }
 
 function html({ meta, portal }) {
-  const platformOpts = portal === 'gamedistribution' ? JSON.stringify({ gameId: gdIds[meta.slug] || '' }) : '{}';
+  const gd = portal === 'gamedistribution';
+  const platformOpts = gd ? JSON.stringify({ gameId: gdIds[meta.slug] || '' }) : '{}';
   const platformName = portal === 'generic' ? 'none' : portal;
+  const title = gd ? gdListing[meta.slug]?.title || meta.title : meta.title;
+  const description = gd ? gdListing[meta.slug]?.short || meta.description : meta.description;
+  // GD: start screen + preroll on Play, an ad request on every Play again (the SDK paces
+  // them), rotate hint on phones held sideways.
+  const shellOpts = gd ? `\n  splash: { image: 'cover.jpg' },\n  interstitialEvery: 1,\n  rotateHint: true,` : '';
+  const metaExpr = title !== meta.title ? `{ ...meta, title: ${JSON.stringify(title)} }` : 'meta';
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>${meta.title}</title>
-<meta name="description" content="${meta.description.replace(/"/g, '&quot;')}">
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(description)}">
 <style>
 @font-face{font-family:'Fredoka';font-weight:500 800;src:url('fonts/Fredoka-Bold.ttf') format('truetype')}
 html,body{margin:0;height:100%;overflow:hidden;background:${meta.bg || '#0b0618'};overscroll-behavior:none;-webkit-user-select:none;user-select:none}
@@ -72,9 +112,9 @@ const q = new URLSearchParams(location.search);
 bootStandalone({
   container: document.getElementById('game'),
   createGame,
-  meta,
+  meta: ${metaExpr},
   platform: createPlatform('${platformName}', ${platformOpts}),
-  mode: q.get('mode') === 'daily' ? 'daily' : 'classic',
+  mode: q.get('mode') === 'daily' ? 'daily' : 'classic',${shellOpts}
 });
 </script>
 </body>
@@ -103,7 +143,10 @@ for (const portal of PORTALS) {
       fs.rmSync(zipPath, { force: true });
       execFileSync('zip', ['-qr', zipPath, '.'], { cwd: out });
     }
-    summary.push(`${portal.padEnd(17)} ${slug.padEnd(15)} ${(size / 1024).toFixed(0).padStart(5)} KB${portal === 'gamedistribution' && !gdIds[slug] ? '  (set GD_GAME_IDS before uploading)' : ''}`);
+    let zipNote = '';
+    if (hasZip) zipNote = `  zip ${(fs.statSync(path.join(root, 'dist/portals', portal, `${slug}.zip`)).size / 1024).toFixed(0)} KB`;
+    const idNote = portal === 'gamedistribution' ? (gdIds[slug] ? `  gameId ${gdIds[slug]}` : '  gameId from URL at runtime') : '';
+    summary.push(`${portal.padEnd(17)} ${slug.padEnd(15)} ${(size / 1024).toFixed(0).padStart(5)} KB${zipNote}${idNote}`);
   }
 }
 console.log(summary.join('\n'));
