@@ -35,18 +35,19 @@ Preview) and keep a list of what you set. At the end, redeploy production once
    `Play seconds` (`play_seconds`, seconds). Search Console link: the Domain property
    `retryarcade.com` is linked to the Retry Arcade web stream (15861432973), 2026-09-30.
 
-2. **Google AdSense.** Go to https://adsense.google.com and start with my Google account.
-   Website: `retryarcade.com`. Country: India. Stop for me to accept the terms. When the
-   publisher ID appears (`ca-pub-` followed by 16 digits), set
-   `NEXT_PUBLIC_ADSENSE_CLIENT=ca-pub-...`. The site already outputs the AdSense meta tag
-   and `ads.txt` from that variable, so after the redeploy choose the "meta tag" or
-   "ads.txt" verification in AdSense and click Verify, then Request review.
-   Do NOT set NEXT_PUBLIC_DISPLAY_NETWORK to adsense yet (that happens after approval).
-   Then AdSense -> Privacy & messaging -> European regulations -> create the free Google
-   consent message for retryarcade.com and publish it. The site already sends Google
-   Consent Mode v2 defaults (EU/EEA, UK and Swiss visitors start as "denied"); this
-   message is the banner that lets those visitors grant consent, and Google requires it
-   before ads can serve there.
+2. **Google AdSense: site connected 2026-10-01, waiting for review.** Publisher ID
+   `ca-pub-8054463057159999` is set in Vercel (production) as `NEXT_PUBLIC_ADSENSE_CLIENT`,
+   so every page loads the AdSense code snippet and the `google-adsense-account` meta tag, and
+   https://retryarcade.com/ads.txt carries `google.com, pub-8054463057159999, DIRECT,
+   f08c47fec0942fa0`. Until approval, `NEXT_PUBLIC_DISPLAY_NETWORK=house` keeps our own promos
+   in the ad slots and `NEXT_PUBLIC_ADS_PROVIDER=none` keeps in-game ad breaks off.
+   Still to do in AdSense: Sites -> retryarcade.com -> verify with "AdSense code snippet"
+   (or ads.txt), tick "I've placed the code", Verify, then Request review (takes days to
+   weeks). Also AdSense -> Privacy & messaging -> European regulations -> create and publish
+   the free Google consent message: the site already sends Consent Mode v2 defaults (EU/EEA,
+   UK and Swiss visitors start as "denied") and this banner is how they grant consent.
+   After approval, tell the cloud session: it turns on Auto ads or real ad units (switching
+   `NEXT_PUBLIC_DISPLAY_NETWORK` to `adsense`) and redeploys.
 
 3. **Adsterra (earns while AdSense reviews).** Go to https://adsterra.com, choose
    "Sign up" as a **Publisher** with bhargav@hooplaindia.com (ask me for the
