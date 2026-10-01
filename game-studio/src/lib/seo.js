@@ -1,5 +1,13 @@
 // Structured data helpers and the category copy used for search and AI answer engines.
 import { SITE, CATEGORIES } from './site';
+import { GAMES } from './games';
+
+/** "A, B and C": game titles for copy that must stay in sync with the catalog. */
+export const listTitles = (games) => {
+  const t = games.map((g) => g.title);
+  return t.length > 1 ? `${t.slice(0, -1).join(', ')} and ${t[t.length - 1]}` : t.join('');
+};
+export const PARTY_GAMES = GAMES.filter((g) => g.category === 'party');
 
 export const ld = (data) => ({ __html: JSON.stringify(data) });
 
@@ -69,11 +77,11 @@ export const HOME_FAQ = [
   ],
   [
     'Can several people play on one phone?',
-    'Yes. The party games (Tank Tango, Snow Sumo, Hole Party, Shark Attack, Rooftop Rush and Paddle Brawl) put 1 to 4 players on one phone, tablet or laptop, with one corner button each. Bots fill any empty seats.',
+    `Yes. The party games (${listTitles(PARTY_GAMES)}) put 1 to 4 players on one phone, tablet or laptop, with one corner button each. Bots fill any empty seats.`,
   ],
   [
     `Who made ${SITE.name}?`,
-    `${SITE.name} was built by an AI coding agent (Claude, made by Anthropic) with one human directing: the game engine, every game and the website were written in about four days.`,
+    `${SITE.name} was built by an AI coding agent (Claude, made by Anthropic) with one human directing: the game engine, the first 21 games and the website were written in about four days, and the AI keeps adding games since.`,
   ],
 ];
 

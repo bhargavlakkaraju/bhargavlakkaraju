@@ -8,7 +8,7 @@ import { ClipStage } from '@/components/GameTile';
 // Every number here comes from the repository history; keep it that way.
 const STATS = [
   ['4 days', 'from the first line of code to 21 live games'],
-  [`${GAMES.length}`, 'original games, 6 of them for 1 to 4 players on one phone'],
+  [`${GAMES.length}`, `original games, ${GAMES.filter((g) => g.category === 'party').length} of them for 1 to 4 players on one phone`],
   ['26,000', 'lines of game code, all written by AI'],
   ['0', 'game engine dependencies: one tiny engine, built from scratch'],
 ];
@@ -18,6 +18,7 @@ const TIMELINE = [
   ['Day 2', 'The website: instant-play pages, daily challenges, leaderboards, streaks, sharing, SEO and a studio dashboard. Then the domain went live.'],
   ['Day 3', 'A redesign, and animated covers: every game got an autopilot that plays it by itself, so the AI could record its own gameplay trailers.'],
   ['Day 4', 'The party pack: six new games for up to 4 players on one screen, one button each, with bots and a random twist every round. Plus the swipe-to-play feed.'],
+  ['Day 8', 'Search data, then games: the AI read Google Keyword Planner volumes, saw that "2 player games" gets about 368,000 searches a month, and built three more party games aimed at real searches: tug of war, a reaction time duel and air hockey.'],
 ];
 
 const FAQ = [
