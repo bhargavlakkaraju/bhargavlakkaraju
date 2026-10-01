@@ -79,6 +79,8 @@ function runSplash({ shell, meta, platform, ready, image }) {
   return new Promise((resolve) => {
     const root = el('div', 'ra-splash');
     if (image) root.style.backgroundImage = `url("${String(image).replace(/["\\]/g, '')}")`;
+    // Party games keep the sound button at the bottom center: leave room for it.
+    if (meta.party) root.style.paddingBottom = '60px';
     const card = el('div', 'ra-card');
     card.setAttribute('role', 'dialog');
     card.setAttribute('aria-label', meta.title);
