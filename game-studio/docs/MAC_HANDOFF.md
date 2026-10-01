@@ -42,6 +42,11 @@ Preview) and keep a list of what you set. At the end, redeploy production once
    and `ads.txt` from that variable, so after the redeploy choose the "meta tag" or
    "ads.txt" verification in AdSense and click Verify, then Request review.
    Do NOT set NEXT_PUBLIC_DISPLAY_NETWORK to adsense yet (that happens after approval).
+   Then AdSense -> Privacy & messaging -> European regulations -> create the free Google
+   consent message for retryarcade.com and publish it. The site already sends Google
+   Consent Mode v2 defaults (EU/EEA, UK and Swiss visitors start as "denied"); this
+   message is the banner that lets those visitors grant consent, and Google requires it
+   before ads can serve there.
 
 3. **Adsterra (earns while AdSense reviews).** Go to https://adsterra.com, choose
    "Sign up" as a **Publisher** with bhargav@hooplaindia.com (ask me for the
