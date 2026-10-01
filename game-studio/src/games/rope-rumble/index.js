@@ -3,7 +3,8 @@
 // Every player hangs on to a rope tied to one brass ring in a mud pit. TAP to heave the ring
 // toward you. A pulse ring closes in around your puller after every heave: tap as it meets
 // the circle (the green window) for a POWER PULL worth three normal heaves that also costs
-// less stamina. Mashing drains your stamina bar, and a heave on an empty bar is a weak slip.
+// less stamina. Mashing drains your stamina bar, a heave on an empty bar slips and loses some
+// of its pull, and heaves crammed too close together have less weight behind them.
 // HOLD to dig in: you brace against being dragged while your stamina slowly drains. Drag the
 // ring over your own chalk line to win the round. With 3 or 4 pullers, anyone dragged too far
 // the other way loses their footing, face-plants and is out. After 25 seconds SUDDEN DEATH
@@ -27,7 +28,7 @@ const SUDDEN = 10; // last seconds: the lines close in
 const FRICTION = 2.6; // ring drag in the mud (1/s)
 const IMP = 0.06; // ring speed added by one normal heave
 const POWER = 3; // a power pull is worth this many heaves
-const WEAK = 0.3; // a slip still tugs a little
+const WEAK = 0.64; // a slip still tugs, just less (and costs no stamina)
 const LEVERAGE = 0.8; // pullers who are winning get better footing
 const BEAT = 0.42; // seconds after a heave when the power window peaks
 const WIN_H = 0.085; // half width of the power window
@@ -41,7 +42,9 @@ const REGEN_DELAY = 0.18;
 const DIG_T = 0.2; // hold this long to dig in
 const DIG_DRAIN = 0.16;
 const BRAKE = 7; // how hard a dug-in puller resists being dragged
-const STUMBLE = 0.25; // a slip costs this long
+const STUMBLE = 0.25; // running dry while dug in costs this long
+const STUMBLE_TIRED = 0.03; // a tired slip is only a wobble (mashers keep playing)
+const TEMPO = 0.15; // heaves closer together than this land with less force
 const FINISH_T = 0.8; // the winning yank plays this long before the round closes
 const GUST = 0.12;
 const PREF = [135, 45, -45, -135].map((a) => (a * Math.PI) / 180); // each seat's corner
@@ -139,6 +142,7 @@ export default function createGame(api) {
       cheer: -1,
       textT: -9,
       digT: -9,
+      slipT: 0,
       dash: 0,
       danger: 0,
       fx: 0,
@@ -289,7 +293,9 @@ export default function createGame(api) {
       why = 'butter';
     }
     if (kind > 0 || why === 'butter') d.stam = Math.max(0, d.stam - cost);
-    const str = kind === 2 ? POWER : kind === 1 ? 1 : WEAK;
+    // nobody can set their feet ten times a second: rushed heaves land lighter
+    const tempo = kind === 2 ? 1 : clamp(d.since / TEMPO, 0.35, 1);
+    const str = (kind === 2 ? POWER : kind === 1 ? 1 : WEAK) * tempo;
     const lev = 1 + LEVERAGE * clamp(proj(d), -0.5, 0.5);
     const imp = IMP * str * lev * (S.sudden ? 1.2 : 1);
     const ex = d.L.ax - S.rx;
@@ -306,7 +312,10 @@ export default function createGame(api) {
       d.twang = 1;
       S.flash = 1;
     } else d.combo = 0;
-    if (kind === 0) d.stumble = why === 'butter' ? STUMBLE * 0.6 : STUMBLE;
+    if (kind === 0) {
+      d.stumble = why === 'butter' ? STUMBLE * 0.6 : STUMBLE_TIRED;
+      d.slipT = 0.28; // the stumble animation outlasts the tiny lockout
+    }
     heaveFx(q, kind, why, ctx);
     if (p.human) api.haptic(kind === 2 ? 18 : 8);
   }
@@ -616,6 +625,7 @@ export default function createGame(api) {
       d.tension += (target - d.tension) * (1 - Math.exp(-7 * dt));
       d.kick = Math.max(0, d.kick - dt * 5);
       d.twang = Math.max(0, d.twang - dt * 3.5);
+      d.slipT = Math.max(0, d.slipT - dt);
       if (d.tumble >= 0) d.tumble += dt;
       if (d.cheer >= 0) d.cheer += dt;
       if (d.fallen) d.fallen.t += dt;
@@ -892,7 +902,7 @@ export default function createGame(api) {
     if (d.fallen) pose = 'down';
     else if (d.tumble >= 0) pose = d.tumble < 0.22 ? 'slip' : 'down';
     else if (d.cheer >= 0) pose = d.cheer > 0.38 ? 'cheer' : 'pull';
-    else if (d.stumble > 0) pose = 'slip';
+    else if (d.stumble > 0 || d.slipT > 0) pose = 'slip';
     let lean;
     let crouch = 0;
     let strain;

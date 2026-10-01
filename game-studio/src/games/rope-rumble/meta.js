@@ -40,7 +40,7 @@ export default {
   faq: [
     { q: 'Can I play Rope Rumble alone?', a: 'Yes. Press PLAY without joining a corner and you pull the pink rope against three bots. You can also choose how many bots join from the lobby.' },
     { q: 'How do 2, 3 or 4 players share one device?', a: 'Each player owns one corner of the screen and uses only that button. On a keyboard the keys are Z, M, P and Q. It works on phones, tablets and laptops.' },
-    { q: 'Is it better to mash or to tap in rhythm?', a: 'Rhythm wins. A tap in the green window is a power pull worth three normal heaves and costs less stamina, while mashing empties your bar in about a second and then every heave slips.' },
+    { q: 'Is it better to mash or to tap in rhythm?', a: 'Rhythm wins. A tap in the green window is a power pull worth three normal heaves and costs less stamina. Mashing works for a burst, but it empties your bar in a couple of seconds and then your heaves slip and lose some of their pull.' },
     { q: 'What are twist cards?', a: 'From the second round on, each round draws a random rule change, such as BUTTER ROPE, GUST, GIANTS, LIGHTS OUT or SWAP, so no two rounds play the same.' },
   ],
   about:

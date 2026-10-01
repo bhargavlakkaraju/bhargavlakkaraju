@@ -28,7 +28,7 @@ export default {
     'Hold your button and your mallet charges at the puck. The faster it is moving when it connects, the harder the shot.',
     'Let go and your mallet glides back to guard the middle of your goal. Charge for too long and your goal is wide open.',
     'A puck in your goal costs one of your 3 lives. Lose them all and your goal closes for good. The last mallet standing wins the crown.',
-    'A second puck drops in after 20 seconds and RUSH speeds everything up at 40. If time runs out, the most lives left wins. First to 3 crowns takes the cup.',
+    'A second puck drops in after 20 seconds, then RUSH adds a third and keeps every puck flying. If the 60 seconds run out, the most lives left wins. First to 3 crowns takes the cup.',
   ],
   tips: [
     'Tap for a quick jab: your mallet kicks toward the puck and comes straight back, so your goal is never open for long.',
