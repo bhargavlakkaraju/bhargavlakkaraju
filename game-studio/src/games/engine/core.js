@@ -394,7 +394,7 @@ export function mountGame(container, createGame, meta, options = {}) {
   raf = requestAnimationFrame(frame);
   platform?.setHooks({
     pause: () => controller.pause(),
-    resume: () => controller.resume(),
+    resume: (opts) => controller.resume(opts),
   });
 
   // ---------- controller ----------
@@ -436,12 +436,19 @@ export function mountGame(container, createGame, meta, options = {}) {
       canvas.focus({ preventScroll: true });
       return true;
     },
+    /** True while the host (ads) or the engine (tab hidden) has the game paused. */
+    get paused() {
+      return hostPaused || autoPaused;
+    },
     pause() {
       hostPaused = true;
       sfx.setSuspended(true);
     },
-    resume() {
+    /** opts.tapToResume: a run that was in progress shows "PAUSED, tap to resume" instead of
+     *  moving again at once (GameDistribution asks for this after an ad). */
+    resume(opts = {}) {
       hostPaused = false;
+      if (opts && opts.tapToResume && state === 'playing' && !demo) autoPaused = true;
       sfx.setSuspended(false);
       last = performance.now();
     },

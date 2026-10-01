@@ -156,6 +156,9 @@ export const sfx = {
     this.setMuted(!muted);
     return muted;
   },
+  isSuspended() {
+    return suspended;
+  },
   /** Used while ads play: silences everything without changing the user's mute preference. */
   setSuspended(v) {
     suspended = !!v;
