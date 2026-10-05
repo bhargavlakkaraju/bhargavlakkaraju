@@ -361,7 +361,7 @@ export async function submitAvatarStage(
         "This submission needs administrator recovery before another render can start. This prevents a duplicate charge.",
       );
     if (w.translationSourceId) {
-      if (!w.proofreadId || !w.proofreadReviewed)
+      if (w.proofreadId && !w.proofreadReviewed)
         throw new PipelineError(
           "Please review the translated subtitles before creating this video.",
         );
@@ -369,11 +369,36 @@ export async function submitAvatarStage(
       await saveWorkflow(w);
       let result;
       try {
-        result = await heygen<{ video_translation_id: string }>(
-          `/video-translations/proofreads/${encodeURIComponent(w.proofreadId)}/generate`,
-          { captions: false },
-          `${id}:translation:${w.attempt ?? 0}`,
-        );
+        if (w.proofreadId) {
+          // Preserve already-prepared legacy proofread jobs.
+          result = await heygen<{ video_translation_id: string }>(
+            `/video-translations/proofreads/${encodeURIComponent(w.proofreadId)}/generate`,
+            { captions: false },
+            `${id}:translation:${w.attempt ?? 0}`,
+          );
+        } else {
+          const source = await entry(w.translationSourceId);
+          const language = TRANSLATION_LANGUAGES[e.language];
+          if (source.status !== "completed" || !source.video_url || !language)
+            throw new PipelineError(
+              "The completed source video or target language is unavailable.",
+            );
+          const translation = await heygen<{ video_translation_ids: string[] }>(
+            "/video-translations",
+            {
+              video: { type: "url", url: source.video_url },
+              output_languages: [language],
+              mode: "precision",
+              translate_audio_only: false,
+              speaker_num: 1,
+              title: `PortraitVoice ${id} ${e.language}`,
+            },
+            `${id}:translation:${w.attempt ?? 0}`,
+          );
+          result = {
+            video_translation_id: translation.video_translation_ids?.[0],
+          };
+        }
       } catch (error) {
         if (
           error instanceof HeyGenError &&
@@ -709,47 +734,16 @@ export async function prepareExistingVideoTranslation(input: {
       };
       await saveWorkflow(w);
     }
-    if (w.proofreadId)
-      return { entryId: w.id, token: input.token, language: input.language };
-    if (w.submitting)
+    if (
+      w.translationSourceId !== input.sourceId ||
+      (await entry(w.id)).language !== input.language
+    )
       throw new PipelineError(
-        "This translation needs administrator recovery before another request can start.",
+        "This request belongs to a different source or language.",
       );
-    // Use a durable owned video URL, never a caller-supplied remote URL.
-    w.submitting = "proofread";
-    await saveWorkflow(w);
-    try {
-      const result = await heygen<{ proofread_ids: string[] }>(
-        "/video-translations/proofreads",
-        {
-          video: { type: "url", url: source.video_url },
-          output_languages: [supported],
-          mode: "precision",
-          speaker_num: 1,
-          title: `PortraitVoice ${w.id} ${input.language}`,
-        },
-        `${w.id}:proofread`,
-      );
-      if (!result.proofread_ids[0])
-        throw new PipelineError(
-          "Translation preparation needs administrator recovery.",
-        );
-      w.proofreadId = result.proofread_ids[0];
-      delete w.submitting;
-      await saveWorkflow(w);
-      return { entryId: w.id, token: input.token, language: input.language };
-    } catch (error) {
-      if (
-        error instanceof HeyGenError &&
-        error.status >= 400 &&
-        error.status < 500 &&
-        error.status !== 409
-      ) {
-        delete w.submitting;
-        await saveWorkflow(w);
-      }
-      throw error;
-    }
+    // Preparation is free of provider generation calls. The normal pipeline
+    // submits one standard precision translation with a durable charge guard.
+    return { entryId: w.id, token: input.token, language: input.language };
   });
 }
 export async function readExistingVideoTranslation(id: string, token: string) {

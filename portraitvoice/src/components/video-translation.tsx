@@ -3,17 +3,10 @@ import { LANGUAGES, languageLabel } from "@/lib/languages";
 import {
   getTranslationCapabilities,
   prepareVideoTranslation,
-  readVideoTranslation,
-  approveVideoTranslation,
 } from "@/server/fns";
-import {
-  BATCH_STORAGE,
-  LanguageOutputs,
-  type LanguageOutput,
-} from "./language-outputs";
+import { LanguageOutputs, type LanguageOutput } from "./language-outputs";
 import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
-import { Textarea } from "./ui/textarea";
 export function VideoTranslation({ source }: { source: LanguageOutput }) {
   const [open, setOpen] = useState(false),
     [consent, setConsent] = useState(false),
@@ -37,7 +30,7 @@ export function VideoTranslation({ source }: { source: LanguageOutput }) {
         );
   }, [open]);
   const [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
+    [errors, setErrors] = useState<Record<string, string>>({});
   const requests = useRef<Record<string, { requestId: string; token: string }>>(
     {},
   );
@@ -54,7 +47,7 @@ export function VideoTranslation({ source }: { source: LanguageOutput }) {
   async function prepare() {
     if (!source.entryId || !consent || busy) return;
     setBusy(true);
-    setError("");
+    setErrors({});
     let next = [...pending];
     try {
       for (const language of targets) {
@@ -87,9 +80,10 @@ export function VideoTranslation({ source }: { source: LanguageOutput }) {
             JSON.stringify({ pending: next, requests: requests.current }),
           );
         } catch (e) {
-          setError(
-            `${languageLabel(language)}: ${e instanceof Error ? e.message : "Could not prepare."}`,
-          );
+          setErrors((previous) => ({
+            ...previous,
+            [language]: e instanceof Error ? e.message : "Could not prepare.",
+          }));
         }
       }
     } finally {
@@ -109,9 +103,10 @@ export function VideoTranslation({ source }: { source: LanguageOutput }) {
           {access?.reason && <p role="alert">{access.reason}</p>}
           <p className="field-hint">
             HeyGen translates the original voice and synchronizes the lips.
-            Review the timed subtitles before creating each video. Subtitle
-            editing may require Enterprise access; access or billing errors will
-            be shown without changing your source video.
+            Creates a separate video for each language using paid precision
+            lip-sync translation. Review the generated video for meaning, names,
+            numbers and pronunciation before sharing. Your original video stays
+            available. Each selected language is charged separately.
           </p>
           <div className="language-choices">
             {LANGUAGES.filter((l) => l.code !== source.language).map((l) => (
@@ -142,118 +137,26 @@ export function VideoTranslation({ source }: { source: LanguageOutput }) {
             disabled={!access?.available || !consent || !targets.length || busy}
             onClick={() => void prepare()}
           >
-            {busy ? "Preparing…" : "Prepare video translations"}
+            {busy ? "Starting…" : "Create translated videos"}
           </Button>
-          {error && <p role="alert">{error}</p>}
-          {pending.map((o) => (
-            <Proofread key={o.entryId} output={o} />
+          {Object.entries(errors).map(([language, message]) => (
+            <p key={language} role="alert">
+              {languageLabel(language)}: {message}
+            </p>
           ))}
+          {pending.length > 0 && (
+            <LanguageOutputs
+              embedded
+              outputs={pending.map((o) => ({
+                ...o,
+                error: null,
+                startedAt: Date.now(),
+              }))}
+              onReset={() => setOpen(false)}
+            />
+          )}
         </section>
       )}
     </div>
-  );
-}
-function Proofread({
-  output,
-}: {
-  output: { entryId: string; token: string; language: string };
-}) {
-  const [text, setText] = useState(""),
-    [status, setStatus] = useState("Preparing translated subtitles…"),
-    [reviewed, setReviewed] = useState(false),
-    [error, setError] = useState(""),
-    [done, setDone] = useState(false),
-    [busy, setBusy] = useState(false);
-  const storage = `portraitvoice.proofread.${output.entryId}`;
-  useEffect(() => {
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout>;
-    async function poll() {
-      try {
-        const result = await readVideoTranslation({ data: output });
-        if (cancelled) return;
-        if (result.text) {
-          setText(result.text);
-          setStatus("Review translated subtitles");
-        } else timer = setTimeout(poll, 15000);
-      } catch (e) {
-        if (!cancelled)
-          setError(
-            e instanceof Error ? e.message : "Could not prepare subtitles.",
-          );
-      }
-    }
-    void poll();
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [output]);
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(storage) === "rendering") setDone(true);
-    } catch {}
-  }, [storage]);
-  async function create() {
-    if (!reviewed || busy) return;
-    setBusy(true);
-    try {
-      await approveVideoTranslation({
-        data: { ...output, text, consent: true },
-      });
-      localStorage.setItem(storage, "rendering");
-      setDone(true);
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Could not create translation.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-  if (done)
-    return (
-      <LanguageOutputs
-        outputs={[{ ...output, error: null, startedAt: Date.now() }]}
-        onReset={() => setDone(false)}
-      />
-    );
-  return (
-    <section className="translation-draft">
-      <h3>{languageLabel(output.language)}</h3>
-      <p role="status">{status}</p>
-      {text && (
-        <>
-          <label htmlFor={`srt-${output.entryId}`}>
-            Translated words and subtitle timing ·{" "}
-            {languageLabel(output.language)}
-          </label>
-          <Textarea
-            id={`srt-${output.entryId}`}
-            rows={8}
-            value={text}
-            maxLength={30000}
-            onChange={(e) => {
-              setText(e.target.value);
-              setReviewed(false);
-            }}
-          />
-          <label className="check-line">
-            <Checkbox
-              checked={reviewed}
-              onCheckedChange={(v) => setReviewed(v === true)}
-            />
-            <span>
-              I have checked the meaning, names and numbers and preserved
-              subtitle timing.
-            </span>
-          </label>
-          <Button disabled={!reviewed || busy} onClick={() => void create()}>
-            Create {languageLabel(output.language)} translated video
-          </Button>
-        </>
-      )}
-      {error && <p role="alert">{error}</p>}
-    </section>
   );
 }

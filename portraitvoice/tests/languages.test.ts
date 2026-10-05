@@ -37,7 +37,7 @@ test("output catalog includes requested languages and script validation catches 
   assert.equal(validateScript("मेरी कहानी", "hi"), "मेरी कहानी");
   assert.equal(validateScript("ମୋ କାହାଣୀ", "or"), "ମୋ କାହାଣୀ");
 });
-test("existing video translation is owned, proofread before render, idempotent, and saved as a separate output", async () => {
+test("existing video translation is owned, uses self-serve precision without proofread, idempotent, and saved as a separate output", async () => {
   const service = await import("../src/lib/pipeline/service");
   const { getRepository } = await import("../src/lib/db");
   const store = await import("../src/lib/pipeline/store");
@@ -72,44 +72,25 @@ test("existing video translation is owned, proofread before render, idempotent, 
     jobs: [],
     consentAt: new Date().toISOString(),
   });
-  let prepares = 0,
-    renders = 0,
-    edits = 0;
+  let renders = 0;
   const original = globalThis.fetch;
-  const srt = "1\n00:00:00,000 --> 00:00:04,000\nमेरी अपनी कहानी।\n";
   globalThis.fetch = async (input, init) => {
     const url = String(input);
     if (url.endsWith("/api_keys/self"))
-      return Response.json({ data: { scopes: ["*:*"], status: "active" } });
-    if (url.endsWith("/proofreads") && init?.method === "POST") {
-      prepares++;
+      return Response.json({
+        data: { scopes: ["translations:write"], status: "active" },
+      });
+    if (url.endsWith("/video-translations") && init?.method === "POST") {
+      renders++;
       const body = JSON.parse(String(init.body));
       assert.equal(body.mode, "precision");
+      assert.equal(body.translate_audio_only, false);
       assert.deepEqual(body.output_languages, ["Hindi (India)"]);
       assert.equal(body.video.url, video.url);
-      return Response.json({ data: { proofread_ids: ["proofread_mock"] } });
-    }
-    if (url.endsWith("/proofreads/proofread_mock"))
-      return Response.json({
-        data: { id: "proofread_mock", status: "completed" },
-      });
-    if (url.endsWith("/proofread_mock/srt")) {
-      if (init?.method === "PUT") {
-        edits++;
-        return Response.json({
-          data: { id: "proofread_mock", status: "completed" },
-        });
-      }
-      return Response.json({
-        data: { srt_url: "https://files.heygen.ai/translated.srt" },
-      });
-    }
-    if (url.endsWith("translated.srt")) return new Response(srt);
-    if (url.endsWith("/proofread_mock/generate")) {
-      renders++;
+      assert.equal(body.srt, undefined);
       assert.ok(new Headers(init?.headers).get("Idempotency-Key"));
       return Response.json({
-        data: { video_translation_id: "translation_mock" },
+        data: { video_translation_ids: ["translation_mock"] },
       });
     }
     if (url.endsWith("/video-translations/translation_mock"))
@@ -143,24 +124,11 @@ test("existing video translation is owned, proofread before render, idempotent, 
     const result = await service.prepareExistingVideoTranslation(input);
     const again = await service.prepareExistingVideoTranslation(input);
     assert.equal(result.entryId, again.entryId);
-    assert.equal(prepares, 1);
-    assert.equal(renders, 0);
+    assert.equal(renders, 0); // No paid call during preparation.
     await assert.rejects(
-      service.submitAvatarStage(result.entryId, 0, token),
-      /review/,
+      service.prepareExistingVideoTranslation({ ...input, language: "te" }),
+      /different source or language/,
     );
-    const reviewed = await service.readExistingVideoTranslation(
-      result.entryId,
-      token,
-    );
-    assert.equal(reviewed.text, srt);
-    await service.reviewExistingVideoTranslation(
-      result.entryId,
-      token,
-      srt.replace("अपनी", "खुद की"),
-    );
-    assert.equal(edits, 1);
-    assert.equal(renders, 0);
     const job = await service.submitAvatarStage(result.entryId, 0, token);
     await service.submitAvatarStage(result.entryId, 0, token);
     assert.equal(renders, 1);
@@ -187,6 +155,30 @@ test("existing video translation is owned, proofread before render, idempotent, 
     );
     await service.resolveStageJob(result.entryId, "avatar", job.jobId, token);
     assert.equal(renders, 1);
+    const ambiguous = await service.prepareExistingVideoTranslation({
+      ...input,
+      language: "te",
+      requestId: randomUUID(),
+      token: store.newToken(),
+    });
+    let attempts = 0;
+    globalThis.fetch = async () => {
+      attempts++;
+      throw new Error("Connection lost after submission");
+    };
+    await assert.rejects(
+      service.submitAvatarStage(ambiguous.entryId, 0, ambiguous.token),
+      /Connection lost/,
+    );
+    await assert.rejects(
+      service.submitAvatarStage(ambiguous.entryId, 0, ambiguous.token),
+      /duplicate charge/,
+    );
+    assert.equal(attempts, 1);
+    await assert.rejects(
+      service.retryFailedVideo(ambiguous.entryId, ambiguous.token),
+      /cannot be retried/,
+    );
   } finally {
     globalThis.fetch = original;
   }

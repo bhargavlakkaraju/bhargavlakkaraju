@@ -8,9 +8,12 @@ Output languages: English, Hindi, Punjabi, Telugu, Tamil, Kannada, Marathi, Beng
 
 For newly created videos, reviewed scripts fan out to separate Avatar IV entries with independent tokens, request IDs, progress, failures, resume and downloads. A failed output is retried only after HeyGen confirms failure; ambiguous submissions retain the duplicate-charge guard. Preparing a batch retries the original per-language request IDs and does not repeat completed outputs.
 
-Completed videos, including resumable legacy completions, offer precision video translation. The source video stays intact. A HeyGen proofread session is created per target; the timed translated subtitles must be reviewed before final lip-sync rendering. Edited SRT uploads are attempted only when words are changed. The runtime checks the existing API key's non-secret scope metadata; the action is disabled without translation read/write access. No permissions are granted. Enterprise subtitle-editing entitlements and actual voice/render quality require separate provider acceptance testing.
+Completed videos, including resumable legacy completions, offer standard precision lip-sync translation through `POST /v3/video-translations` with proofreading disabled. This is the current self-serve API path; no Enterprise upgrade is required. Each target is a separate owned job with idempotency, failure retry safeguards and download. Original video stays intact. Users explicitly consent and review generated meaning, names, numbers and pronunciation before sharing. Preparation creates local records without a provider generation call; rendering occurs through the normal guarded pipeline. Legacy proofread jobs can still finish if they already exist.
+
+Current authenticated self-serve pricing on 5 October 2026: Precision Lip Sync $0.025/sec per language, billed to the API wallet ($2.07 observed; auto-reload off). A 5-second clip would have a $0.125 base rate per target, subject to actual billable duration; do not promise a fixed charge. Proofread editing is Enterprise-only and is not requested by this flow. Production key still needs Translations Write (includes Read); no grant, top-up or paid test is performed by this release.
 
 Official references:
+
 - https://elevenlabs.io/docs/overview/models#eleven-v3
 - https://developers.heygen.com/docs/video-translation-precision
 - https://developers.heygen.com/docs/api-key-permissions
@@ -19,6 +22,7 @@ Official references:
 Validation: native-script/length/unclear-word checks, ownership/idempotency/finalization/provider-failure retry tests, desktop and mobile draft/review/consent/layout checks, production build. No paid renders, transcription or translation calls are made by these tests. Existing opt-in live tests remain skipped.
 
 Publication from the repository root, after checks:
+
 1. Commit only `portraitvoice/`; fast-forward `claude/peaceful-ramanujan-nissro` to the reviewed feature commit and push that branch.
 2. Verify `git ls-remote origin refs/heads/claude/peaceful-ramanujan-nissro` matches the local release SHA.
 3. Link the existing project: `vercel link --yes --project portraitvoice --scope bhargavlakkarajus-projects` (already linked in this working checkout).

@@ -15,13 +15,20 @@ export const BATCH_STORAGE = "portraitvoice.batch.v1";
 export function LanguageOutputs({
   outputs,
   onReset,
+  embedded = false,
 }: {
   outputs: LanguageOutput[];
   onReset: () => void;
+  embedded?: boolean;
 }) {
+  const Container = embedded ? "div" : "main";
   return (
-    <main className="studio-shell">
-      <h1>Your language videos</h1>
+    <Container className={embedded ? "translation-results" : "studio-shell"}>
+      {embedded ? (
+        <h3>Your translated videos</h3>
+      ) : (
+        <h1>Your language videos</h1>
+      )}
       <p>
         Each language has its own video and progress. Completed videos remain
         available if another language fails.
@@ -31,10 +38,12 @@ export function LanguageOutputs({
           <Output key={o.language} output={o} />
         ))}
       </div>
-      <Button variant="secondary" onClick={onReset}>
-        Create another testimonial
-      </Button>
-    </main>
+      {!embedded && (
+        <Button variant="secondary" onClick={onReset}>
+          Create another testimonial
+        </Button>
+      )}
+    </Container>
   );
 }
 function Output({ output: initial }: { output: LanguageOutput }) {
