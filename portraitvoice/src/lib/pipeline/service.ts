@@ -2,6 +2,10 @@ import { randomUUID } from "node:crypto";
 import { getRepository } from "../db";
 import {
   createVideo,
+  heygen,
+  getVideoTranslation,
+  TRANSLATION_LANGUAGES,
+  translationCapabilities,
   getVideo,
   HeyGenError,
   mapJobStatus,
@@ -206,6 +210,9 @@ export async function extractNoteText(
   }
 }
 export interface CreateEntryInput {
+  sourceLanguage?: string;
+  sourceScript?: string;
+  batchId?: string;
   sourcePortraitUrl: string;
   sourcePortraitId: string;
   inputMode: InputMode;
@@ -271,6 +278,12 @@ export async function submitPortraitStage(input: CreateEntryInput) {
       );
       w = { id: e.id, tokenHash: hashToken(input.token), jobs: [] };
     }
+    if (input.audioUrl && input.inputMode !== "audio")
+      await requireAudio(input.audioUrl);
+    w.sourceAudioUrl = input.audioUrl ?? undefined;
+    w.sourceLanguage = input.sourceLanguage;
+    w.sourceScript = input.sourceScript;
+    w.batchId = input.batchId;
     w.requestId = input.requestId;
     w.consentAt = new Date().toISOString();
     w.ambience = input.ambience ?? false;
@@ -347,6 +360,58 @@ export async function submitAvatarStage(
       throw new PipelineError(
         "This submission needs administrator recovery before another render can start. This prevents a duplicate charge.",
       );
+    if (w.translationSourceId) {
+      if (!w.proofreadId || !w.proofreadReviewed)
+        throw new PipelineError(
+          "Please review the translated subtitles before creating this video.",
+        );
+      w.submitting = "translation";
+      await saveWorkflow(w);
+      let result;
+      try {
+        result = await heygen<{ video_translation_id: string }>(
+          `/video-translations/proofreads/${encodeURIComponent(w.proofreadId)}/generate`,
+          { captions: false },
+          `${id}:translation:${w.attempt ?? 0}`,
+        );
+      } catch (error) {
+        if (
+          error instanceof HeyGenError &&
+          error.status >= 400 &&
+          error.status < 500 &&
+          error.status !== 409
+        ) {
+          delete w.submitting;
+          await saveWorkflow(w);
+        }
+        throw error;
+      }
+      if (!result.video_translation_id)
+        throw new PipelineError(
+          "Translation submission needs administrator recovery before another render can start.",
+        );
+      const job: StageJob = {
+        id: result.video_translation_id,
+        stage: "avatar",
+        model: "Video Translation Precision",
+        provider: "heygen",
+        credits: 0,
+        units: 1,
+      };
+      w.jobs.push(job);
+      delete w.submitting;
+      await saveWorkflow(w);
+      await getRepository().insertUsage({
+        entry_id: id,
+        provider: "HeyGen",
+        model: job.model,
+        stage: "avatar",
+        units: 1,
+        unit_type: "videos",
+        credits: 0,
+      });
+      return submission(w, "avatar", job);
+    }
     if (!w.imageAssetId) {
       const source = await readStoredUrl(e.portrait_url);
       w.imageAssetId = await uploadAsset(
@@ -391,7 +456,7 @@ export async function submitAvatarStage(
     await saveWorkflow(w);
     let video;
     try {
-      video = await createVideo(body, `${id}:avatar`);
+      video = await createVideo(body, `${id}:avatar:${w.attempt ?? 0}`);
     } catch (error) {
       // Definite rejections are safe to retry. Ambiguous timeouts/409 retain the guard.
       if (
@@ -463,7 +528,9 @@ export async function checkStageJob(
         chained: false,
         error: null,
       };
-    const job = await getVideo(jobId),
+    const job = await (w.translationSourceId
+        ? getVideoTranslation(jobId)
+        : getVideo(jobId)),
       status = mapJobStatus(job.status);
     if (status === "failed")
       return {
@@ -512,7 +579,9 @@ export async function resolveStageJob(
     assertCurrent(w);
     if (stage !== "avatar")
       throw new PipelineError("Please refresh to use the new generator.");
-    const job = await getVideo(jobId);
+    const job = await (w.translationSourceId
+      ? getVideoTranslation(jobId)
+      : getVideo(jobId));
     if (mapJobStatus(job.status) !== "completed" || !job.video_url)
       throw new PipelineError(
         "This step is still in progress. Please wait a moment.",
@@ -553,4 +622,197 @@ export async function resumeGeneration(id: string, token: string) {
   const e = await entry(id);
   if (e.status !== "completed") assertCurrent(w);
   return { entry: e, jobs: w.jobs, audioDuration: w.audioDuration ?? null };
+}
+
+/** A retry is permitted only after the provider confirms the previous render failed. */
+export async function retryFailedVideo(id: string, token: string) {
+  await withWorkflowLock(id, async () => {
+    const w = await assertOwner(id, token),
+      e = await entry(id);
+    if (e.status !== "failed" || w.submitting || e.video_url)
+      throw new PipelineError(
+        "Resume the existing request; it cannot be retried yet.",
+      );
+    const job = w.jobs.find((j) => j.stage === "avatar");
+    if (
+      !job ||
+      mapJobStatus(
+        (
+          await (w.translationSourceId
+            ? getVideoTranslation(job.id)
+            : getVideo(job.id))
+        ).status,
+      ) !== "failed"
+    )
+      throw new PipelineError(
+        "The provider must confirm failure before a new render can start.",
+      );
+    w.jobs = w.jobs.filter((j) => j.id !== job.id);
+    w.attempt = (w.attempt ?? 0) + 1;
+    await saveWorkflow(w);
+    await getRepository().updateEntry(id, {
+      status: "processing",
+      error_message: null,
+    });
+  });
+  return resumeGeneration(id, token);
+}
+
+export async function prepareExistingVideoTranslation(input: {
+  sourceId: string;
+  sourceToken: string;
+  language: string;
+  requestId: string;
+  token: string;
+  consent: true;
+}) {
+  return withWorkflowLock(input.requestId, async () => {
+    await assertOwner(input.sourceId, input.sourceToken);
+    const source = await entry(input.sourceId);
+    if (
+      source.status !== "completed" ||
+      !source.video_url ||
+      input.consent !== true
+    )
+      throw new PipelineError(
+        "A completed source video and permission to translate its voice are required.",
+      );
+    const access = await translationCapabilities();
+    if (!access.available)
+      throw new PipelineError(
+        access.reason ?? "Video translation access is unavailable.",
+      );
+    const supported = TRANSLATION_LANGUAGES[input.language];
+    if (!supported)
+      throw new PipelineError(
+        "Please choose a supported translation language.",
+      );
+    const existing = await findRequest(input.requestId);
+    let w: Workflow;
+    if (existing) w = await assertOwner(existing.id, input.token);
+    else {
+      const e = await getRepository().createEntry({
+        ...emptyEntry("text", input.language),
+        portrait_url: source.portrait_url,
+        source_portrait_url: source.source_portrait_url,
+      });
+      w = {
+        id: e.id,
+        tokenHash: hashToken(input.token),
+        requestId: input.requestId,
+        jobs: [],
+        provider: "heygen",
+        consentAt: new Date().toISOString(),
+        translationSourceId: input.sourceId,
+        sourceLanguage: source.language,
+        sourceScript: source.script_text ?? "",
+      };
+      await saveWorkflow(w);
+    }
+    if (w.proofreadId)
+      return { entryId: w.id, token: input.token, language: input.language };
+    if (w.submitting)
+      throw new PipelineError(
+        "This translation needs administrator recovery before another request can start.",
+      );
+    // Use a durable owned video URL, never a caller-supplied remote URL.
+    w.submitting = "proofread";
+    await saveWorkflow(w);
+    try {
+      const result = await heygen<{ proofread_ids: string[] }>(
+        "/video-translations/proofreads",
+        {
+          video: { type: "url", url: source.video_url },
+          output_languages: [supported],
+          mode: "precision",
+          speaker_num: 1,
+          title: `PortraitVoice ${w.id} ${input.language}`,
+        },
+        `${w.id}:proofread`,
+      );
+      if (!result.proofread_ids[0])
+        throw new PipelineError(
+          "Translation preparation needs administrator recovery.",
+        );
+      w.proofreadId = result.proofread_ids[0];
+      delete w.submitting;
+      await saveWorkflow(w);
+      return { entryId: w.id, token: input.token, language: input.language };
+    } catch (error) {
+      if (
+        error instanceof HeyGenError &&
+        error.status >= 400 &&
+        error.status < 500 &&
+        error.status !== 409
+      ) {
+        delete w.submitting;
+        await saveWorkflow(w);
+      }
+      throw error;
+    }
+  });
+}
+export async function readExistingVideoTranslation(id: string, token: string) {
+  return withWorkflowLock(id, async () => {
+    const w = await assertOwner(id, token);
+    if (!w.proofreadId)
+      throw new PipelineError("This translation is not ready for review.");
+    const base = `/video-translations/proofreads/${encodeURIComponent(w.proofreadId)}`;
+    const result = await heygen<{ status: string }>(base);
+    if (result.status === "failed")
+      throw new PipelineError(
+        "HeyGen could not prepare this translation. The administrator can check translation access and billing.",
+      );
+    if (result.status !== "completed")
+      return { status: result.status, text: null };
+    if (!w.proofreadText) {
+      const srt = await heygen<{ srt_url: string }>(`${base}/srt`);
+      w.proofreadText = new TextDecoder().decode(
+        await downloadMedia(srt.srt_url),
+      );
+      await saveWorkflow(w);
+    }
+    return { status: "completed", text: w.proofreadText };
+  });
+}
+export async function reviewExistingVideoTranslation(
+  id: string,
+  token: string,
+  text: string,
+) {
+  return withWorkflowLock(id, async () => {
+    const w = await assertOwner(id, token);
+    if (
+      !w.proofreadId ||
+      w.jobs.some((j) => j.stage === "avatar") ||
+      !w.proofreadText
+    )
+      throw new PipelineError(
+        "Please finish preparing this translation before reviewing it.",
+      );
+    if (
+      !text.trim() ||
+      text.length > 30000 ||
+      !/\d{2}:\d{2}:\d{2},\d{3} --> /.test(text)
+    )
+      throw new PipelineError(
+        "Please preserve subtitle timing and review the translated words.",
+      );
+    if (text !== w.proofreadText) {
+      const stored = await storeMedia(
+        new TextEncoder().encode(text),
+        "text/plain",
+      );
+      await heygen(
+        `/video-translations/proofreads/${encodeURIComponent(w.proofreadId)}/srt`,
+        { srt: { type: "url", url: stored.url } },
+        `${id}:review`,
+        "PUT",
+      );
+    }
+    w.proofreadText = text;
+    w.proofreadReviewed = true;
+    await saveWorkflow(w);
+    return { entryId: id, token };
+  });
 }

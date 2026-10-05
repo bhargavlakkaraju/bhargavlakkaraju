@@ -7,6 +7,7 @@ export interface LanguageOption {
 }
 
 export const LANGUAGES: readonly LanguageOption[] = [
+  { code: "or", label: "Odia", native: "ଓଡ଼ିଆ", ttsHint: null },
   { code: "hi", label: "Hindi", native: "हिन्दी", ttsHint: "hi" },
   { code: "bn", label: "Bengali", native: "বাংলা", ttsHint: null },
   { code: "ta", label: "Tamil", native: "தமிழ்", ttsHint: "ta" },

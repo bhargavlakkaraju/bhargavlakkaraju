@@ -12,7 +12,7 @@ export const Route = createFileRoute("/api/download/$id")({
         return new Response(Buffer.from(bytes), {
           headers: {
             "Content-Type": "video/mp4",
-            "Content-Disposition": `attachment; filename="portraitvoice-${entry.id}.mp4"`,
+            "Content-Disposition": `attachment; filename="portraitvoice-${entry.language.replace(/[^a-z]/g, "")}-${entry.id}.mp4"`,
             "Cache-Control": "private, max-age=3600",
           },
         });

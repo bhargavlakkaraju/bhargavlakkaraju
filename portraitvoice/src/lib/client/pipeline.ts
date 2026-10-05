@@ -73,16 +73,16 @@ function sleep(ms: number, signal: AbortSignal): Promise<void> {
     signal.addEventListener("abort", abort, { once: true });
   });
 }
-function save(value: Saved) {
+function save(value: Saved, storage = STORAGE) {
   try {
-    localStorage.setItem(STORAGE, JSON.stringify(value));
+    localStorage.setItem(storage, JSON.stringify(value));
   } catch {
     /* private browsing may block storage; generation still works */
   }
 }
-function read(): Saved | null {
+function read(storage = STORAGE): Saved | null {
   try {
-    const v: unknown = JSON.parse(localStorage.getItem(STORAGE) ?? "null");
+    const v: unknown = JSON.parse(localStorage.getItem(storage) ?? "null");
     if (
       v &&
       typeof v === "object" &&
@@ -99,7 +99,11 @@ function read(): Saved | null {
   }
   return null;
 }
-export function useTestimonialPipeline() {
+export function useTestimonialPipeline(
+  storage = STORAGE,
+  initialSaved?: Saved,
+) {
+  const fallback = useRef(initialSaved);
   const [state, setState] = useState<PipelineState>(INITIAL),
     abort = useRef<AbortController | null>(null);
   const drive = useCallback(async (saved: Saved, signal: AbortSignal) => {
@@ -228,7 +232,7 @@ export function useTestimonialPipeline() {
       }));
   }, []);
   const resume = useCallback(async () => {
-    const saved = read();
+    const saved = read(storage) ?? fallback.current;
     if (!saved) return;
     abort.current?.abort();
     const controller = new AbortController();
@@ -249,7 +253,7 @@ export function useTestimonialPipeline() {
           error: e instanceof Error ? e.message : "Please try again.",
         }));
     }
-  }, [drive]);
+  }, [drive, storage]);
   useEffect(() => {
     void resume();
     return () => abort.current?.abort();
@@ -257,12 +261,12 @@ export function useTestimonialPipeline() {
   const reset = useCallback(() => {
     abort.current?.abort();
     try {
-      localStorage.removeItem(STORAGE);
+      localStorage.removeItem(storage);
     } catch {
       /* unavailable storage */
     }
     setState(INITIAL);
-  }, []);
+  }, [storage]);
   const generate = useCallback(
     async (input: GenerateInput) => {
       if (input.consent !== true) return;
@@ -309,7 +313,7 @@ export function useTestimonialPipeline() {
           },
         });
         const saved = { entryId: submitted.entryId, token, startedAt };
-        save(saved);
+        save(saved, storage);
         if (!signal.aborted) await drive(saved, signal);
       } catch (e) {
         if (!signal.aborted)
@@ -323,7 +327,7 @@ export function useTestimonialPipeline() {
           }));
       }
     },
-    [drive],
+    [drive, storage],
   );
   return { state, generate, reset, resume };
 }
@@ -333,7 +337,7 @@ export async function extractTextFromNote(file: File, language: string) {
   return extractNoteText({ data: form });
 }
 
-async function mediaForm(file: File, kind: "image" | "audio") {
+export async function mediaForm(file: File, kind: "image" | "audio") {
   const form = new FormData();
   form.set("kind", kind);
   const upload = await prepareMediaUpload({

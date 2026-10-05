@@ -2076,3 +2076,55 @@ textarea.ui-field {
     scroll-behavior: auto !important;
   }
 }
+
+.translation-field {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+}
+.translation-field legend {
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.language-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.translation-draft {
+  border: 1px solid var(--color-border, #dce3de);
+  padding: 16px;
+  border-radius: 12px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.language-output-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+  margin: 24px 0;
+}
+.language-output {
+  padding: 20px;
+  border: 1px solid #dce3de;
+  border-radius: 16px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+.language-output video {
+  width: 100%;
+  max-height: 500px;
+  border-radius: 12px;
+}
+@media (max-width: 480px) {
+  .language-choices {
+    grid-template-columns: 1fr;
+  }
+  .translation-draft {
+    padding: 12px;
+  }
+}

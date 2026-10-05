@@ -281,3 +281,169 @@ export const prepareMediaUpload = createServerFn({ method: "POST" })
       return friendly(error);
     }
   });
+
+export const translateScript = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      text: z.string().trim().min(1).max(700),
+      sourceLanguage: z.string().min(1).max(80),
+      target: languageSchema,
+    }),
+  )
+  .handler(async ({ data }) => {
+    try {
+      return await (
+        await import("@/lib/pipeline/translation")
+      ).prepareTranslation(data.text, data.sourceLanguage, data.target);
+    } catch {
+      throw new Error(
+        "Translation could not be prepared. Your original words are saved. Try again or enter the translation yourself.",
+      );
+    }
+  });
+export const transcribeAudio = createServerFn({ method: "POST" })
+  .validator(requireFormData)
+  .handler(async ({ data }) => {
+    try {
+      const result = await (
+        await import("@/lib/pipeline/translation")
+      ).transcribeRecording(
+        await requireFile(data, "file"),
+        String(data.get("sourceLanguage") || "auto"),
+      );
+      if (typeof data.get("cloudReceipt") === "string")
+        await cleanCloudUpload(String(data.get("cloudReceipt")));
+      return result;
+    } catch {
+      throw new Error(
+        "The recording could not be transcribed. Try again or type the transcript yourself.",
+      );
+    }
+  });
+const batchSchema = z
+  .object({
+    batchId: z.uuid(),
+    sourceLanguage: z.string().min(1).max(80),
+    sourceScript: z.string().max(10000),
+    sourcePortraitId: z.uuid(),
+    sourcePortraitUrl: z.url(),
+    audioUrl: z.url().nullable(),
+    gender: z.enum(["female", "male"]),
+    consent: z.literal(true),
+    ambience: z.boolean(),
+    outputs: z
+      .array(
+        z.object({
+          language: languageSchema,
+          text: z.string().trim().min(1).max(700),
+          originalAudio: z.boolean(),
+          requestId: z.uuid(),
+          token: z.string().regex(/^[a-f0-9]{64}$/),
+        }),
+      )
+      .min(1)
+      .max(11),
+  })
+  .refine(
+    (v) => new Set(v.outputs.map((o) => o.language)).size === v.outputs.length,
+    "Choose each language once",
+  );
+export const createLanguageBatch = createServerFn({ method: "POST" })
+  .validator(batchSchema)
+  .handler(async ({ data }) => {
+    const results = [];
+    for (const output of data.outputs) {
+      try {
+        const job = await submitPortraitStage({
+          ...data,
+          ...output,
+          inputMode: output.originalAudio ? "audio" : "text",
+          scriptText: output.text,
+          extraction: null,
+        });
+        results.push({
+          language: output.language,
+          entryId: job.entryId,
+          token: output.token,
+          error: null,
+        });
+      } catch (error) {
+        results.push({
+          language: output.language,
+          entryId: null,
+          token: output.token,
+          error: toFriendlyError(error).friendly,
+        });
+      }
+    }
+    return results;
+  });
+export const retryLanguageVideo = createServerFn({ method: "POST" })
+  .validator(
+    z.object({ entryId: z.uuid(), token: z.string().regex(/^[a-f0-9]{64}$/) }),
+  )
+  .handler(async ({ data }) => {
+    try {
+      return await (
+        await import("@/lib/pipeline/service")
+      ).retryFailedVideo(data.entryId, data.token);
+    } catch (error) {
+      return friendly(error);
+    }
+  });
+export const prepareVideoTranslation = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      sourceId: z.uuid(),
+      sourceToken: z.string().regex(/^[a-f0-9]{64}$/),
+      language: languageSchema,
+      requestId: z.uuid(),
+      token: z.string().regex(/^[a-f0-9]{64}$/),
+      consent: z.literal(true),
+    }),
+  )
+  .handler(async ({ data }) => {
+    try {
+      return await (
+        await import("@/lib/pipeline/service")
+      ).prepareExistingVideoTranslation(data);
+    } catch (error) {
+      return friendly(error);
+    }
+  });
+export const readVideoTranslation = createServerFn({ method: "POST" })
+  .validator(
+    z.object({ entryId: z.uuid(), token: z.string().regex(/^[a-f0-9]{64}$/) }),
+  )
+  .handler(async ({ data }) => {
+    try {
+      return await (
+        await import("@/lib/pipeline/service")
+      ).readExistingVideoTranslation(data.entryId, data.token);
+    } catch (error) {
+      return friendly(error);
+    }
+  });
+export const approveVideoTranslation = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      entryId: z.uuid(),
+      token: z.string().regex(/^[a-f0-9]{64}$/),
+      text: z.string().min(1).max(30000),
+      consent: z.literal(true),
+    }),
+  )
+  .handler(async ({ data }) => {
+    try {
+      return await (
+        await import("@/lib/pipeline/service")
+      ).reviewExistingVideoTranslation(data.entryId, data.token, data.text);
+    } catch (error) {
+      return friendly(error);
+    }
+  });
+export const getTranslationCapabilities = createServerFn({
+  method: "GET",
+}).handler(async () =>
+  (await import("@/lib/heygen")).translationCapabilities(),
+);

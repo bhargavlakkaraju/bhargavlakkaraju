@@ -2,8 +2,8 @@ import { generateText } from "ai";
 import { LANGUAGE_CODES } from "../languages";
 export const OCR_MODEL = "google/gemini-2.5-flash";
 export async function readNote(file: File, language: string) {
-  if (!LANGUAGE_CODES.includes(language))
-    throw new Error("Please choose a supported language.");
+  if (!language || language.length > 80)
+    throw new Error("Please choose a source language.");
   const result = await generateText({
     model: OCR_MODEL,
     maxOutputTokens: 1800,

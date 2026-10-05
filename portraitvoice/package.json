@@ -15,8 +15,8 @@
   "dependencies": {
     "@hono/node-server": "^2.1.1",
     "@supabase/supabase-js": "^2.116.0",
-    "@tanstack/react-router": "^1.170.35",
-    "@tanstack/react-start": "^1.168.52",
+    "@tanstack/react-router": "1.170.41",
+    "@tanstack/react-start": "1.168.60",
     "@vercel/blob": "^2.8.0",
     "@vercel/functions": "^3.9.7",
     "ai": "^7.0.99",

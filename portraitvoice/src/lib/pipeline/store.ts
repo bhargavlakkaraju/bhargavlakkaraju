@@ -19,6 +19,15 @@ export interface StageJob {
   resolved?: boolean;
 }
 export interface Workflow {
+  translationSourceId?: string;
+  proofreadId?: string;
+  proofreadText?: string;
+  proofreadReviewed?: boolean;
+  sourceAudioUrl?: string;
+  sourceLanguage?: string;
+  sourceScript?: string;
+  batchId?: string;
+  attempt?: number;
   provider?: "heygen";
   imageAssetId?: string;
   audioAssetId?: string;

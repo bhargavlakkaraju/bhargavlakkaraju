@@ -24,10 +24,22 @@ import { GenerationScreen } from "@/components/generation-screen";
 import {
   useTestimonialPipeline,
   extractTextFromNote,
+  mediaForm,
 } from "@/lib/client/pipeline";
 import { validateScript } from "@/lib/script";
 import { LANGUAGES } from "@/lib/languages";
 import type { InputMode, VoiceGender } from "@/lib/types";
+import {
+  translateScript,
+  transcribeAudio,
+  createLanguageBatch,
+  uploadMedia,
+} from "@/server/fns";
+import {
+  LanguageOutputs,
+  BATCH_STORAGE,
+  type LanguageOutput,
+} from "@/components/language-outputs";
 import { toast } from "sonner";
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -56,7 +68,7 @@ function Home() {
   const [portrait, setPortrait] = useState<File | null>(null),
     [preview, setPreview] = useState<string | null>(null),
     [mode, setMode] = useState<InputMode>("text"),
-    [language, setLanguage] = useState("hi"),
+    [language, setLanguage] = useState("auto"),
     [gender, setGender] = useState<VoiceGender>("female"),
     [consent, setConsent] = useState(false),
     [ambience, setAmbience] = useState<boolean | null>(null),
@@ -78,9 +90,187 @@ function Home() {
     setPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [portrait]);
-  const script = mode === "note" ? noteScript : typedScript;
+  const [transcript, setTranscript] = useState("");
+  const [otherLanguage, setOtherLanguage] = useState("");
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [detected, setDetected] = useState("");
+  const [targets, setTargets] = useState<string[]>(["hi"]);
+  const [drafts, setDrafts] = useState<
+    Record<string, { text: string; source: string; reviewed: boolean }>
+  >({});
+  const [outputs, setOutputs] = useState<LanguageOutput[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [translationBusy, setTranslationBusy] = useState<string | null>(null);
+  const pendingBatch = useRef<
+    Parameters<typeof createLanguageBatch>[0]["data"] | null
+  >(null);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(BATCH_STORAGE) ?? "null");
+      if (Array.isArray(saved)) setOutputs(saved);
+    } catch {}
+  }, []);
+  const script =
+    mode === "audio" ? transcript : mode === "note" ? noteScript : typedScript;
+  const sourceLanguage =
+    language === "other" ? otherLanguage.trim() || "mixed" : language;
+  const sourceKey = JSON.stringify([script, sourceLanguage, mode]);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem("portraitvoice.draft.v1") ?? "null",
+      );
+      if (saved) {
+        setTypedScript(saved.typedScript ?? "");
+        setNoteScript(saved.noteScript ?? "");
+        setTranscript(saved.transcript ?? "");
+        setLanguage(saved.language ?? "auto");
+        setOtherLanguage(saved.otherLanguage ?? "");
+        setTargets(
+          (saved.targets ?? ["hi"]).filter((c: string) =>
+            LANGUAGES.some((l) => l.code === c),
+          ),
+        );
+        setDrafts(saved.drafts ?? {});
+      }
+      const pending = JSON.parse(
+        localStorage.getItem("portraitvoice.batch-request.v1") ?? "null",
+      );
+      if (pending) pendingBatch.current = pending;
+    } catch {}
+    setDraftLoaded(true);
+  }, []);
+  useEffect(() => {
+    if (draftLoaded)
+      try {
+        localStorage.setItem(
+          "portraitvoice.draft.v1",
+          JSON.stringify({
+            typedScript,
+            noteScript,
+            transcript,
+            language,
+            otherLanguage,
+            targets,
+            drafts,
+          }),
+        );
+      } catch {}
+  }, [
+    draftLoaded,
+    typedScript,
+    noteScript,
+    transcript,
+    language,
+    otherLanguage,
+    targets,
+    drafts,
+  ]);
+  useEffect(() => {
+    setConsent(false);
+  }, [sourceKey, gender, ambience]);
+  const translationsReady =
+    targets.length > 0 &&
+    targets.every((code) => {
+      const draft = drafts[code];
+      if (!draft || draft.source !== sourceKey || !draft.reviewed) return false;
+      try {
+        validateScript(draft.text, code);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+  async function prepare(code: string) {
+    setTranslationBusy(code);
+    const key = sourceKey;
+    try {
+      const result = await translateScript({
+        data: { text: script, sourceLanguage, target: code },
+      });
+      setDetected(result.detectedLanguage);
+      setDrafts((d) => ({
+        ...d,
+        [code]: { text: result.text, source: key, reviewed: false },
+      }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not translate.");
+    } finally {
+      setTranslationBusy(null);
+    }
+  }
+  async function transcribe() {
+    if (!audio) return;
+    setReading(true);
+    try {
+      const form = await mediaForm(audio, "audio");
+      form.set("sourceLanguage", sourceLanguage);
+      const result = await transcribeAudio({ data: form });
+      setTranscript(result.text);
+      setDetected(result.detectedLanguage);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not transcribe.");
+    } finally {
+      setReading(false);
+    }
+  }
+  async function generateBatch() {
+    if (!portrait || !consent || !translationsReady || submitting) return;
+    setSubmitting(true);
+    try {
+      if (!pendingBatch.current) {
+        const photo = await uploadMedia({
+          data: await mediaForm(portrait, "image"),
+        });
+        const sourceAudio =
+          mode === "audio" && audio
+            ? await uploadMedia({ data: await mediaForm(audio, "audio") })
+            : null;
+        pendingBatch.current = {
+          batchId: crypto.randomUUID(),
+          sourcePortraitId: photo.id,
+          sourcePortraitUrl: photo.url,
+          sourceLanguage,
+          sourceScript: script,
+          gender,
+          consent: true,
+          ambience: ambience ?? mode !== "audio",
+          audioUrl: sourceAudio?.url ?? null,
+          outputs: targets.map((code) => ({
+            language: code,
+            text: drafts[code]!.text,
+            originalAudio: false,
+            requestId: crypto.randomUUID(),
+            token: Array.from(crypto.getRandomValues(new Uint8Array(32)), (v) =>
+              v.toString(16).padStart(2, "0"),
+            ).join(""),
+          })),
+        };
+      }
+      localStorage.setItem(
+        "portraitvoice.batch-request.v1",
+        JSON.stringify(pendingBatch.current),
+      );
+      const result = await createLanguageBatch({ data: pendingBatch.current });
+      if (!result.some((o) => o.entryId))
+        throw new Error(result[0]?.error ?? "Could not prepare the videos.");
+      const saved = result.map((o) => ({ ...o, startedAt: Date.now() }));
+      try {
+        localStorage.setItem(BATCH_STORAGE, JSON.stringify(saved));
+      } catch {}
+      setOutputs(saved);
+    } catch (e) {
+      toast.error(
+        e instanceof Error
+          ? e.message
+          : "Could not create videos. Try again to resume this batch.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
   let scriptError = "";
-  if (mode !== "audio" && script.trim()) {
+  if (script.trim()) {
     try {
       validateScript(script, language);
     } catch (error) {
@@ -90,17 +280,19 @@ function Home() {
   }
   const storyReady = Boolean(
     mode === "audio"
-      ? audio
+      ? audio && transcript.trim() && !scriptError
       : script.trim() &&
           !scriptError &&
           (mode === "text" || (confirmed && extraction)),
   );
-  const ready = Boolean(portrait && consent && storyReady);
+  const ready = Boolean(portrait && consent && storyReady && translationsReady);
   const nextHint = reading
     ? "Reading your note…"
     : step === 2
       ? consent
-        ? "Ready to create. This usually takes a few minutes."
+        ? translationsReady
+          ? "Ready to create. This usually takes a few minutes."
+          : "Review every selected translation before creating videos."
         : "Confirm permission above to create your video."
       : mode === "audio"
         ? audio
@@ -128,6 +320,16 @@ function Home() {
   }
   function startAgain() {
     reset();
+    localStorage.removeItem(BATCH_STORAGE);
+    outputs.forEach((o) =>
+      localStorage.removeItem(`portraitvoice.output.${o.entryId}`),
+    );
+    localStorage.removeItem("portraitvoice.batch-request.v1");
+    localStorage.removeItem("portraitvoice.draft.v1");
+    setOutputs([]);
+    pendingBatch.current = null;
+    setDrafts({});
+    setTranscript("");
     setStep(0);
     setPortrait(null);
     setTypedScript("");
@@ -142,7 +344,7 @@ function Home() {
     if (!note) return;
     setReading(true);
     try {
-      const result = await extractTextFromNote(note, language);
+      const result = await extractTextFromNote(note, sourceLanguage);
       setNoteScript(result.text);
       setExtraction(result);
       setConfirmed(false);
@@ -157,6 +359,8 @@ function Home() {
       setReading(false);
     }
   }
+  if (outputs.length)
+    return <LanguageOutputs outputs={outputs} onReset={startAgain} />;
   if (
     state.phase === "uploading" ||
     state.phase === "running" ||
@@ -217,17 +421,7 @@ function Home() {
                 return;
               }
               if (!ready || !portrait) return;
-              void generate({
-                portrait,
-                inputMode: mode,
-                language,
-                gender: mode === "audio" ? null : gender,
-                scriptText: mode === "audio" ? null : script,
-                audioFile: mode === "audio" ? audio : null,
-                extraction: mode === "note" ? extraction : null,
-                consent: true,
-                ambience: ambience ?? mode !== "audio",
-              });
+              void generateBatch();
             }}
           >
             <div className="step-intro">
@@ -269,13 +463,19 @@ function Home() {
             {step === 1 && (
               <div className="story-step">
                 <div className="language-field">
-                  <label htmlFor="language">Language</label>
+                  <label htmlFor="language">Input language</label>
                   <Select
                     id="language"
                     disabled={reading}
                     value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
+                    onChange={(e) => {
+                      setLanguage(e.target.value);
+                      setConsent(false);
+                      pendingBatch.current = null;
+                    }}
                   >
+                    <option value="auto">Detect automatically</option>
+                    <option value="other">Other / mixed languages</option>
                     {LANGUAGES.map((l) => (
                       <option key={l.code} value={l.code}>
                         {l.native}
@@ -284,6 +484,23 @@ function Home() {
                     ))}
                   </Select>
                 </div>
+                {language === "other" && (
+                  <label>
+                    Source language name
+                    <input
+                      className="input"
+                      maxLength={80}
+                      value={otherLanguage}
+                      onChange={(e) => setOtherLanguage(e.target.value)}
+                      placeholder="For example, Spanish or mixed Hindi and English"
+                    />
+                  </label>
+                )}
+                <p className="field-hint">
+                  Keep your original words in their source language. Detection
+                  is a suggestion; review the text before translating.
+                  {detected && ` Detected: ${detected}.`}
+                </p>
                 <Tabs
                   value={mode}
                   onValueChange={(v) => {
@@ -336,11 +553,37 @@ function Home() {
                 )}
                 {mode === "audio" ? (
                   <div className="audio-input">
-                    <UploadZone kind="audio" file={audio} onChange={setAudio} />
+                    <UploadZone
+                      kind="audio"
+                      file={audio}
+                      onChange={(f) => {
+                        setAudio(f);
+                        setTranscript("");
+                        setConsent(false);
+                      }}
+                    />
                     {audio && <AudioPreview file={audio} />}
                     <p className="field-hint">
-                      Your original voice will be used in the video.
+                      Translated videos use the selected AI speaking voice. Your
+                      original recording stays unchanged.
                     </p>
+                    <Button
+                      variant="secondary"
+                      disabled={!audio || reading}
+                      onClick={() => void transcribe()}
+                    >
+                      {reading ? "Transcribing…" : "Transcribe recording"}
+                    </Button>
+                    {scriptError && <p role="alert">{scriptError}</p>}
+                    <label htmlFor="transcript">
+                      Review original transcript
+                    </label>
+                    <Textarea
+                      id="transcript"
+                      value={transcript}
+                      maxLength={700}
+                      onChange={(e) => setTranscript(e.target.value)}
+                    />
                   </div>
                 ) : mode === "text" || extraction ? (
                   <div className="script-wrap">
@@ -365,6 +608,7 @@ function Home() {
                       }
                       value={script}
                       onChange={(e) => {
+                        pendingBatch.current = null;
                         if (mode === "note") setNoteScript(e.target.value);
                         else setTypedScript(e.target.value);
                         if (mode === "note") setConfirmed(false);
@@ -411,23 +655,28 @@ function Home() {
                   <div>
                     <span>
                       {mode === "audio" ? "Your recording" : "Your story"} ·{" "}
-                      {LANGUAGES.find((l) => l.code === language)?.native}
+                      {language === "auto"
+                        ? detected || "Detect automatically"
+                        : language === "other"
+                          ? otherLanguage || "Other / mixed languages"
+                          : LANGUAGES.find((l) => l.code === language)?.native}
                     </span>
                     <button type="button" onClick={() => setStep(1)}>
                       Edit story
                     </button>
                   </div>
-                  <p>{mode === "audio" ? audio?.name : script}</p>
+                  <p>{script}</p>
                   {mode === "audio" && audio && (
                     <>
                       <AudioPreview file={audio} />
                       <p className="original-voice-note">
-                        Your recording will be used as-is. No AI voice.
+                        Your original recording is preserved. Translated
+                        versions use an AI voice.
                       </p>
                     </>
                   )}
                 </div>
-                {mode !== "audio" && (
+                {
                   <fieldset className="gender-field">
                     <legend>Speaking voice</legend>
                     <div className="gender-toggle">
@@ -436,7 +685,10 @@ function Home() {
                           type="button"
                           key={g}
                           aria-pressed={gender === g}
-                          onClick={() => setGender(g)}
+                          onClick={() => {
+                            setGender(g);
+                            pendingBatch.current = null;
+                          }}
                           className={gender === g ? "selected" : ""}
                         >
                           {g === "female" ? "Female" : "Male"}
@@ -445,12 +697,126 @@ function Home() {
                       ))}
                     </div>
                   </fieldset>
-                )}
+                }
+
+                <fieldset className="translation-field">
+                  <legend>Video output languages</legend>
+                  <p className="field-hint">
+                    Choose one or more. Each selected language creates a
+                    separate video. Review every translation and check that
+                    names, numbers and meaning are correct.
+                  </p>
+                  <div className="language-choices">
+                    {LANGUAGES.map((l) => (
+                      <label className="check-line" key={l.code}>
+                        <Checkbox
+                          checked={targets.includes(l.code)}
+                          onCheckedChange={(checked) => {
+                            setTargets((t) =>
+                              checked
+                                ? [...t, l.code]
+                                : t.filter((c) => c !== l.code),
+                            );
+                            setConsent(false);
+                            pendingBatch.current = null;
+                          }}
+                        />
+                        <span>
+                          {l.label} · {l.native}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  {targets.map((code) => {
+                    const draft = drafts[code];
+                    const current = draft?.source === sourceKey;
+                    let error = "";
+                    try {
+                      if (draft) validateScript(draft.text, code);
+                    } catch (e) {
+                      error =
+                        e instanceof Error ? e.message : "Check this text";
+                    }
+                    return (
+                      <section className="translation-draft" key={code}>
+                        <h3>{LANGUAGES.find((l) => l.code === code)?.label}</h3>
+                        <Button
+                          variant="secondary"
+                          disabled={Boolean(translationBusy)}
+                          onClick={() => void prepare(code)}
+                        >
+                          {translationBusy === code
+                            ? "Translating…"
+                            : draft
+                              ? "Translate again"
+                              : "Prepare translation"}
+                        </Button>
+                        {draft && !current && (
+                          <p role="alert">
+                            Source changed. Previous draft is preserved below.
+                            Translate again or review and use your edited draft.
+                          </p>
+                        )}
+                        <label htmlFor={`translation-${code}`}>
+                          Reviewed script ·{" "}
+                          {LANGUAGES.find((l) => l.code === code)?.label}
+                        </label>
+                        <Textarea
+                          id={`translation-${code}`}
+                          value={draft?.text ?? ""}
+                          maxLength={700}
+                          onChange={(e) => {
+                            setDrafts((d) => ({
+                              ...d,
+                              [code]: {
+                                text: e.target.value,
+                                source: sourceKey,
+                                reviewed: false,
+                              },
+                            }));
+                            setConsent(false);
+                            pendingBatch.current = null;
+                          }}
+                        />
+                        <p className="field-hint">
+                          {draft?.text.length ?? 0} / 700 characters
+                        </p>
+                        {error && <p role="alert">{error}</p>}
+                        <label className="check-line">
+                          <Checkbox
+                            disabled={!draft?.text || Boolean(error)}
+                            checked={current && draft?.reviewed}
+                            onCheckedChange={(v) => {
+                              setDrafts((d) => ({
+                                ...d,
+                                [code]: {
+                                  text: d[code]?.text ?? "",
+                                  source: sourceKey,
+                                  reviewed: v === true,
+                                },
+                              }));
+                              setConsent(false);
+                              pendingBatch.current = null;
+                            }}
+                          />
+                          <span>
+                            I have checked the{" "}
+                            {LANGUAGES.find((l) => l.code === code)?.label}{" "}
+                            translation.
+                          </span>
+                        </label>
+                      </section>
+                    );
+                  })}
+                </fieldset>
 
                 <AmbienceControl
                   key={mode}
                   enabled={ambience ?? mode !== "audio"}
-                  onChange={setAmbience}
+                  onChange={(v) => {
+                    setAmbience(v);
+                    pendingBatch.current = null;
+                  }}
                 />
                 <label className="check-line">
                   <Checkbox
@@ -460,7 +826,8 @@ function Home() {
                   />
                   <span>
                     I have permission to create this AI video and share the
-                    photo, voice and testimonial in the public gallery.
+                    photo, voice, testimonial and chosen translations in the
+                    public gallery.
                   </span>
                 </label>
               </div>
@@ -505,6 +872,7 @@ function Home() {
                     aria-describedby="next-step-hint"
                     disabled={
                       reading ||
+                      submitting ||
                       (step === 0
                         ? !portrait
                         : step === 1
@@ -513,7 +881,9 @@ function Home() {
                     }
                   >
                     {step === 2
-                      ? "Create my video"
+                      ? submitting
+                        ? "Preparing videos…"
+                        : `Create ${targets.length} ${targets.length === 1 ? "video" : "videos"}`
                       : step === 1
                         ? "Review video"
                         : "Use this photo"}

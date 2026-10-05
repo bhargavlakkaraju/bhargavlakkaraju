@@ -27,11 +27,12 @@ export async function heygen<T>(
   path: string,
   body?: unknown,
   idempotencyKey?: string,
+  method?: "PUT",
 ): Promise<T> {
   if (!env.HEYGEN_API_KEY)
     throw new HeyGenError(401, "not_configured", providerMessage(401, ""));
   const response = await fetch(`https://api.heygen.com/v3${path}`, {
-    method: body === undefined ? "GET" : "POST",
+    method: method ?? (body === undefined ? "GET" : "POST"),
     headers: {
       "x-api-key": env.HEYGEN_API_KEY,
       "Content-Type": "application/json",
@@ -138,4 +139,46 @@ export async function uploadAsset(
     `${key}:complete`,
   );
   return slot.asset_id;
+}
+
+export const getVideoTranslation = (id: string) =>
+  heygen<HeyGenVideo>(`/video-translations/${encodeURIComponent(id)}`);
+export const TRANSLATION_LANGUAGES: Record<string, string> = {
+  en: "English (India)",
+  hi: "Hindi (India)",
+  pa: "Punjabi (India)",
+  te: "Telugu (India)",
+  ta: "Tamil (India)",
+  kn: "Kannada (India)",
+  mr: "Marathi (India)",
+  bn: "Bengali (India)",
+  gu: "Gujarati (India)",
+  or: "Odia (India)",
+  ml: "Malayalam (India)",
+};
+
+export async function translationCapabilities() {
+  try {
+    const key = await heygen<{ scopes: string[]; status: string }>(
+      "/api_keys/self",
+    );
+    const allows = (scope: string) =>
+      key.scopes.includes("*:*") ||
+      key.scopes.includes(scope) ||
+      (scope.endsWith(":read") && key.scopes.includes("*:read"));
+    const available =
+      allows("translations:read") && allows("translations:write");
+    return {
+      available,
+      reason: available
+        ? null
+        : "Existing-video translation requires HeyGen translation access. Ask the administrator to review the current API key; your source video is unchanged.",
+    };
+  } catch {
+    return {
+      available: false,
+      reason:
+        "Existing-video translation access could not be verified. Your source video is unchanged.",
+    };
+  }
 }

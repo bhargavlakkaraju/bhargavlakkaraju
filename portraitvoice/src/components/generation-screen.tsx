@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   Download,
 } from "lucide-react";
+import { VideoTranslation } from "./video-translation";
 import { Button } from "./ui/button";
 import { AGRI_FACTS } from "@/lib/facts";
 import { formatDuration } from "@/lib/utils";
@@ -20,6 +21,15 @@ export function GenerationScreen({
   state: PipelineState;
   onReset: () => void;
 }) {
+  const [ownerToken, setOwnerToken] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      setOwnerToken(
+        JSON.parse(localStorage.getItem("portraitvoice.active.v1") ?? "null")
+          ?.token ?? null,
+      );
+    } catch {}
+  }, []);
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -86,6 +96,17 @@ export function GenerationScreen({
               <ArrowLeft size={16} /> Create another
             </Button>
           </div>
+          {ownerToken && state.entry && (
+            <VideoTranslation
+              source={{
+                entryId: state.entry.id,
+                token: ownerToken,
+                language: state.entry.language,
+                error: null,
+                startedAt: state.startedAt ?? Date.now(),
+              }}
+            />
+          )}
           <small>
             AI-generated video · Shared in the gallery with your consent
           </small>
