@@ -165,7 +165,9 @@ export async function translationCapabilities() {
     const allows = (scope: string) =>
       key.scopes.includes("*:*") ||
       key.scopes.includes(scope) ||
-      (scope.endsWith(":read") && key.scopes.includes("*:read"));
+      (scope.endsWith(":read") &&
+        (key.scopes.includes("*:read") ||
+          key.scopes.includes(scope.replace(":read", ":write"))));
     const available =
       allows("translations:read") && allows("translations:write");
     return {

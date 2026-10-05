@@ -277,3 +277,22 @@ test("retry starts only a provider-confirmed failed output with a new idempotenc
     globalThis.fetch = original;
   }
 });
+
+test("translation write permission also authorizes read capability", async () => {
+  const { translationCapabilities } = await import("../src/lib/heygen");
+  const original = globalThis.fetch;
+  try {
+    globalThis.fetch = async () =>
+      Response.json({
+        data: { scopes: ["translations:write"], status: "active" },
+      });
+    assert.equal((await translationCapabilities()).available, true);
+    globalThis.fetch = async () =>
+      Response.json({
+        data: { scopes: ["translations:read"], status: "active" },
+      });
+    assert.equal((await translationCapabilities()).available, false);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
