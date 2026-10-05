@@ -2108,6 +2108,7 @@ textarea.ui-field {
   margin: 24px 0;
 }
 .language-output {
+  min-width: 0;
   padding: 20px;
   border: 1px solid #dce3de;
   border-radius: 16px;
@@ -2116,6 +2117,8 @@ textarea.ui-field {
   align-content: start;
 }
 .language-output video {
+  min-width: 0;
+  display: block;
   width: 100%;
   max-height: 500px;
   border-radius: 12px;
@@ -2127,4 +2130,14 @@ textarea.ui-field {
   .translation-draft {
     padding: 12px;
   }
+}
+
+.translation-results {
+  min-width: 0;
+}
+.language-output button {
+  max-width: 100%;
+  white-space: normal;
+  height: auto;
+  min-height: 40px;
 }

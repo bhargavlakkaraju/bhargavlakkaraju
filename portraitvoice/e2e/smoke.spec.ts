@@ -221,12 +221,8 @@ test("completed video uses consented self-serve translation and preserves partia
     name: "Create translated videos",
     exact: true,
   });
-  await page
-    .getByRole("checkbox", { name: "Hindi", exact: true })
-    .check();
-  await page
-    .getByRole("checkbox", { name: "Telugu", exact: true })
-    .check();
+  await page.getByRole("checkbox", { name: "Hindi", exact: true }).check();
+  await page.getByRole("checkbox", { name: "Telugu", exact: true }).check();
   await expect(create).toBeDisabled();
   await page
     .getByRole("checkbox", {
@@ -250,6 +246,18 @@ test("completed video uses consented self-serve translation and preserves partia
   await expect
     .poll(() =>
       page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    )
+    .toBe(true);
+  await expect
+    .poll(() =>
+      page
+        .locator(".language-output video, .language-output button")
+        .evaluateAll((elements) =>
+          elements.every((element) => {
+            const box = element.getBoundingClientRect();
+            return box.left >= 0 && box.right <= innerWidth;
+          }),
+        ),
     )
     .toBe(true);
   await page.screenshot({
